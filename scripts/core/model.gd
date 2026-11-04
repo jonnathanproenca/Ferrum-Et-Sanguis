@@ -1,0 +1,213 @@
+class_name Model
+extends RefCounted
+## Modelo de dados: classes, itens, origens e gladiadores (porte fiel de model.ts).
+
+const ATRIBUTOS: Array = ["forca", "agilidade", "vitalidade", "sorte"]
+const SLOTS: Array = ["arma", "acessorio", "elmo", "peito", "pe", "calca"]
+const CLASSES_IDS: Array = ["murmilo", "retiario", "tracio", "samnita"]
+const QUALIDADES: Array = ["Normal", "Superior", "Rara", "Épica", "Lendária"]
+const COR_QUALIDADE: Array = ["#9aa0a6", "#4caf50", "#3d8bfd", "#a855f7", "#ff9f1a"]
+const QUALIDADE_MAX := 4
+const BONUS_QUALIDADE: Array = [0, 1, 2, 3, 4]
+const PRECO_QUALIDADE: Array = [1.0, 1.5, 2.5, 4.0, 7.0]
+const FOCO_SLOT := {"arma": "forca", "acessorio": "vitalidade", "elmo": "sorte", "peito": "vitalidade", "pe": "agilidade", "calca": "agilidade"}
+const NOME_SLOT := {"arma": "Arma", "acessorio": "Escudo / acessório", "elmo": "Elmo", "peito": "Peitoral", "pe": "Calçado", "calca": "Calça"}
+const NOME_ATRIBUTO := {"forca": "Força", "agilidade": "Agilidade", "vitalidade": "Vitalidade", "sorte": "Sorte"}
+const NIVEL_MAXIMO := 15
+const TENDENCIA_PONTOS := 2
+const PRECO_CONDICAO := {"jovem": 20, "maduro": 0, "cicatrizado": -20}
+const AJUSTE_RIVAL := {"treinoPorNivel": 1, "divisorQualidade": 4, "qualidadeArena": [0, 1, 2]}
+const PENALIDADE_EFEITO := {"sangramento": "vitalidade", "envenenamento": "agilidade", "contusao": "forca", "queimadura": "sorte"}
+
+const NOME_BASICO := {
+	"arma": {"murmilo": "Gládio simples", "retiario": "Tridente simples", "tracio": "Sica simples", "samnita": "Gládio simples", "dimachaerus": "Gládios simples"},
+	"acessorio": {"murmilo": "Escudo simples", "retiario": "Rede simples", "tracio": "Escudo pequeno simples", "samnita": "Escudo simples", "dimachaerus": "Manica simples"},
+	"elmo": {"murmilo": "Elmo simples", "retiario": "Galero simples", "tracio": "Capacete simples", "samnita": "Elmo simples", "dimachaerus": "Faixa de cabelo simples"},
+	"peito": {"murmilo": "Peitoral simples", "retiario": "Peitoral de couro simples", "tracio": "Peitoral de couro simples", "samnita": "Peitoral simples", "dimachaerus": "Correias simples"},
+	"pe": {"murmilo": "Botas simples", "retiario": "Sandálias simples", "tracio": "Sandálias simples", "samnita": "Botas simples", "dimachaerus": "Sandálias simples"},
+	"calca": {"murmilo": "Perneira simples", "retiario": "Faixa simples", "tracio": "Faixa simples", "samnita": "Perneira simples", "dimachaerus": "Faixa simples"},
+}
+
+const NOMES: Array = [
+	"Ático", "Brenno", "Cássio", "Dárdano", "Espúrio", "Flávio", "Gracco", "Hélvio", "Ícaro", "Juba",
+	"Lúcio", "Márcio", "Nério", "Otávio", "Pacato", "Rúfio", "Sabino", "Túlio", "Vário", "Xantipo",
+	"Aulo", "Balbo", "Cneu", "Décimo", "Eumeno", "Fábio", "Galba", "Hirto", "Ibero", "Jano",
+	"Lêntulo", "Mânio", "Numério", "Ósio", "Pláucio", "Quinto", "Rômulo", "Sérvio", "Tibério", "Úlpio",
+	"Valente", "Zenão", "Amílcar", "Bóio", "Crixo", "Doro", "Enômao", "Fúrio", "Górgias", "Heitor",
+	"Ixíon", "Jugurta", "Lisandro", "Mário", "Nicandro", "Orgétorix", "Perseu", "Rufo", "Sertório", "Tárcio",
+]
+
+static var _classes: Dictionary = {}
+static var _itens: Array = []
+static var _terras: Array = []
+
+static func classes() -> Dictionary:
+	if _classes.is_empty():
+		_classes = Util.ler_json("res://data/classes.json")
+	return _classes
+
+static func itens() -> Array:
+	if _itens.is_empty():
+		_itens = Util.ler_json("res://data/itens.json")
+	return _itens
+
+static func terras() -> Array:
+	if _terras.is_empty():
+		_terras = Util.ler_json("res://data/origens.json")
+	return _terras
+
+## Arredondamento do JavaScript (meio vai para cima), diferente do roundf do Godot em negativos.
+static func jsround(x: float) -> int:
+	return int(floor(x + 0.5))
+
+static func separar_id(id: String) -> Dictionary:
+	var i := id.find("@")
+	if i < 0:
+		return {"base": id, "qualidade": 0}
+	var n := id.substr(i + 1)
+	var q: int = int(n) if n.is_valid_int() else 0
+	return {"base": id.substr(0, i), "qualidade": mini(QUALIDADE_MAX, maxi(0, q))}
+
+static func com_qualidade(base: String, q: int) -> String:
+	return "%s@%d" % [base, q] if q > 0 else base
+
+static func qualidade_de(id) -> int:
+	return int(separar_id(id)["qualidade"]) if id != null else 0
+
+static func _item_basico(slot: String, classe: String) -> Dictionary:
+	return {"id": "basico_%s_%s" % [slot, classe], "nome": NOME_BASICO[slot][classe], "slot": slot, "bonus": {}, "classes": [classe], "preco": 25, "basico": true}
+
+## Item completo (com qualidade aplicada). Devolve {} se não existir.
+static func item_por_id(id: String) -> Dictionary:
+	var s := separar_id(id)
+	var base: String = s["base"]
+	var qualidade: int = s["qualidade"]
+	var item: Dictionary = {}
+	for i in itens():
+		if i["id"] == base:
+			item = i
+			break
+	if item.is_empty() and base.begins_with("basico_"):
+		var resto := base.substr(7)
+		for slot in SLOTS:
+			if resto.begins_with(slot + "_"):
+				var classe := resto.substr(slot.length() + 1)
+				if classe in ["murmilo", "retiario", "tracio", "samnita", "dimachaerus"]:
+					item = _item_basico(slot, classe)
+				break
+	if item.is_empty():
+		return {}
+	var r: Dictionary = item.duplicate(true)
+	var foco: String = FOCO_SLOT[r["slot"]]
+	var bonus: Dictionary = r["bonus"]
+	bonus[foco] = int(bonus.get(foco, 0)) + int(BONUS_QUALIDADE[qualidade])
+	if bonus[foco] == 0:
+		bonus.erase(foco)
+	r["id"] = id
+	r["qualidade"] = qualidade
+	r["preco"] = jsround(float(item["preco"]) * float(PRECO_QUALIDADE[qualidade]))
+	return r
+
+static func terra_por_id(id: String) -> Dictionary:
+	for t in terras():
+		if t["id"] == id:
+			return t
+	return {}
+
+static func equipamento_vazio() -> Dictionary:
+	return {"arma": null, "acessorio": null, "elmo": null, "peito": null, "pe": null, "calca": null}
+
+static func sortear_equipamento(rng: Rng, classe: String, qual_max: int = 0) -> Dictionary:
+	var eq := equipamento_vazio()
+	for slot in SLOTS:
+		var q: int = rng.inteiro(0, qual_max) if qual_max > 0 else 0
+		eq[slot] = com_qualidade("basico_%s_%s" % [slot, classe], q)
+	return eq
+
+static func gerar_gladiador(rng: Rng, id: String, classe: String, nivel: int, origem: String, campeao: bool = false, qual_max: int = 0) -> Dictionary:
+	var treino := {"forca": 0, "agilidade": 0, "vitalidade": 0, "sorte": 0}
+	var pontos: int
+	if origem == "livre":
+		pontos = jsround(float((nivel - 1) * int(AJUSTE_RIVAL["treinoPorNivel"]))) + rng.inteiro(0, 2)
+	else:
+		pontos = rng.inteiro(0, 2)
+	for i in range(pontos):
+		treino[ATRIBUTOS[rng.inteiro(0, ATRIBUTOS.size() - 1)]] += 1
+	var terra: Dictionary = terras()[rng.inteiro(0, terras().size() - 1)]
+	var nome: String = NOMES[rng.inteiro(0, NOMES.size() - 1)]
+	var look: int = rng.inteiro(0, 3)
+	var equipamento := sortear_equipamento(rng, classe, qual_max)
+	return {
+		"id": id, "nome": nome, "classe": classe, "origem": origem, "terra": terra["id"], "look": look,
+		"campeao": campeao, "lenda": false, "nivel": nivel, "xp": 0, "treino": treino, "equipamento": equipamento,
+		"vivo": true, "pocoOnly": false, "vitorias": 0, "vitoriasPoco": 0, "derrotas": 0, "efeitos": [],
+	}
+
+static func gerar_escravo(rng: Rng, id: String) -> Dictionary:
+	var g := gerar_gladiador(rng, id, "murmilo", 1, "escravo")
+	g["semEstilo"] = true
+	g["equipamento"] = equipamento_vazio()
+	var tendencia: String = ATRIBUTOS[rng.inteiro(0, ATRIBUTOS.size() - 1)]
+	g["tendencia"] = tendencia
+	g["treino"][tendencia] += TENDENCIA_PONTOS
+	var condicoes := ["jovem", "maduro", "cicatrizado"]
+	var condicao: String = condicoes[rng.inteiro(0, condicoes.size() - 1)]
+	g["condicao"] = condicao
+	if condicao == "jovem":
+		g["treino"][ATRIBUTOS[rng.inteiro(0, ATRIBUTOS.size() - 1)]] += 1
+	if condicao == "cicatrizado":
+		g["treino"]["vitalidade"] += 1
+	return g
+
+static func atualizar_nivel(g: Dictionary) -> void:
+	g["nivel"] = mini(NIVEL_MAXIMO, maxi(int(g["nivel"]), 1 + int(floor(float(g["xp"]) / 50.0))))
+
+static func soma_treino(g: Dictionary) -> int:
+	var t := 0
+	for a in ATRIBUTOS:
+		t += int(g["treino"][a])
+	return t
+
+static func aparencia_de(g: Dictionary) -> Dictionary:
+	return {"terra": g["terra"], "look": g["look"], "classe": g["classe"], "campeao": g["campeao"], "equipamento": g["equipamento"]}
+
+## Atributos finais: classe + nível + treino + itens + especialidade (+2) + campeão (+2) + lenda (+1) + extra − efeitos.
+static func stats_do_gladiador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
+	var base: Dictionary = classes()[g["classe"]]["stats"]
+	var s := {
+		"forca": int(base["forca"]) + int(g["nivel"]) - 1,
+		"agilidade": int(base["agilidade"]),
+		"vitalidade": int(base["vitalidade"]) + int(g["nivel"]) - 1,
+		"sorte": int(base["sorte"]),
+	}
+	for a in ATRIBUTOS:
+		s[a] += int(g["treino"][a]) + (2 if especialidade == g["classe"] else 0) + (2 if g["campeao"] else 0) + (1 if g["lenda"] else 0) + int(extra.get(a, 0))
+	for slot in SLOTS:
+		var id = g["equipamento"][slot]
+		if id == null:
+			continue
+		var item := item_por_id(id)
+		for a in ATRIBUTOS:
+			s[a] += int(item["bonus"].get(a, 0))
+	for ef in g["efeitos"]:
+		s[PENALIDADE_EFEITO[ef["tipo"]]] -= int(ef["severidade"])
+	for a in ATRIBUTOS:
+		s[a] = maxi(1, s[a])
+	return s
+
+static func para_lutador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
+	return Combat.criar_lutador(g["id"], g["nome"], stats_do_gladiador(g, especialidade, extra), classes()[g["classe"]]["passiva"])
+
+static func preco_gladiador(g: Dictionary) -> int:
+	if g["origem"] == "livre":
+		return 220 + int(g["nivel"]) * 40 + soma_treino(g) * 15
+	return maxi(30, 60 + soma_treino(g) * 15 + (int(PRECO_CONDICAO[g["condicao"]]) if g.has("condicao") else 0))
+
+static func preco_troca(g: Dictionary) -> int:
+	return (300 if g["origem"] == "livre" else 100) + int(g["nivel"]) * 20
+
+static func custo_tratamento(g: Dictionary) -> int:
+	var t := 0
+	for ef in g["efeitos"]:
+		t += int(ef["severidade"]) * 30
+	return t

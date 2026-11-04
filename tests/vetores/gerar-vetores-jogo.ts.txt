@@ -1,0 +1,75 @@
+import { Rng } from '../src/core/rng';
+import * as G from '../src/core/game';
+import { CLASSES_IDS, SLOTS, ATRIBUTOS, itemPorId, ITENS } from '../src/core/model';
+import { writeFileSync } from 'node:fs';
+
+const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().filter((k) => (v as Record<string, unknown>)[k] !== undefined).map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
+const S = (v: unknown) => JSON.stringify(canon(v));
+type Passo = { acao: string; args: unknown[]; erro: string | null; ret: string; estado: string };
+const cenarios: { semente: number; casa: string; dif: string; cheats: Record<string, boolean>; passos: Passo[] }[] = [];
+
+const difs = ['facil', 'medio', 'dificil', 'extremo'] as const;
+for (let c = 0; c < 16; c++) {
+  const r = new Rng(1000 + c);
+  const semente = r.int(1, 1e9);
+  const casa = G.LANISTAS[r.int(0, G.LANISTAS.length - 1)].id;
+  const dif = difs[c % 4];
+  const cheats: Record<string, boolean> = {};
+  if (c % 3 === 0) cheats.ouro = true;
+  if (c % 5 === 0) cheats.energia = true;
+  if (c % 7 === 0) cheats.lendario = true;
+  if (c % 6 === 1) cheats.campanha = true;
+  if (c % 8 === 3) cheats.vida = true;
+  const e = G.novoJogo(semente, casa, { dificuldade: dif });
+  e.cheats = cheats;
+  const passos: Passo[] = [];
+  let ultimoPayload: G.PayloadLuta | null = null;
+  const exec = (acao: string, args: unknown[], fn: () => unknown) => {
+    let erro: string | null = null; let ret: unknown = null;
+    try { ret = fn(); } catch (err) { erro = err instanceof Error ? err.message : String(err); }
+    passos.push({ acao, args, erro, ret: S(ret ?? null), estado: S(e) });
+  };
+  const gl = () => e.gladiadores;
+  const pick = <T,>(a: T[]): T => a[r.int(0, a.length - 1)];
+  for (let p = 0; p < 70; p++) {
+    let x = r.next();
+    if (p >= 5 && e.energia === 0 && r.next() < 0.8) x = 0.99;
+    else if (p >= 5 && e.energia > 0 && x >= 0.52 && x < 0.9 && r.next() < 0.6) x = 0.55;
+    const g0 = gl().length ? pick(gl()) : null; const g = g0;
+    if (p < 5) { const m = pick(G.MELHORIAS_LUDUS).id; exec('construir', [m], () => G.construirMelhoria(e, m)); continue; }
+    if (x < 0.1) { const m = e.mercado.length ? pick(e.mercado).id : 'zz'; exec('recrutar', [m], () => G.recrutar(e, m)); }
+    else if (x < 0.16 && g) { const cl = pick(CLASSES_IDS); exec('escolherEstilo', [g.id, cl], () => G.escolherEstilo(e, g.id, cl)); }
+    else if (x < 0.22 && g) { const cl = pick(CLASSES_IDS); exec('trocarClasse', [g.id, cl], () => G.trocarClasse(e, g.id, cl)); }
+    else if (x < 0.3 && g) { const a = pick(ATRIBUTOS); exec('treinar', [g.id, a], () => G.treinar(e, g.id, a)); }
+    else if (x < 0.34 && g) { exec('tratar', [g.id], () => G.tratar(e, g.id)); }
+    else if (x < 0.4 && (e.armeiroMestre ?? []).length) { const id = pick(e.armeiroMestre as string[]); exec('comprarMestre', [id], () => G.comprarMestre(e, id)); }
+    else if (x < 0.44) { const it = pick(ITENS.filter((i) => !i.basico)); exec('comprarItem', [it.id], () => G.comprarItem(e, it.id)); }
+    else if (x < 0.52 && g) {
+      const slot = pick(SLOTS);
+      const cand = e.inventario.filter((id) => { try { const it = itemPorId(id); return it.slot === slot; } catch { return false; } });
+      const item = cand.length && r.next() < 0.85 ? pick(cand) : null;
+      exec('equipar', [g.id, slot, item], () => G.equipar(e, g.id, slot, item));
+    }
+    else if (x < 0.78 && g) {
+      const viaveis = gl().filter((q) => q.vivo && !q.semEstilo);
+      const g = viaveis.length ? pick(viaveis) : pick(gl());
+      const arenas = G.ARENAS.map((a) => a.id); const ar = pick(arenas);
+      const n = r.next() < 0.3 && gl().length > 1 ? 2 : 1;
+      const ids = [g.id]; if (n === 2) ids.push(pick(gl()).id);
+      exec('lutarArena', [ids, ar], () => { ultimoPayload = G.lutarArena(e, ids, ar); return ultimoPayload; });
+    }
+    else if (x < 0.84 && g) {
+      const d = G.proximoDesafio(e); const n = d?.passo.formato ?? 1; const ids = [g.id]; if (n === 2) ids.push(pick(gl()).id);
+      exec('lutarCampanha', [ids], () => { ultimoPayload = G.lutarCampanha(e, ids); return ultimoPayload; });
+    }
+    else if (x < 0.87 && ultimoPayload) { const pl = ultimoPayload; exec('pularLuta', [], () => G.pularLuta(e, pl)); }
+    else if (x < 0.9 && g) { exec('vender', [g.id], () => G.venderGladiador(e, g.id)); }
+    else if (x < 0.92 && g) { exec('dispensar', [g.id], () => G.dispensarGladiador(e, g.id)); }
+    else { exec('avancarTurno', [], () => G.avancarTurno(e)); }
+    if (gl().length === 0 && e.ouro < 10) break;
+  }
+  cenarios.push({ semente, casa, dif, cheats, passos });
+}
+writeFileSync('/home/claude/fes-godot/tests/vetores/jogo.json', JSON.stringify(cenarios));
+console.log(cenarios.map((c) => c.passos.length).join(','), 'erros:', cenarios.flatMap((c) => c.passos).filter((p) => p.erro).length);
+const cont: Record<string, number> = {}; for (const c of cenarios) for (const p of c.passos) { const k = p.acao + (p.erro ? '!' : ''); cont[k] = (cont[k] ?? 0) + 1; } console.log(cont);
