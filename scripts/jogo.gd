@@ -11,6 +11,9 @@ signal iniciar_luta(payload: Dictionary, ao_fim: Callable, ao_desistir: Callable
 const ARQ_SAVE := "user://save_v4.json"
 const ARQ_PREFS := "user://prefs.json"
 
+signal construiu(id: String)   ## uma melhoria do ludus foi comprada (a cena do ludus anima a obra)
+
+var equipe: Array = []                 ## ids dos gladiadores escalados para a próxima luta (compartilhado por Arenas e Campanha)
 var e: Dictionary = {}                 ## Estado da partida (mesma estrutura do jogo em TypeScript)
 var prefs: Dictionary = {"audio": {"ativo": true, "musica": 0.5, "efeitos": 0.7}, "cheatLiberado": false, "cheats": {}}
 var _tempo_acc := 0.0
@@ -81,6 +84,12 @@ func resultado(erro: String) -> bool:
 	salvar()
 	mudou.emit()
 	return true
+
+## Gladiadores escalados que continuam vivos e com estilo (descarta os demais da lista).
+func equipe_valida() -> Array:
+	var vivos: Array = e["gladiadores"].filter(func(g): return g["vivo"] and not g.get("semEstilo", false))
+	equipe = equipe.filter(func(id): return vivos.any(func(g): return g["id"] == id))
+	return equipe.map(func(id): return vivos.filter(func(g): return g["id"] == id)[0])
 
 func notificar() -> void:
 	salvar()
