@@ -6,6 +6,11 @@ config/name="Ferrum et Sanguis"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
+[autoload]
+
+Jogo="*res://scripts/jogo.gd"
+Som="*res://scripts/som.gd"
+
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=720
