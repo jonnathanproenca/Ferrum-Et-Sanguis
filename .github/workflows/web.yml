@@ -19,7 +19,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Exportar para Web
         run: |
-          mkdir -p build/web
+          mkdir -p build/web ~/.local/share/godot
+          cp -r /root/.local/share/godot/export_templates ~/.local/share/godot/
           godot --headless --import || true
           godot --headless --export-release "Web" build/web/index.html
       - uses: actions/upload-pages-artifact@v3
