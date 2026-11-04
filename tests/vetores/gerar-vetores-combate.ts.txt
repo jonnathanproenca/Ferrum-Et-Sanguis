@@ -1,0 +1,27 @@
+import { Rng } from '../src/core/rng';
+import { criarLutador, simularEquipes } from '../src/core/combat';
+import { writeFileSync } from 'node:fs';
+
+const canon = (v: unknown): unknown => Array.isArray(v) ? v.map(canon) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v as object).sort().map((k) => [k, canon((v as Record<string, unknown>)[k])])) : v;
+const r = new Rng(123);
+const rngSeq = Array.from({ length: 50 }, () => new Rng(777).next()); // placeholder
+const g = new Rng(777);
+const seq = Array.from({ length: 200 }, () => g.next());
+const ints = (() => { const x = new Rng(42); return Array.from({ length: 100 }, () => x.int(1, 20)); })();
+const passivas = ['', 'guarda', 'resistencia', 'rede', 'sequencia'];
+const casos = [];
+for (let i = 0; i < 300; i++) {
+  const mk = (id: string) => criarLutador(id, id, { forca: r.int(4, 25), agilidade: r.int(4, 25), vitalidade: r.int(4, 25), sorte: r.int(4, 25) }, passivas[r.int(0, 4)] || undefined);
+  const nA = r.int(1, 2), nB = r.int(1, 2);
+  const A = Array.from({ length: nA }, (_, k) => mk(`a${k}`)), B = Array.from({ length: nB }, (_, k) => mk(`b${k}`));
+  const opcoes: Record<string, number | boolean> = {};
+  if (r.next() < 0.5) opcoes.efeitosPoco = true;
+  if (r.next() < 0.3) opcoes.chanceEfeito = 0.3;
+  if (r.next() < 0.5) opcoes.rendicao = 0.25;
+  const entradaA = JSON.parse(JSON.stringify(A)), entradaB = JSON.parse(JSON.stringify(B));
+  const semente = r.int(1, 1e9);
+  const res = simularEquipes(A, B, semente, opcoes);
+  casos.push({ semente, A: entradaA, B: entradaB, opcoes, saida: canon(res) });
+}
+writeFileSync('/home/claude/fes-godot/tests/vetores/combate.json', JSON.stringify({ seq, ints, casos }));
+console.log(casos.length, rngSeq.length);
