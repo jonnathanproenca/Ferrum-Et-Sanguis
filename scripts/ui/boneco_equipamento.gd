@@ -60,7 +60,7 @@ func atualizar(g_: Dictionary = {}) -> void:
 		s.definir(item, motivo)
 
 
-## 0 = sombra anatômica, 1 = homem vitruviano (linhas), 2 = estátua de mármore
+## nível de detalhe 0..4 (0 = cru ... 4 = completo com fundo romano)
 var estilo := 0
 
 func _juntas(aberto: bool) -> Dictionary:
@@ -103,43 +103,137 @@ func _corpo(col: Color, ex: float, aberto: bool) -> void:
 		_membro(j["joelho_" + l], j["pe_" + l], 27.0 + ex * 2, col)
 		draw_circle(j["ombro_" + l], 16.0 + ex, col)
 
+func _anatomia(col: Color, forte: bool) -> void:
+	var w := 1.6 if forte else 1.0
+	# clavículas, peitoral, abdômen, deltoides, joelhos
+	draw_polyline(PackedVector2Array([Vector2(206, 92), Vector2(186, 98), Vector2(172, 96)]), col, w, true)
+	draw_polyline(PackedVector2Array([Vector2(234, 92), Vector2(254, 98), Vector2(268, 96)]), col, w, true)
+	draw_arc(Vector2(200, 126), 24.0, 0.15, PI - 0.25, 16, col, w, true)
+	draw_arc(Vector2(240, 126), 24.0, 0.25, PI - 0.15, 16, col, w, true)
+	draw_line(Vector2(220, 100), Vector2(220, 214), col, w, true)
+	for y in [166, 186, 204]:
+		draw_line(Vector2(204, y), Vector2(236, y), col, w, true)
+	draw_arc(Vector2(170, 108), 15.0, 1.2, 4.4, 12, col, w, true)
+	draw_arc(Vector2(270, 108), 15.0, -1.3, 1.9, 12, col, w, true)
+	draw_arc(Vector2(190, 304), 11.0, 0.3, 2.8, 10, col, w, true)
+	draw_arc(Vector2(250, 304), 11.0, 0.3, 2.8, 10, col, w, true)
+	draw_line(Vector2(192, 244), Vector2(190, 290), col, w, true)
+	draw_line(Vector2(248, 244), Vector2(250, 290), col, w, true)
+
+func _colunas(a: float, estriar: bool) -> void:
+	for cx in [38.0, 402.0]:
+		draw_rect(Rect2(cx - 16, 14, 32, 380), Color(0.17, 0.13, 0.10, a))
+		draw_rect(Rect2(cx - 20, 8, 40, 10), Color(0.24, 0.19, 0.14, a))
+		draw_rect(Rect2(cx - 20, 388, 40, 10), Color(0.24, 0.19, 0.14, a))
+		if estriar:
+			for k in range(-2, 3):
+				draw_line(Vector2(cx + k * 6.0, 20), Vector2(cx + k * 6.0, 386), Color(0.08, 0.06, 0.05, a), 1.0)
+
+func _arco(cor: Color) -> void:
+	draw_arc(Vector2(220, 214), 176.0, PI, TAU, 64, cor, 12.0, true)
+	draw_arc(Vector2(220, 214), 160.0, PI, TAU, 64, Color(cor, cor.a * 0.5), 2.0, true)
+
+func _tijolos(a: float) -> void:
+	for y in range(30, 386, 22):
+		draw_line(Vector2(60, y), Vector2(380, y), Color(0.0, 0.0, 0.0, a), 1.0)
+		var off := 0.0 if (y / 22) % 2 == 0 else 20.0
+		for x in range(60 + int(off), 380, 40):
+			draw_line(Vector2(x, y), Vector2(x, y + 22), Color(0.0, 0.0, 0.0, a), 1.0)
+
+func _piso(a: float) -> void:
+	for ix in range(0, 11):
+		for iy in range(0, 2):
+			var cor := Color(0.30, 0.22, 0.14, a) if (ix + iy) % 2 == 0 else Color(0.20, 0.14, 0.09, a)
+			draw_rect(Rect2(8 + ix * 42.0, 384 + iy * 8.0, 42, 8), cor)
+
+func _tocha(p: Vector2, forca: float) -> void:
+	for i in range(8):
+		var k := float(i) / 7.0
+		draw_circle(p, 80.0 * (1.0 - k), Color(1.0, 0.55, 0.15, 0.012 + 0.02 * k * forca))
+	draw_rect(Rect2(p + Vector2(-3, 6), Vector2(6, 26)), Color(0.25, 0.16, 0.08))
+	draw_circle(p + Vector2(0, 2), 6.0, Color(1.0, 0.7, 0.2))
+	draw_circle(p + Vector2(0, -2), 3.5, Color(1.0, 0.95, 0.6))
+
+func _subligaculo(cor: Color) -> void:
+	draw_colored_polygon(PackedVector2Array([Vector2(192, 214), Vector2(248, 214), Vector2(256, 262), Vector2(236, 270), Vector2(220, 246), Vector2(204, 270), Vector2(184, 262)]), cor)
+	draw_rect(Rect2(191, 210, 58, 9), Color(0.55, 0.40, 0.14))
+
+func _faixas(cor: Color) -> void:
+	for l in [[Vector2(122, 168), Vector2(146, 180)], [Vector2(112, 190), Vector2(134, 202)], [Vector2(318, 180), Vector2(294, 168)], [Vector2(328, 202), Vector2(306, 190)]]:
+		draw_line(l[0], l[1], cor, 5.0, true)
+
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	draw_rect(r, Color("0e0a08"))
+	var n := estilo + 1
+	draw_rect(r, Color("0e0a08") if n < 4 else Color("120d0a"))
 	var c := Vector2(LARGURA / 2.0, ALTURA * 0.46)
 	for i in range(14):
 		var k := float(i) / 13.0
 		draw_circle(c, 210.0 * (1.0 - k), Color(0.80, 0.55, 0.25, 0.012 + 0.012 * k))
+	if n >= 3:
+		_colunas(0.9 if n >= 4 else 0.45, n >= 4)
+	if n >= 4:
+		_tijolos(0.18 if n == 4 else 0.28)
+		_arco(Color(0.26, 0.20, 0.15, 1.0))
+		_piso(1.0)
+		_tocha(Vector2(38, 130), 1.0)
+		_tocha(Vector2(402, 130), 1.0)
+	if n >= 5:
+		for bx in [78.0, 330.0]:
+			draw_rect(Rect2(bx, 14, 32, 74), Color(0.50, 0.08, 0.06))
+			draw_rect(Rect2(bx, 14, 32, 74), Color(Tema.OURO, 0.8), false, 2.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(bx, 88), Vector2(bx + 32, 88), Vector2(bx + 16, 104)]), Color(0.50, 0.08, 0.06))
+			draw_circle(Vector2(bx + 16, 42), 8.0, Color(Tema.OURO, 0.85))
 	draw_rect(r, Color(Tema.OURO_ESCURO, 0.9), false, 2.0)
 	draw_rect(Rect2(Vector2(5, 5), size - Vector2(10, 10)), Color(Tema.OURO_ESCURO, 0.3), false, 1.0)
-	match estilo:
-		0:
+	if n >= 3:
+		draw_set_transform(Vector2.ZERO)
+		draw_circle(Vector2(220, 384), 2.0, Color(0, 0, 0, 0))
+		for i in range(6):
+			draw_rect(Rect2(Vector2(220 - 90 + i * 6, 380 + i * 0.6), Vector2(180 - i * 12, 6)), Color(0, 0, 0, 0.10))
+	match n:
+		1:
 			_corpo(Color(Tema.OURO_ESCURO, 0.55), 2.5, false)
 			_corpo(Color(0.06, 0.045, 0.04), 0.0, false)
-			# volume: luz lateral suave
-			var luz := Color(0.20, 0.14, 0.10, 0.55)
-			draw_line(Vector2(184, 104), Vector2(190, 214), luz, 8.0, true)
-			draw_line(Vector2(176, 250), Vector2(182, 360), luz, 8.0, true)
-		1:
-			var fio := Color(Tema.OURO_ESCURO, 0.5)
-			draw_arc(Vector2(220, 212), 186.0, 0, TAU, 96, fio, 1.5, true)
-			draw_rect(Rect2(Vector2(60, 28), Vector2(320, 350)), Color(Tema.OURO_ESCURO, 0.3), false, 1.5)
-			draw_line(Vector2(20, 104), Vector2(420, 104), Color(Tema.OURO_ESCURO, 0.2), 1.0)
-			draw_line(Vector2(220, 14), Vector2(220, 392), Color(Tema.OURO_ESCURO, 0.2), 1.0)
-			_corpo(Color(Tema.OURO, 0.55), 1.2, true)
-			_corpo(Color("0e0a08"), 0.0, true)
 		2:
-			draw_rect(Rect2(Vector2(120, 388), Vector2(200, 12)), Color(0.42, 0.38, 0.33))
-			draw_rect(Rect2(Vector2(120, 388), Vector2(200, 3)), Color(0.62, 0.57, 0.5))
-			_corpo(Color(0.30, 0.27, 0.23), 2.0, false)
-			_corpo(Color(0.50, 0.46, 0.40), 0.0, false)
-			var luz2 := Color(0.68, 0.63, 0.55, 0.7)
-			draw_line(Vector2(186, 104), Vector2(192, 212), luz2, 9.0, true)
-			draw_line(Vector2(176, 252), Vector2(182, 356), luz2, 9.0, true)
-			draw_circle(Vector2(213, 34), 8.0, luz2)
-			var sombra := Color(0.34, 0.30, 0.26, 0.6)
-			draw_line(Vector2(256, 104), Vector2(250, 214), sombra, 7.0, true)
-			draw_line(Vector2(264, 252), Vector2(258, 356), sombra, 7.0, true)
+			_corpo(Color(Tema.OURO_ESCURO, 0.7), 2.5, false)
+			_corpo(Color(0.11, 0.08, 0.065), 0.0, false)
+			draw_line(Vector2(184, 104), Vector2(190, 214), Color(0.20, 0.14, 0.10, 0.6), 8.0, true)
+			draw_line(Vector2(176, 250), Vector2(182, 360), Color(0.20, 0.14, 0.10, 0.6), 8.0, true)
+			_anatomia(Color(Tema.OURO_ESCURO, 0.45), false)
+		3:
+			_corpo(Color(Tema.OURO_ESCURO, 0.8), 2.5, false)
+			_corpo(Color(0.16, 0.11, 0.085), 0.0, false)
+			draw_line(Vector2(184, 104), Vector2(190, 214), Color(0.26, 0.18, 0.13, 0.7), 9.0, true)
+			draw_line(Vector2(176, 250), Vector2(182, 360), Color(0.26, 0.18, 0.13, 0.7), 9.0, true)
+			_anatomia(Color(0.05, 0.03, 0.02, 0.7), true)
+			_subligaculo(Color(0.42, 0.10, 0.08))
+			_faixas(Color(0.55, 0.42, 0.25))
+			draw_arc(Vector2(220, 30), 24.0, PI + 0.3, TAU - 0.3, 14, Color(0.05, 0.03, 0.02), 6.0, true)
+		4, 5:
+			_corpo(Color(0.04, 0.02, 0.01), 2.5, false)
+			_corpo(Color(0.46, 0.31, 0.21), 0.0, false)
+			_corpo(Color(0.20, 0.12, 0.08, 0.5), 0.0, false)
+			draw_line(Vector2(182, 104), Vector2(188, 214), Color(0.62, 0.43, 0.29, 0.8), 9.0, true)
+			draw_line(Vector2(174, 250), Vector2(180, 360), Color(0.62, 0.43, 0.29, 0.8), 9.0, true)
+			draw_line(Vector2(260, 104), Vector2(254, 214), Color(0.28, 0.17, 0.11, 0.7), 8.0, true)
+			draw_line(Vector2(268, 250), Vector2(262, 360), Color(0.28, 0.17, 0.11, 0.7), 8.0, true)
+			_anatomia(Color(0.20, 0.11, 0.07, 0.8), true)
+			_subligaculo(Color(0.55, 0.09, 0.07))
+			_faixas(Color(0.78, 0.64, 0.38))
+			draw_arc(Vector2(220, 30), 24.0, PI + 0.2, TAU - 0.2, 14, Color(0.10, 0.06, 0.04), 7.0, true)
+			draw_line(Vector2(206, 38), Vector2(234, 38), Color(0.16, 0.09, 0.06), 1.5, true)
+			draw_line(Vector2(220, 36), Vector2(222, 46), Color(0.25, 0.15, 0.10), 1.5, true)
+			# luz de tocha nas bordas
+			draw_line(Vector2(122, 128), Vector2(104, 206), Color(1.0, 0.6, 0.25, 0.35), 2.0, true)
+			draw_line(Vector2(318, 128), Vector2(336, 206), Color(1.0, 0.6, 0.25, 0.35), 2.0, true)
+			if n == 5:
+				draw_line(Vector2(170, 100), Vector2(262, 214), Color(0.30, 0.18, 0.10), 5.0, true)
+				draw_line(Vector2(270, 100), Vector2(178, 214), Color(0.30, 0.18, 0.10), 5.0, true)
+				draw_circle(Vector2(220, 157), 7.0, Color(Tema.OURO, 0.9))
+				draw_line(Vector2(192, 222), Vector2(248, 222), Color(Tema.OURO, 0.9), 4.0, true)
+				draw_line(Vector2(174, 120), Vector2(176, 200), Color(1.0, 0.7, 0.35, 0.3), 2.0, true)
+				draw_line(Vector2(266, 120), Vector2(264, 200), Color(1.0, 0.7, 0.35, 0.3), 2.0, true)
 
 
 ## Caixa de um slot: ícone do item (moldura da qualidade) ou rótulo discreto do tipo quando vazio.
