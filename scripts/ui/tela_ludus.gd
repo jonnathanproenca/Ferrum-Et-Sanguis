@@ -9,6 +9,7 @@ const LARGURA_CARTA := 600
 var _raiz: VBoxContainer
 var _caixa_cena: Control
 var _cena: Control
+var _doctore_ossos := false
 var _cena_nova := false
 var _fim: PanelContainer
 var _l_fim_sub: Label
@@ -118,7 +119,8 @@ func _ao_redimensionar() -> void:
 
 func ao_mostrar() -> void:
 	super.ao_mostrar()
-	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova:
+	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova or bool(Jogo.prefs.get("doctoreOssos", false)) != _doctore_ossos:
+		_doctore_ossos = bool(Jogo.prefs.get("doctoreOssos", false))
 		_criar_cena()
 	call_deferred("_ao_redimensionar")
 

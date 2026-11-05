@@ -30,6 +30,7 @@ class Doctore extends Node2D:
 	const DIR := "assets/ludus/doctore/"
 	var frente := 1.0
 	var ocupado := false  ## true enquanto toca a chicotada
+	var escala_base := 0.6
 	var _meta: Dictionary
 	var _spr := Sprite2D.new()
 	var _tex := {}
@@ -92,7 +93,7 @@ var _palco2: Node2D
 var _treinadores: Array = []
 var _prox_golpe := 1.5
 var _ponto_doctore := 0.0
-var _doctore: Doctore
+var _doctore: Node2D
 
 
 func _init() -> void:
@@ -156,7 +157,7 @@ func _montar() -> void:
 		b.z_index = 1200
 		_novo_item(b, Rect2(pos.x - altura * 0.30, pos.y - altura, altura * 0.60, altura), 1200, "ponto")
 	# doctore: sprite grande, patrulhando o pátio
-	_doctore = Doctore.new()
+	_doctore = (DoctoreOssos.new() if bool(Jogo.prefs.get("doctoreOssos", false)) else Doctore.new())
 	_doctore.position = Vector2(300, 458)
 	_doctore.z_index = 458
 	_palco2.add_child(_doctore)
@@ -181,7 +182,7 @@ func _animar(delta: float) -> void:
 		var x := lerpf(250.0, 600.0, u)
 		var vai := fposmod(_ponto_doctore, 16.0) < 8.0
 		_doctore.position = Vector2(x, 458.0)
-		_doctore.scale.x = 0.6 * (1.0 if vai else -1.0)
+		_doctore.scale.x = float(_doctore.get("escala_base")) * (1.0 if vai else -1.0)
 	if not _treinadores.is_empty() and is_visible_in_tree():
 		_prox_golpe -= delta
 		if _prox_golpe <= 0.0:

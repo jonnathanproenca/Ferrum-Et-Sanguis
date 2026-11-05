@@ -1,0 +1,23 @@
+extends RefCounted
+## Mostra o doctore por esqueleto grande e salva quadros da chicotada.
+func preparar(arvore: SceneTree) -> void:
+	var fundo := ColorRect.new()
+	fundo.color = Color(0.45, 0.36, 0.26)
+	fundo.size = Vector2(1280, 720)
+	arvore.root.add_child(fundo)
+	var d := DoctoreOssos.new()
+	d.escala_base = 1.2
+	d.scale = Vector2(1.2, 1.2)
+	d.position = Vector2(560, 640)
+	arvore.root.add_child(d)
+	var saida := OS.get_environment("SAIDA")
+	for i in 40:
+		await arvore.process_frame
+	d.chicotear()
+	var n := 0
+	for i in range(100):
+		await arvore.process_frame
+		if i % 5 == 0 and saida != "":
+			var img := arvore.root.get_texture().get_image()
+			img.save_png("%s_%02d.png" % [saida, n])
+			n += 1

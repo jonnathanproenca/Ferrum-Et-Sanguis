@@ -90,6 +90,12 @@ static func painel_audio() -> Control:
 
 ## Alterna entre o ludus antigo e o novo (pátio ao entardecer). Vale para todas as partidas.
 static func painel_visual() -> Control:
+	var v := Tema.vbox(8)
+	v.add_child(_alternar("Novo visual do ludus (teste)", "ludusNovo"))
+	v.add_child(_alternar("Doctore por esqueleto (teste)", "doctoreOssos"))
+	return v
+
+static func _alternar(rotulo: String, chave: String) -> Control:
 	var h := Tema.hbox(12)
 	var b := Tema.botao("")
 	b.toggle_mode = true
@@ -99,14 +105,14 @@ static func painel_visual() -> Control:
 		b.text = "LIGADO" if on else "desligado"
 		b.add_theme_stylebox_override("normal", Tema.caixa(Tema.SANGUE if on else Tema.PAINEL, Tema.OURO_ESCURO if on else Tema.BORDA, 6, 1, 4))
 		b.add_theme_stylebox_override("pressed", Tema.caixa(Tema.SANGUE, Tema.OURO, 6, 1, 4))
-	pintar.call(bool(Jogo.prefs.get("ludusNovo", false)))
+	pintar.call(bool(Jogo.prefs.get(chave, false)))
 	b.pressed.connect(func() -> void:
-		var novo: bool = not bool(Jogo.prefs.get("ludusNovo", false))
-		Jogo.prefs["ludusNovo"] = novo
+		var novo: bool = not bool(Jogo.prefs.get(chave, false))
+		Jogo.prefs[chave] = novo
 		Jogo.salvar_prefs()
 		pintar.call(novo))
 	h.add_child(b)
-	var l := Tema.rotulo("Novo visual do ludus (teste)", 18)
+	var l := Tema.rotulo(rotulo, 18)
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(l)
