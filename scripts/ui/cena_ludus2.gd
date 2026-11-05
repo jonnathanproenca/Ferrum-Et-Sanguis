@@ -25,10 +25,89 @@ class Grade extends Control:
 		draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w * 0.16, 0), Vector2(w * 0.16, h), Vector2(0, h)]), PackedColorArray([esc, branco, branco, esc]))
 		draw_polygon(PackedVector2Array([Vector2(w * 0.84, 0), Vector2(w, 0), Vector2(w, h), Vector2(w * 0.84, h)]), PackedColorArray([branco, esc, esc, branco]))
 
+## Doctore: corpo em 3 poses (guarda, preparar, golpe) + chicote em 4 quadros presos à mão por ponto e ângulo de cada pose.
+class Doctore extends Node2D:
+	const DIR := "assets/ludus/doctore/"
+	var frente := 1.0
+	var ocupado := false
+	var _meta: Dictionary
+	var _corpo := Sprite2D.new()
+	var _chicote := Sprite2D.new()
+	var _tex := {}
+	var _seq: Array = []
+	var _seq_t := 0.0
+	var _t := 0.0
+	var _proximo := 3.0
+	var _pose := "guarda"
+	var _quadro := 1
+
+	func _init() -> void:
+		_meta = Util.ler_json("res://" + DIR + "doctore.json")
+		for n in ["corpo_guarda", "corpo_prepara", "corpo_golpe", "chicote_1", "chicote_2", "chicote_3", "chicote_4"]:
+			_tex[n] = Tema.textura(DIR + n + ".png")
+		_corpo.centered = false
+		_chicote.centered = false
+		add_child(_corpo)
+		add_child(_chicote)
+		scale = Vector2(0.6, 0.6)
+		_aplicar("guarda", 1)
+
+	func _draw() -> void:
+		var pts := PackedVector2Array()
+		for i in range(24):
+			var a := TAU * i / 24.0
+			pts.append(Vector2(cos(a) * 62.0, sin(a) * 9.0))
+		draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
+
+	func _aplicar(pose: String, quadro: int) -> void:
+		_pose = pose
+		_quadro = quadro
+		var m: Dictionary = _meta["corpo_" + pose]
+		var anc := Vector2(m["ancora"][0], m["ancora"][1])
+		_corpo.texture = _tex["corpo_" + pose]
+		_corpo.position = -anc
+		var c: Dictionary = _meta["chicote_%d" % quadro]
+		_chicote.texture = _tex["chicote_%d" % quadro]
+		_chicote.offset = -Vector2(c["pivo"][0], c["pivo"][1])
+		_chicote.position = Vector2(m["mao"][0], m["mao"][1]) - anc
+		_chicote.rotation = deg_to_rad(float(m["angulo"]))
+
+	func chicotear() -> void:
+		ocupado = true
+		_seq = [[0.30, "prepara", 2], [0.10, "golpe", 3], [0.16, "golpe", 4], [0.20, "golpe", 3]]
+		_seq_t = 0.0
+		_aplicar("prepara", 2)
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if ocupado:
+			_seq_t += delta
+			var acum := 0.0
+			var fim := true
+			for passo in _seq:
+				acum += float(passo[0])
+				if _seq_t < acum:
+					if _pose != passo[1] or _quadro != passo[2]:
+						_aplicar(passo[1], passo[2])
+					fim = false
+					break
+			if fim:
+				ocupado = false
+				_proximo = randf_range(3.0, 7.0)
+				_aplicar("guarda", 1)
+			return
+		_proximo -= delta
+		if _proximo <= 0.0:
+			chicotear()
+			return
+		_chicote.rotation = deg_to_rad(float(_meta["corpo_" + _pose]["angulo"]) + sin(_t * 2.2) * 2.5)
+
+
 var _palco2: Node2D
 var _treinadores: Array = []
 var _prox_golpe := 1.5
-var _doctore: LutadorLuta
+var _ponto_doctore := 0.0
+var _doctore: Doctore
 
 
 func _init() -> void:
@@ -92,9 +171,9 @@ func _montar() -> void:
 		b.z_index = 1200
 		_novo_item(b, Rect2(pos.x - altura * 0.30, pos.y - altura, altura * 0.60, altura), 1200, "ponto")
 	# doctore: sprite grande, patrulhando o pátio
-	_doctore = LutadorLuta.new("doctore", "samnita", 0.60, false, 0.5, Vector2(300, 458))
+	_doctore = Doctore.new()
+	_doctore.position = Vector2(300, 458)
 	_doctore.z_index = 458
-	_doctore.modulate = Color(0.72, 0.58, 0.46)
 	_palco2.add_child(_doctore)
 	# gradação de entardecer
 	var gr := Grade.new()
@@ -112,12 +191,13 @@ func _reposicionar() -> void:
 func _animar(delta: float) -> void:
 	super._animar(delta)
 	if _doctore and is_instance_valid(_doctore):
-		var u := _tri(_t / 18.0)
+		if not _doctore.ocupado:
+			_ponto_doctore += delta
+		var u := _tri(_ponto_doctore / 18.0)
 		var x := lerpf(250.0, 600.0, _suave(u))
-		var vai := fposmod(_t, 36.0) < 18.0
-		_doctore.position = Vector2(x, 458.0 + _suave(_tri(_t / 0.55)) * -1.5)
-		_doctore.base = _doctore.position
-		_doctore.scale.x = absf(_doctore.scale.x) * (1.0 if vai else -1.0)
+		var vai := fposmod(_ponto_doctore, 36.0) < 18.0
+		_doctore.position = Vector2(x, 458.0 + (0.0 if _doctore.ocupado else _suave(_tri(_t / 0.55)) * -1.5))
+		_doctore.scale.x = 0.6 * (1.0 if vai else -1.0)
 	if not _treinadores.is_empty() and is_visible_in_tree():
 		_prox_golpe -= delta
 		if _prox_golpe <= 0.0:
