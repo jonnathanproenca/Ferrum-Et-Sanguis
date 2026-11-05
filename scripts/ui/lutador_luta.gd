@@ -52,6 +52,20 @@ func _draw() -> void:
 		pts.append(Vector2(cos(a) * 70.0, sin(a) * 11.0))
 	draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
 
+var _tweens: Array[Tween] = []
+
+## Tween preso a este nó, cancelado ao sair da árvore (evita erros de can_process com o nó já removido).
+func _novo_tween() -> Tween:
+	var tw := create_tween()
+	_tweens.append(tw)
+	return tw
+
+func _exit_tree() -> void:
+	for tw in _tweens:
+		if tw and tw.is_valid():
+			tw.kill()
+	_tweens.clear()
+
 func pose(nome: String) -> void:
 	var usar := AncorasPoses.resolver(classe, nome)
 	if usar == _pose_atual:
@@ -91,7 +105,7 @@ func _acao(atraso_ms: float, passos: Array) -> void:
 	_ficha += 1
 	var minha := _ficha
 	_ocupado = true
-	var tw := create_tween()
+	var tw := _novo_tween()
 	tw.set_speed_scale(vel)
 	tw.tween_interval(maxf(0.001, atraso_ms / 1000.0))
 	for p in passos:
@@ -115,7 +129,7 @@ func _deslocar(dx: float, dy: float, dur_ms: float, volta: bool = true) -> void:
 	if _tw_pos:
 		_tw_pos.kill()
 	position = base
-	_tw_pos = create_tween()
+	_tw_pos = _novo_tween()
 	_tw_pos.set_speed_scale(vel)
 	_tw_pos.tween_property(self, "position", base + Vector2(dx * frente * mov * E, dy * mov * E), dur_ms / 1000.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	if volta:
@@ -150,7 +164,7 @@ func cair() -> void:
 	_ocupado = true
 	parado = true
 	pose("cai")
-	var tw := create_tween()
+	var tw := _novo_tween()
 	tw.set_speed_scale(vel)
 	tw.tween_interval(0.42)
 	tw.tween_callback(func() -> void:
@@ -163,7 +177,7 @@ func recolher() -> void:
 	_ocupado = true
 	parado = true
 	pose("critico")
-	create_tween().tween_property(self, "modulate:a", 0.5, 0.4)
+	_novo_tween().tween_property(self, "modulate:a", 0.5, 0.4)
 
 func comemorar() -> void:
 	if parado:
@@ -171,12 +185,12 @@ func comemorar() -> void:
 	_ficha += 1
 	_ocupado = true
 	pose("guarda")
-	var tw := create_tween().set_loops(3)
+	var tw := _novo_tween().set_loops(3)
 	tw.tween_property(self, "position:y", base.y - 26.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tw.tween_property(self, "position:y", base.y, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	tw.tween_interval(0.25)
 
 func tingir(cor: Color) -> void:
-	var tw := create_tween()
+	var tw := _novo_tween()
 	tw.tween_property(self, "self_modulate", cor, 0.12)
 	tw.tween_property(self, "self_modulate", Color.WHITE, 0.5)

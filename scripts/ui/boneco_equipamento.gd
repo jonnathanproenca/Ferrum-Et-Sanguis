@@ -192,7 +192,7 @@ func _silhueta(col: Color, ex: float) -> void:
 		draw_circle(Vector2(220.0 + lado * 106.0, 216), 8.0 + ex, col)
 		_cone(Vector2(220.0 + lado * 17.0, 226), Vector2(220.0 + lado * 30.0, 304), 38.0 + ex * 2, 26.0 + ex * 2, col)
 		_cone(Vector2(220.0 + lado * 30.0, 304), Vector2(220.0 + lado * 36.0, 376), 26.0 + ex * 2, 15.0 + ex * 2, col)
-		draw_colored_polygon(PackedVector2Array([Vector2(220.0 + lado * 36.0 - 12 - ex, 372), Vector2(220.0 + lado * 36.0 + 12 + ex, 372), Vector2(220.0 + lado * 36.0 + lado * 20 + ex * lado, 386 + ex), Vector2(220.0 + lado * 36.0 - lado * 8, 386 + ex)]), col)
+		draw_colored_polygon(PackedVector2Array([Vector2(220.0 + lado * 36.0 - 12 - ex, 372), Vector2(220.0 + lado * 36.0 + 12 + ex, 372), Vector2(220.0 + lado * 36.0 + 12 + ex + maxf(lado, 0.0) * 20.0, 386 + ex), Vector2(220.0 + lado * 36.0 - 12 - ex + minf(lado, 0.0) * 20.0, 386 + ex)]), col)
 
 func _luz_lateral(cor: Color, w: float) -> void:
 	# faixa de luz na borda esquerda de tronco e pernas, sombra na direita

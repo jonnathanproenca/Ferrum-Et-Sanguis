@@ -38,7 +38,7 @@ func musica(chave: String) -> void:
 	if chave == _atual:
 		return
 	_atual = chave
-	var s := _carregar("res://assets/audio/musica/%s.mp3" % chave)
+	var s := _carregar("res://assets/audio/musica/%s.ogg" % chave)
 	_musica_saindo.stop()
 	if _musica.playing:
 		var t := _musica_saindo
@@ -50,7 +50,7 @@ func musica(chave: String) -> void:
 	if s == null:
 		return
 	var inst: AudioStream = s.duplicate()
-	if inst is AudioStreamMP3:
+	if inst is AudioStreamMP3 or inst is AudioStreamOggVorbis:
 		inst.loop = true
 	_musica.stream = inst
 	_aplicar_volume()
