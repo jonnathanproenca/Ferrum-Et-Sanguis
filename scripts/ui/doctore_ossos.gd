@@ -8,23 +8,23 @@ const ESC := 0.52   ## fonte -> PNG do corpo
 const SW := 0.10    ## fonte -> PNG do chicote
 ## [nome, pai, posição (px da fonte, no espaço do pai), pivô (px da fonte, na peça), rotação inicial, z, esticar em y]
 const OSSOS := [
-	["quadril", "", Vector2(0, 0), Vector2.ZERO, 0.0, 0, 1.0],
-	["saia", "quadril", Vector2(0, 0), Vector2(116, 30), 0.0, 6, 0.72],
-	["torso", "quadril", Vector2(0, 8), Vector2(96, 190), 0.0, 2, 1.0],
-	["cabeca", "torso", Vector2(34, -158), Vector2(62, 172), 0.0, 3, 1.0],
-	["braco_f_sup", "torso", Vector2(-8, -118), Vector2(58, 32), 0.0, 5, 1.0],
-	["braco_f_ant", "braco_f_sup", Vector2(10, 143), Vector2(22, 78), 0.0, 5, 1.0],
-	["braco_t_sup", "torso", Vector2(-2, -120), Vector2(62, 32), 0.0, 0, 1.0],
-	["braco_t_ant", "braco_t_sup", Vector2(43, 118), Vector2(18, 42), 0.0, 0, 1.0],
-	["coxa_f", "quadril", Vector2(6, 0), Vector2(48, 28), -0.31, 3, 1.35],
-	["canela_f", "coxa_f", Vector2(60, 185), Vector2(58, 22), 0.31, 4, 1.1],
-	["coxa_t", "quadril", Vector2(-4, 0), Vector2(48, 28), -0.31, 1, 1.35],
-	["canela_t", "coxa_t", Vector2(60, 185), Vector2(50, 55), 0.31, 1, 1.1],
+	["quadril", "", Vector2(0, 0), Vector2.ZERO, 0.0, 0, Vector2(1.0, 1.0)],
+	["saia", "quadril", Vector2(0, 0), Vector2(116, 30), 0.0, 6, Vector2(1.0, 0.62)],
+	["torso", "quadril", Vector2(0, 8), Vector2(96, 190), 0.0, 2, Vector2(1.0, 1.0)],
+	["cabeca", "torso", Vector2(34, -158), Vector2(62, 172), 0.0, 3, Vector2(1.0, 1.0)],
+	["braco_f_sup", "torso", Vector2(-8, -118), Vector2(58, 32), 0.0, 5, Vector2(1.0, 1.0)],
+	["braco_f_ant", "braco_f_sup", Vector2(10, 143), Vector2(22, 78), 0.0, 5, Vector2(1.0, 1.0)],
+	["braco_t_sup", "torso", Vector2(-2, -120), Vector2(62, 32), 0.0, 0, Vector2(1.0, 1.0)],
+	["braco_t_ant", "braco_t_sup", Vector2(43, 118), Vector2(18, 42), 0.0, 0, Vector2(1.0, 1.0)],
+	["coxa_f", "quadril", Vector2(6, 0), Vector2(48, 28), -0.2, 3, Vector2(0.7, 1.55)],
+	["canela_f", "coxa_f", Vector2(42, 212), Vector2(58, 22), 0.2, 4, Vector2(0.85, 1.25)],
+	["coxa_t", "quadril", Vector2(-4, 0), Vector2(48, 28), -0.2, 1, Vector2(0.7, 1.55)],
+	["canela_t", "coxa_t", Vector2(42, 212), Vector2(50, 55), 0.2, 1, Vector2(0.85, 1.25)],
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
-const REPOUSO := [0.0, 0.0, -0.35, -0.5, -0.45, -0.3, -0.1]
-const PES := 360.0
-const LF := 0.45  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
+const REPOUSO := [0.0, 0.05, 0.3, 0.4, 0.4, 0.3, 0.15]
+const PES := 440.0
+const LF := 0.34  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
 
 var escala_base := 0.3
 var congelar := false  ## só para depuração: pose parada
@@ -57,7 +57,7 @@ func _init() -> void:
 			s.centered = false
 			s.offset = -(d[3] as Vector2) * ESC
 			s.z_index = d[5]
-			s.scale = Vector2(1.0, float(d[6]))
+			s.scale = d[6]
 			n.add_child(s)
 	# chicote: cabo na mão (ponta da mão) e corrente de segmentos
 	var cabo := _peca("w_cabo", Vector2(0, 4.4))
@@ -151,10 +151,10 @@ func _process(delta: float) -> void:
 			chicotear()
 	# pernas
 	var a := sin(ph)
-	(_o["coxa_f"] as Node2D).rotation = -0.31 + a * 0.3
-	(_o["canela_f"] as Node2D).rotation = 0.31 + 0.6 * maxf(0.0, -cos(ph)) + 0.08
-	(_o["coxa_t"] as Node2D).rotation = -0.31 - a * 0.3
-	(_o["canela_t"] as Node2D).rotation = 0.31 + 0.6 * maxf(0.0, cos(ph)) + 0.08
+	(_o["coxa_f"] as Node2D).rotation = -0.2 + a * 0.3
+	(_o["canela_f"] as Node2D).rotation = 0.2 + 0.6 * maxf(0.0, -cos(ph)) + 0.08
+	(_o["coxa_t"] as Node2D).rotation = -0.2 - a * 0.3
+	(_o["canela_t"] as Node2D).rotation = 0.2 + 0.6 * maxf(0.0, cos(ph)) + 0.08
 	(_o["quadril"] as Node2D).position.y = -PES * ESC + absf(sin(ph)) * 3.0
 	(_o["torso"] as Node2D).rotation = tronco + sin(ph * 2.0) * 0.015
 	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.05 + 0.1
