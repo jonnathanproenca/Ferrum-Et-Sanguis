@@ -27,6 +27,7 @@ class Grade extends Control:
 
 ## Doctore: corpo em 3 poses (guarda, preparar, golpe) + chicote em 4 quadros presos à mão por ponto e ângulo de cada pose.
 class Doctore extends Node2D:
+	const USAR_ROLO := false  ## rolo desenhado em código desligado até existir o sprite do chicote enrolado
 	const DIR := "assets/ludus/doctore/"
 	var frente := 1.0
 	var ocupado := false
@@ -62,7 +63,7 @@ class Doctore extends Node2D:
 			var a := TAU * i / 24.0
 			pts.append(Vector2(cos(a) * 62.0, sin(a) * 9.0))
 		draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
-		if _pose == "guarda" and _coil > 0.01:
+		if USAR_ROLO and _pose == "guarda" and _coil > 0.01:
 			_desenhar_rolo()
 
 	## Chicote enrolado na mão (desenhado em código): cabo curto e três voltas de couro.
