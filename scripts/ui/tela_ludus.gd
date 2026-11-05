@@ -153,6 +153,16 @@ func atualizar() -> void:
 		if not Game.tem_melhoria(e, r[0]):
 			_regras.add_child(_chip(r[1], Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
 
+	if bool(Jogo.prefs.get("treinoCombate", false)):
+		if Game.tem_melhoria(e, "palus"):
+			var bt := Tema.botao("Treino de combate", "ouro", 15)
+			bt.custom_minimum_size = Vector2(0, 30)
+			bt.pressed.connect(func() -> void:
+				var vivos: Array = e["gladiadores"].filter(func(g): return g["vivo"] and not g.get("semEstilo", false))
+				TelaTreinoCombate.abrir(self, vivos[0] if vivos.size() > 0 else {}))
+			_regras.add_child(bt)
+		else:
+			_regras.add_child(_chip("Treino de combate: construa os palus.", Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
 	var n_of := Patrocinio.ofertas(e).size()
 	var n_ct := Patrocinio.contratos(e).size()
 	if n_of > 0 or n_ct > 0:

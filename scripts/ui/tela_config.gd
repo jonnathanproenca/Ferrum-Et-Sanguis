@@ -93,6 +93,7 @@ static func painel_visual() -> Control:
 	var v := Tema.vbox(8)
 	v.add_child(_alternar("Novo visual do ludus (teste)", "ludusNovo"))
 	v.add_child(_alternar("Doctore por esqueleto (teste)", "doctoreOssos"))
+	v.add_child(_alternar("Treino de combate controlado (teste)", "treinoCombate"))
 	return v
 
 static func _alternar(rotulo: String, chave: String) -> Control:

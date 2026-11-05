@@ -12,6 +12,7 @@ func _init() -> void:
 	teste_regras()
 	teste_fluxo()
 	teste_patrocinio()
+	teste_treino_combate()
 	print("TESTES: ", total, " FALHAS: ", falhas)
 	quit(1 if falhas > 0 else 0)
 
@@ -295,3 +296,86 @@ func teste_patrocinio() -> void:
 		e3["energia"] = 0
 		Game.avancar_turno(e3)
 	ok(Patrocinio.ofertas(e3).is_empty(), "oferta vence com as rodadas")
+
+func _passos(c: TreinoCombate, seg: float) -> void:
+	var n := int(round(seg * 60.0))
+	for i in range(n):
+		c.atualizar(1.0 / 60.0)
+
+func _boneco_ataca(c: TreinoCombate) -> void:
+	c.b_prox = 0.0
+	_passos(c, 1.0 / 60.0)
+
+func teste_treino_combate() -> void:
+	var c := TreinoCombate.new(3)
+	# andar respeita os limites
+	c.definir_direcao(-1)
+	_passos(c, 5.0)
+	ok(c.x == TreinoCombate.X_MIN, "andar para trás para no limite")
+	c.definir_direcao(1)
+	_passos(c, 5.0)
+	ok(c.x <= TreinoCombate.X_BONECO - TreinoCombate.DIST_MIN + 0.01, "andar para frente para antes do boneco")
+	c.definir_direcao(0)
+	# parry: guarda erguida perto do golpe
+	c = TreinoCombate.new(3)
+	_boneco_ataca(c)
+	_passos(c, 0.55)
+	c.defesa(true)
+	_passos(c, 0.25)
+	ok(c.placar["parries"] == 1 and c.b_estado == "atordoado", "parry no tempo certo atordoa o boneco")
+	# bloqueio comum: guarda erguida cedo demais
+	c = TreinoCombate.new(3)
+	c.defesa(true)
+	_boneco_ataca(c)
+	_passos(c, 0.9)
+	ok(c.placar["bloqueios"] == 1 and c.placar["parries"] == 0, "guarda erguida cedo só bloqueia")
+	# esquiva anula o golpe e a posição recua
+	c = TreinoCombate.new(3)
+	_boneco_ataca(c)
+	_passos(c, 0.5)
+	var x0 := c.x
+	c.esquiva()
+	_passos(c, 0.4)
+	ok(c.placar["esquivas"] == 1 and c.x < x0, "esquiva no tempo certo anula o golpe e recua")
+	# sem defesa nem esquiva, leva o golpe (sem vida: só conta)
+	c = TreinoCombate.new(3)
+	_boneco_ataca(c)
+	_passos(c, 0.9)
+	ok(c.placar["levados"] == 1, "sem reação, leva o golpe")
+	# fora de alcance não conta
+	c = TreinoCombate.new(3)
+	c.x = TreinoCombate.X_MIN
+	_boneco_ataca(c)
+	_passos(c, 0.9)
+	ok(c.placar["levados"] == 0, "golpe do boneco erra se estiver longe")
+	# anti-spam do parry
+	c = TreinoCombate.new(3)
+	c.defesa(true)
+	_passos(c, 0.1)
+	c.defesa(false)
+	_passos(c, 0.1)
+	c.defesa(true)
+	ok(not c.defendendo, "guarda não reergue logo depois de baixar")
+	# segurar o ataque vira pesado; toque rápido é leve
+	c = TreinoCombate.new(3)
+	c.atacar_pressionar()
+	_passos(c, 0.5)
+	c.atacar_soltar()
+	ok(c.estado == "pesado", "segurar o ataque vira golpe pesado")
+	c = TreinoCombate.new(3)
+	c.atacar_pressionar()
+	_passos(c, 0.1)
+	c.atacar_soltar()
+	ok(c.estado == "leve", "toque rápido é ataque leve")
+	# pesado quebra o golpe do boneco; depois dá crítico
+	c = TreinoCombate.new(3)
+	_boneco_ataca(c)
+	_passos(c, 0.2)
+	c.ataque_pesado()
+	_passos(c, 0.5)
+	ok(c.b_estado == "atordoado", "pesado quebra o golpe do boneco")
+	_passos(c, 0.5)  # recuperação do jogador
+	var crit0: int = c.placar["criticos"]
+	c.ataque_pesado()
+	_passos(c, 0.5)
+	ok(c.placar["criticos"] == crit0 + 1, "pesado no boneco atordoado é crítico")
