@@ -11,7 +11,7 @@ const OSSOS := [
 	["quadril", "", Vector2(0, 0), Vector2.ZERO, 0.0, 0, 1.0],
 	["saia", "quadril", Vector2(0, 0), Vector2(116, 30), 0.0, 6, 0.72],
 	["torso", "quadril", Vector2(0, 8), Vector2(96, 190), 0.0, 2, 1.0],
-	["cabeca", "torso", Vector2(19, -172), Vector2(62, 172), 0.0, 3, 1.0],
+	["cabeca", "torso", Vector2(34, -158), Vector2(62, 172), 0.0, 3, 1.0],
 	["braco_f_sup", "torso", Vector2(-8, -118), Vector2(58, 32), 0.0, 5, 1.0],
 	["braco_f_ant", "braco_f_sup", Vector2(10, 143), Vector2(22, 78), 0.0, 5, 1.0],
 	["braco_t_sup", "torso", Vector2(-2, -120), Vector2(62, 32), 0.0, 0, 1.0],
@@ -23,10 +23,11 @@ const OSSOS := [
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
 const REPOUSO := [0.0, 0.0, -0.35, -0.5, -0.45, -0.3, -0.1]
-const PES := 392.0
+const PES := 360.0
 const LF := 0.45  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
 
 var escala_base := 0.3
+var congelar := false  ## só para depuração: pose parada
 var frente := 1.0
 var ocupado := false
 var _o := {}
@@ -112,7 +113,8 @@ static func _suave(x: float) -> float:
 
 
 func _process(delta: float) -> void:
-	_t += delta
+	if not congelar:
+		_t += delta
 	var ph := _t / 1.6 * TAU
 	var braco := 0.0
 	var ante := 0.0
@@ -149,15 +151,15 @@ func _process(delta: float) -> void:
 			chicotear()
 	# pernas
 	var a := sin(ph)
-	(_o["coxa_f"] as Node2D).rotation = -0.31 + a * 0.36
-	(_o["canela_f"] as Node2D).rotation = 0.31 + 0.7 * maxf(0.0, cos(ph)) + 0.1
-	(_o["coxa_t"] as Node2D).rotation = -0.31 - a * 0.36
-	(_o["canela_t"] as Node2D).rotation = 0.31 + 0.7 * maxf(0.0, -cos(ph)) + 0.1
+	(_o["coxa_f"] as Node2D).rotation = -0.31 + a * 0.3
+	(_o["canela_f"] as Node2D).rotation = 0.31 + 0.6 * maxf(0.0, -cos(ph)) + 0.08
+	(_o["coxa_t"] as Node2D).rotation = -0.31 - a * 0.3
+	(_o["canela_t"] as Node2D).rotation = 0.31 + 0.6 * maxf(0.0, cos(ph)) + 0.08
 	(_o["quadril"] as Node2D).position.y = -PES * ESC + absf(sin(ph)) * 3.0
 	(_o["torso"] as Node2D).rotation = tronco + sin(ph * 2.0) * 0.015
-	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.08 + 0.1
+	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.05 + 0.1
 	(_o["braco_f_ant"] as Node2D).rotation = ante
-	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.3 + 0.1
+	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.18 + 0.1
 	(_o["braco_t_ant"] as Node2D).rotation = 0.3 + sin(ph) * 0.1
 	_chicote(delta, rijo)
 
