@@ -197,7 +197,7 @@ func _palco(d: Dictionary, final: bool, misterio: bool) -> Control:
 		var cx: float = 0.5 if final else 0.08 + (0.84 / float(maxi(1, n - 1))) * i
 		var estado := "futuro" if misterio else ("ativo" if final else ("vencido" if i < indice else ("ativo" if i == indice else "futuro")))
 		var hf: float = wf * aspecto * sz.y / sz.x
-		var base := 0.88 - (0.03 if estado == "ativo" else 0.0)
+		var base := 0.88 - (0.012 if estado == "ativo" else 0.0)
 		var wf2 := wf * (1.06 if estado == "ativo" else 1.0)
 		var hf2 := hf * (1.06 if estado == "ativo" else 1.0)
 		var fig := Control.new()
@@ -228,12 +228,25 @@ func _palco(d: Dictionary, final: bool, misterio: bool) -> Control:
 			"futuro":
 				cor = COR_FUTURO
 		var tr := _tex_rect(Tema.textura(SpriteLanista.caminho(l["id"])), false, cor)
-		tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		fig.add_child(tr)
+		# Pés sempre colados na base da figura: o sprite é encaixado manualmente (sem faixa vazia embaixo, que o fazia flutuar).
+		var suporte := Control.new()
+		suporte.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		suporte.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		fig.add_child(suporte)
+		suporte.add_child(tr)
+		var encaixar := func() -> void:
+			var k := minf(fig.size.x / sz.x, fig.size.y / sz.y)
+			var dw := sz.x * k
+			var dh := sz.y * k
+			tr.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+			tr.size = Vector2(dw, dh)
+			tr.position = Vector2((fig.size.x - dw) / 2.0, fig.size.y - dh)
+		fig.resized.connect(encaixar)
+		encaixar.call_deferred()
 		if estado == "ativo" and l["id"] != "batiatus":
 			var tw := fig.create_tween().set_loops()
-			tw.tween_property(tr, "position:y", -3.0, 1.1).set_trans(Tween.TRANS_SINE)
-			tw.tween_property(tr, "position:y", 2.0, 1.1).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(suporte, "position:y", -3.0, 1.1).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(suporte, "position:y", 2.0, 1.1).set_trans(Tween.TRANS_SINE)
 		if estado == "vencido":
 			var x := Glifo.novo("falha", 56, VERMELHO_VIVO)
 			x.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
