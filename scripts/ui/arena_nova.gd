@@ -24,7 +24,7 @@ void fragment() {
 	vec2 px = UV * tam;
 	float w = 0.045 * px.x + 0.025 * px.y + fase;
 	float oy = sin(TIME * freq + w) * amp + sin(TIME * freq * 2.3 + w * 1.7) * amp * 0.4 * sway;
-	float ox = sin(TIME * freq * 1.4 + w * 1.3) * sway * 3.0;
+	float ox = sin(TIME * freq * 1.4 + w * 1.3) * sway * 1.0;
 	COLOR = texture(TEXTURE, UV + vec2(ox, oy) / tam);
 }
 """
@@ -93,6 +93,6 @@ func _process(delta: float) -> void:
 	if _mat == null:
 		return
 	_excit = maxf(0.0, _excit - delta * 0.7)
-	_mat.set_shader_parameter("amp", 1.6 + _excit * 5.0)
-	_mat.set_shader_parameter("freq", (2.2 + _excit * 4.0) * vel)
+	_mat.set_shader_parameter("amp", 0.45 + _excit * 1.6)
+	_mat.set_shader_parameter("freq", (1.3 + _excit * 1.2) * vel)
 	_mat.set_shader_parameter("sway", _excit)
