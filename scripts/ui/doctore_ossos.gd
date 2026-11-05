@@ -11,21 +11,21 @@ const OSSOS := [
 	["quadril", "", Vector2(0, 0), Vector2.ZERO, 0.0, 0, Vector2(1.0, 1.0)],
 	["saia", "quadril", Vector2(0, -105), Vector2(116, 35), 0.0, 6, Vector2(1.1, 0.94)],
 	["torso", "quadril", Vector2(0, -90), Vector2(98, 218), 0.0, 2, Vector2(1.4, 1.4)],
-	["cabeca", "torso", Vector2(37, -264), Vector2(58, 185), 0.0, 3, Vector2(1.0, 1.0)],
-	["braco_f_sup", "torso", Vector2(-60, -235), Vector2(58, 35), 0.0, 5, Vector2(1.0, 1.0)],
-	["braco_f_ant", "braco_f_sup", Vector2(7, 165), Vector2(50, 50), 0.0, 5, Vector2(1.2, 1.2)],
-	["braco_t_sup", "torso", Vector2(-50, -238), Vector2(58, 35), 0.0, 0, Vector2(1.0, 1.0)],
+	["cabeca", "torso", Vector2(37, -266), Vector2(58, 185), 0.0, 1, Vector2(1.0, 1.0)],
+	["braco_f_sup", "torso", Vector2(-60, -235), Vector2(58, 35), 0.0, 8, Vector2(1.0, 1.0)],
+	["braco_f_ant", "braco_f_sup", Vector2(7, 165), Vector2(50, 50), 0.0, 8, Vector2(1.2, 1.2)],
+	["braco_t_sup", "torso", Vector2(-10, -238), Vector2(58, 35), 0.0, 0, Vector2(1.0, 1.0)],
 	["braco_t_ant", "braco_t_sup", Vector2(7, 155), Vector2(50, 55), 0.0, 0, Vector2(1.05, 1.05)],
-	["coxa_f", "quadril", Vector2(12, 0), Vector2(60, 25), 0.0, 3, Vector2(1.12, 1.35)],
+	["coxa_f", "quadril", Vector2(12, -70), Vector2(60, 25), 0.0, 3, Vector2(1.12, 1.35)],
 	["canela_f", "coxa_f", Vector2(3, 230), Vector2(55, 25), 0.0, 4, Vector2(1.22, 1.15)],
 	["pe_f", "canela_f", Vector2(-5, 207), Vector2(45, 35), 0.0, 3, Vector2(1.1, 1.1)],
-	["coxa_t", "quadril", Vector2(-12, 0), Vector2(52, 25), 0.0, 1, Vector2(1.12, 1.35)],
+	["coxa_t", "quadril", Vector2(-12, -70), Vector2(52, 25), 0.0, 1, Vector2(1.12, 1.35)],
 	["canela_t", "coxa_t", Vector2(0, 225), Vector2(55, 25), 0.0, 1, Vector2(1.22, 1.15)],
 	["pe_t", "canela_t", Vector2(-5, 207), Vector2(47, 81), 0.0, 0, Vector2(1.1, 1.1)],
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
 const REPOUSO := [0.0, 0.05, 0.3, 0.4, 0.4, 0.3, 0.15]
-const PES := 546.0
+const PES := 476.0
 const LF := 0.34  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
 
 var escala_base := 0.3
@@ -89,7 +89,7 @@ func _peca(nome: String, piv: Vector2) -> Node2D:
 	s.centered = false
 	var h := s.texture.get_height()
 	s.offset = Vector2(0 if nome != "w_cabo" else -s.texture.get_width() / 2.0, -h / 2.0)
-	s.z_index = 7
+	s.z_index = 9
 	if nome != "w_cabo":
 		s.scale = Vector2(LF, 1.0)
 	n.add_child(s)
@@ -159,16 +159,16 @@ func _process(delta: float) -> void:
 	var kt := 0.75 * maxf(0.0, cos(ph))
 	(_o["coxa_f"] as Node2D).rotation = cf
 	(_o["canela_f"] as Node2D).rotation = kf
-	(_o["pe_f"] as Node2D).rotation = -(cf + kf) * 0.8
+	(_o["pe_f"] as Node2D).rotation = 0.0  # pé preso à canela: gira junto
 	(_o["coxa_t"] as Node2D).rotation = ct
 	(_o["canela_t"] as Node2D).rotation = kt
-	(_o["pe_t"] as Node2D).rotation = -(ct + kt) * 0.8
+	(_o["pe_t"] as Node2D).rotation = 0.0
 	(_o["quadril"] as Node2D).position.y = -PES * ESC + absf(sin(ph)) * 3.0
 	(_o["torso"] as Node2D).rotation = tronco + sin(ph * 2.0) * 0.015
 	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.06
 	(_o["braco_f_ant"] as Node2D).rotation = ante - 0.35
-	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.2
-	(_o["braco_t_ant"] as Node2D).rotation = -0.25
+	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.4 - 0.1
+	(_o["braco_t_ant"] as Node2D).rotation = -0.5
 	_chicote(delta, rijo)
 
 
