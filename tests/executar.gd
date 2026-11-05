@@ -134,6 +134,21 @@ func teste_regras() -> void:
 	ok(Game.vender_item(ev, "maca@2") == "", "vender item")
 	ok(int(ev["ouro"]) - antes_v == Model.jsround(float(pago) * 0.4), "venda devolve 40%% (%d de %d)" % [int(ev["ouro"]) - antes_v, pago])
 	ok(Game.vender_item(ev, "maca@2") != "", "não vende item que não tem")
+	# amuletos: só da própria região
+	var ea := novo()
+	ea["fama"] = 100
+	var ga: Dictionary = ea["gladiadores"][0]
+	var minha: String = ga["terra"]
+	var outra: String = "galia" if minha != "galia" else "dacia"
+	var am_ok := Model.id_amuleto(minha, "forca", 3)
+	var am_no := Model.id_amuleto(outra, "forca", 3)
+	ok(Game.comprar_item(ea, am_ok) == "" and Game.comprar_item(ea, am_no) == "", "comprar amuletos")
+	ok(Game.equipar(ea, ga["id"], "amuleto", am_no) != "", "amuleto de outra região não equipa")
+	var f0: int = Model.stats_do_gladiador(ga)["forca"]
+	ok(Game.equipar(ea, ga["id"], "amuleto", am_ok) == "", "amuleto da própria região equipa")
+	ok(int(Model.stats_do_gladiador(ga)["forca"]) == f0 + 4, "amuleto Épico dá +4 no atributo")
+	ok(Model.item_por_id(Model.id_amuleto(minha, "aura", 0))["nome"] != Model.item_por_id(Model.id_amuleto(outra, "aura", 0))["nome"], "nome por região")
+	ok(Game.catalogo_amuletos(minha).size() == 6, "catálogo com 6 atributos")
 	# força para equipar
 	var e3 := novo()
 	var gl: Dictionary = e3["gladiadores"][0]

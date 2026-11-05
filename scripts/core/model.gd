@@ -3,15 +3,15 @@ extends RefCounted
 ## Modelo de dados: classes, itens, origens e gladiadores (porte fiel de model.ts).
 
 const ATRIBUTOS: Array = ["forca", "destreza", "vitalidade", "resistencia", "inteligencia", "aura"]
-const SLOTS: Array = ["arma", "acessorio", "elmo", "peito", "pe", "calca"]
+const SLOTS: Array = ["arma", "acessorio", "elmo", "peito", "pe", "calca", "amuleto"]
 const CLASSES_IDS: Array = ["murmilo", "retiario", "tracio", "samnita"]
 const QUALIDADES: Array = ["Normal", "Superior", "Rara", "Épica", "Lendária"]
 const COR_QUALIDADE: Array = ["#9aa0a6", "#4caf50", "#3d8bfd", "#a855f7", "#ff9f1a"]
 const QUALIDADE_MAX := 4
 const BONUS_QUALIDADE: Array = [0, 1, 2, 3, 4]
 const PRECO_QUALIDADE: Array = [1.0, 1.5, 2.5, 4.0, 7.0]
-const FOCO_SLOT := {"arma": "forca", "acessorio": "inteligencia", "elmo": "aura", "peito": "vitalidade", "pe": "destreza", "calca": "resistencia"}
-const NOME_SLOT := {"arma": "Arma", "acessorio": "Escudo / acessório", "elmo": "Elmo", "peito": "Peitoral", "pe": "Calçado", "calca": "Calça"}
+const FOCO_SLOT := {"arma": "forca", "acessorio": "inteligencia", "elmo": "aura", "peito": "vitalidade", "pe": "destreza", "calca": "resistencia", "amuleto": "aura"}
+const NOME_SLOT := {"arma": "Arma", "acessorio": "Escudo / acessório", "elmo": "Elmo", "peito": "Peitoral", "pe": "Calçado", "calca": "Calça", "amuleto": "Amuleto"}
 const NOME_ATRIBUTO := {"forca": "Força", "destreza": "Destreza", "vitalidade": "Vitalidade", "resistencia": "Resistência", "inteligencia": "Inteligência", "aura": "Aura"}
 const SIGLA_ATRIBUTO := {"forca": "FOR", "destreza": "DES", "vitalidade": "VIT", "resistencia": "RES", "inteligencia": "INT", "aura": "AUR"}
 ## Qualidade: peso extra por nível e Fama mínima para comprar.
@@ -23,6 +23,10 @@ const CARGA_BASE := 20
 const CARGA_POR_FORCA := 2
 ## Glória: títulos por pontuação mínima.
 const TITULOS_GLORIA: Array = [[0, "Novato"], [100, "Conhecido"], [400, "Temido"], [1000, "Campeão"], [2500, "Lenda"]]
+## Amuletos: cada região (terra) tem um tipo por atributo; só gladiadores daquela região podem usar. Bônus = +1 + qualidade no atributo.
+const AMULETO_OBJETO := {"galia": "Torque", "germania": "Runa", "tracia": "Talismã", "dacia": "Dracônio", "numidia": "Colar", "hispania": "Medalhão", "siria": "Selo", "britania": "Pingente"}
+const AMULETO_EPITETO := {"forca": "do Urso", "destreza": "do Falcão", "vitalidade": "do Carvalho", "resistencia": "da Rocha", "inteligencia": "da Coruja", "aura": "da Lua"}
+const AMULETO_PRECO := 90
 const NIVEL_MAXIMO := 15
 const TENDENCIA_PONTOS := 2
 const PRECO_CONDICAO := {"jovem": 20, "maduro": 0, "cicatrizado": -20}
@@ -118,6 +122,18 @@ static func com_qualidade(base: String, q: int) -> String:
 static func qualidade_de(id) -> int:
 	return int(separar_id(id)["qualidade"]) if id != null else 0
 
+static func id_amuleto(terra: String, atributo: String, qualidade: int = 0) -> String:
+	return com_qualidade("amu_%s_%s" % [terra, atributo], qualidade)
+
+static func _item_amuleto(base: String) -> Dictionary:
+	var partes := base.split("_")
+	if partes.size() != 3 or not AMULETO_OBJETO.has(partes[1]) or not (partes[2] in ATRIBUTOS):
+		return {}
+	var terra: String = partes[1]
+	var atributo: String = partes[2]
+	return {"id": base, "nome": "%s %s" % [AMULETO_OBJETO[terra], AMULETO_EPITETO[atributo]], "slot": "amuleto", "bonus": {atributo: 1},
+		"classes": CLASSES_IDS + ["dimachaerus"], "preco": AMULETO_PRECO, "peso": 0, "forcaMin": 0, "famaMin": 0, "terra": terra, "foco": atributo, "amuleto": true}
+
 static func _item_basico(slot: String, classe: String) -> Dictionary:
 	var pesos := {"arma": 2, "acessorio": 3, "elmo": 2, "peito": 3, "pe": 1, "calca": 1}
 	return {"id": "basico_%s_%s" % [slot, classe], "nome": NOME_BASICO[slot][classe], "slot": slot, "bonus": {}, "classes": [classe], "preco": 25, "basico": true, "peso": pesos[slot], "forcaMin": 0, "famaMin": 0}
@@ -132,6 +148,8 @@ static func item_por_id(id: String) -> Dictionary:
 		if i["id"] == base:
 			item = i
 			break
+	if item.is_empty() and base.begins_with("amu_"):
+		item = _item_amuleto(base)
 	if item.is_empty() and base.begins_with("basico_"):
 		var resto := base.substr(7)
 		for slot in SLOTS:
@@ -143,14 +161,14 @@ static func item_por_id(id: String) -> Dictionary:
 	if item.is_empty():
 		return {}
 	var r: Dictionary = item.duplicate(true)
-	var foco: String = FOCO_SLOT[r["slot"]]
+	var foco: String = str(r.get("foco", FOCO_SLOT[r["slot"]]))
 	var bonus: Dictionary = r["bonus"]
 	bonus[foco] = int(bonus.get(foco, 0)) + int(BONUS_QUALIDADE[qualidade])
 	if bonus[foco] == 0:
 		bonus.erase(foco)
 	r["id"] = id
 	r["qualidade"] = qualidade
-	r["peso"] = maxi(1, jsround(float(item["peso"]) * float(PESO_QUALIDADE[qualidade])))
+	r["peso"] = 0 if int(item["peso"]) == 0 else maxi(1, jsround(float(item["peso"]) * float(PESO_QUALIDADE[qualidade])))
 	r["forcaMin"] = (int(item["forcaMin"]) + int(FORCA_QUALIDADE[qualidade])) if int(item["forcaMin"]) > 0 else 0
 	r["famaMin"] = int(item.get("famaMin", 0)) + int(FAMA_QUALIDADE[qualidade])
 	r["preco"] = jsround(float(item["preco"]) * float(PRECO_QUALIDADE[qualidade]))
@@ -163,11 +181,13 @@ static func terra_por_id(id: String) -> Dictionary:
 	return {}
 
 static func equipamento_vazio() -> Dictionary:
-	return {"arma": null, "acessorio": null, "elmo": null, "peito": null, "pe": null, "calca": null}
+	return {"arma": null, "acessorio": null, "elmo": null, "peito": null, "pe": null, "calca": null, "amuleto": null}
 
 static func sortear_equipamento(rng: Rng, classe: String, qual_max: int = 0) -> Dictionary:
 	var eq := equipamento_vazio()
 	for slot in SLOTS:
+		if slot == "amuleto":
+			continue
 		var q: int = rng.inteiro(0, qual_max) if qual_max > 0 else 0
 		eq[slot] = com_qualidade("basico_%s_%s" % [slot, classe], q)
 	return eq

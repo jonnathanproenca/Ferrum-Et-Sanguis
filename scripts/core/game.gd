@@ -474,6 +474,16 @@ static func vender_item(e: Dictionary, item_id: String) -> String:
 	registrar(e, "Vendido: %s por %d de ouro." % [item["nome"], valor])
 	return ""
 
+## Amuletos à venda para uma região: {atributo: [id por qualidade 0..4]}.
+static func catalogo_amuletos(terra: String) -> Dictionary:
+	var r := {}
+	for a in Model.ATRIBUTOS:
+		var l: Array = []
+		for q in range(Model.QUALIDADE_MAX + 1):
+			l.append(Model.id_amuleto(terra, a, q))
+		r[a] = l
+	return r
+
 ## Coloca um item no slot, ou tira o que estiver nele (item_id vazio).
 static func equipar(e: Dictionary, glad_id: String, slot: String, item_id: String) -> String:
 	var err := _exigir_melhoria(e, "armaria")
@@ -496,6 +506,8 @@ static func equipar(e: Dictionary, glad_id: String, slot: String, item_id: Strin
 		return "Este item não serve a este slot."
 	if not (g["classe"] in item["classes"]):
 		return "Este item não serve a esta classe."
+	if item.get("amuleto", false) and item["terra"] != g["terra"]:
+		return "Este amuleto pertence a %s; %s é de %s." % [Model.terra_por_id(item["terra"])["nome"], g["nome"], Model.terra_por_id(g["terra"])["nome"]]
 	var casa_esp: String = str(lanista_da_casa(e).get("especialidade", ""))
 	var base_stats := Model.stats_sem_itens(g, casa_esp, extra_da_casa(e))
 	if int(base_stats["forca"]) < int(item["forcaMin"]):
