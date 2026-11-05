@@ -157,7 +157,7 @@ func _montar() -> void:
 		b.z_index = 1200
 		_novo_item(b, Rect2(pos.x - altura * 0.30, pos.y - altura, altura * 0.60, altura), 1200, "ponto")
 	# doctore: sprite grande, patrulhando o pátio
-	_doctore = (DoctoreOssos.new() if bool(Jogo.prefs.get("doctoreOssos", false)) else Doctore.new())
+	_doctore = (DoctoreOssos.new() if bool(Jogo.prefs.get("doctoreOssos", true)) else Doctore.new())
 	_doctore.position = Vector2(300, 458)
 	_doctore.z_index = 458
 	_palco2.add_child(_doctore)

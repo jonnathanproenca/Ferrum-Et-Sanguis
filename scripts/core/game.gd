@@ -56,10 +56,10 @@ const REGRAS := {
 	"medio": {"nome": "Médio", "campeao": 3, "lenda": 9, "liberdade": null, "precos": 1.0, "arenaBase": 1.0, "arenaFator": 1.0, "campReq": 1.0,
 		"campMult": [0.65, 0.65, 0.67, 0.75, 0.72, 0.78, 0.92, 0.86, 0.88, 0.88],
 		"resumo": "Campeão com 3 vitórias, lenda com 9. Nunca é libertado. Preços e rivais padrão."},
-	"dificil": {"nome": "Difícil", "campeao": 6, "lenda": 15, "liberdade": 30, "precos": 1.25, "arenaBase": 1.05, "arenaFator": 1.15, "campReq": 1.6,
+	"dificil": {"nome": "Difícil", "campeao": 6, "lenda": 15, "liberdade": 30, "precos": 1.25, "arenaBase": 1.05, "arenaFator": 1.1, "campReq": 1.6,
 		"campMult": [0.7, 0.7, 0.72, 0.81, 0.78, 0.84, 0.99, 0.93, 0.95, 0.95],
 		"resumo": "Campeão com 6 vitórias, lenda com 15. Libertado após 30 lutas como lenda. Preços +25%, rivais mais fortes."},
-	"extremo": {"nome": "Extremo", "campeao": 15, "lenda": 45, "liberdade": 5, "precos": 1.6, "arenaBase": 1.1, "arenaFator": 1.3, "campReq": 2.4,
+	"extremo": {"nome": "Extremo", "campeao": 15, "lenda": 45, "liberdade": 5, "precos": 1.6, "arenaBase": 1.1, "arenaFator": 1.2, "campReq": 2.4,
 		"campMult": [0.78, 0.78, 0.8, 0.9, 0.86, 0.94, 1.1, 1.03, 1.06, 1.06],
 		"resumo": "Campeão com 15 vitórias, lenda com 45. Libertado após só 5 lutas como lenda. Preços +60%, rivais brutais."},
 }

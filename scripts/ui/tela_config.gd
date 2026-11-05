@@ -92,11 +92,11 @@ static func painel_audio() -> Control:
 static func painel_visual() -> Control:
 	var v := Tema.vbox(8)
 	v.add_child(_alternar("Novo visual do ludus (teste)", "ludusNovo"))
-	v.add_child(_alternar("Doctore por esqueleto (teste)", "doctoreOssos"))
+	v.add_child(_alternar("Doctore por esqueleto", "doctoreOssos", true))
 	v.add_child(_alternar("Treino de combate controlado (teste)", "treinoCombate"))
 	return v
 
-static func _alternar(rotulo: String, chave: String) -> Control:
+static func _alternar(rotulo: String, chave: String, padrao: bool = false) -> Control:
 	var h := Tema.hbox(12)
 	var b := Tema.botao("")
 	b.toggle_mode = true
@@ -106,9 +106,9 @@ static func _alternar(rotulo: String, chave: String) -> Control:
 		b.text = "LIGADO" if on else "desligado"
 		b.add_theme_stylebox_override("normal", Tema.caixa(Tema.SANGUE if on else Tema.PAINEL, Tema.OURO_ESCURO if on else Tema.BORDA, 6, 1, 4))
 		b.add_theme_stylebox_override("pressed", Tema.caixa(Tema.SANGUE, Tema.OURO, 6, 1, 4))
-	pintar.call(bool(Jogo.prefs.get(chave, false)))
+	pintar.call(bool(Jogo.prefs.get(chave, padrao)))
 	b.pressed.connect(func() -> void:
-		var novo: bool = not bool(Jogo.prefs.get(chave, false))
+		var novo: bool = not bool(Jogo.prefs.get(chave, padrao))
 		Jogo.prefs[chave] = novo
 		Jogo.salvar_prefs()
 		pintar.call(novo))

@@ -119,8 +119,8 @@ func _ao_redimensionar() -> void:
 
 func ao_mostrar() -> void:
 	super.ao_mostrar()
-	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova or bool(Jogo.prefs.get("doctoreOssos", false)) != _doctore_ossos:
-		_doctore_ossos = bool(Jogo.prefs.get("doctoreOssos", false))
+	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova or bool(Jogo.prefs.get("doctoreOssos", true)) != _doctore_ossos:
+		_doctore_ossos = bool(Jogo.prefs.get("doctoreOssos", true))
 		_criar_cena()
 	call_deferred("_ao_redimensionar")
 	call_deferred("_mostrar_oferta_nova")
@@ -400,6 +400,12 @@ class Carta extends PanelContainer:
 		cs.add_child(TelaLudus._chip("Vitórias %d" % int(g["vitorias"]), Color("1f2a18"), Color("4a6a38"), Tema.VERDE, 14))
 		cs.add_child(TelaLudus._chip("Poço %d" % int(g["vitoriasPoco"]), Color("2a2216"), Color("6a5230"), Tema.OURO_ESCURO, 14))
 		cs.add_child(TelaLudus._chip("Derrotas %d" % int(g["derrotas"]), Color("2a1414"), Color("6a3030"), Color("d88a7a"), 14))
+		var ct := Patrocinio.contrato_do(Jogo.e, str(g["id"]))
+		if not ct.is_empty():
+			var tp := Patrocinio.tipo_por_id(str(ct["tipo"]))
+			var chip_p := TelaLudus._chip("%s %s · +%d/rodada" % [tp["nome"], ct["patrono"], int(ct["ouro"])], Color("2a2410"), Tema.OURO_ESCURO, Tema.OURO, 14)
+			chip_p.tooltip_text = "Meta: %s (feitas %d)" % [Patrocinio.texto_meta(ct), int(ct["vitorias"])]
+			cs.add_child(chip_p)
 
 		# Passiva
 		var passiva: Label
