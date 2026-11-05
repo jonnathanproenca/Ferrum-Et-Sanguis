@@ -14,15 +14,23 @@ const CAMPANHA_MIN := 2
 
 ## Do menor para o maior prestígio. campMin: lanistas derrotados na campanha para esse tipo aparecer; peso: frequência base.
 const TIPOS: Array = [
-	{"id": "eques", "nome": "Eques", "titulo": "Cavaleiro", "ouro": 12, "meta": 1, "prazo": 3, "campMin": 2, "peso": 50.0},
-	{"id": "edil", "nome": "Edil", "titulo": "Edil dos jogos", "ouro": 18, "meta": 2, "prazo": 4, "campMin": 2, "peso": 38.0},
-	{"id": "legado", "nome": "Legado", "titulo": "Legado de legião", "ouro": 25, "meta": 2, "prazo": 4, "campMin": 2, "peso": 28.0},
-	{"id": "pretor", "nome": "Pretor", "titulo": "Pretor da cidade", "ouro": 45, "meta": 2, "prazo": 3, "campMin": 4, "peso": 14.0},
-	{"id": "senador", "nome": "Senador", "titulo": "Senador de Roma", "ouro": 70, "meta": 3, "prazo": 4, "campMin": 6, "peso": 6.0},
-	{"id": "consul", "nome": "Cônsul", "titulo": "Cônsul de Roma", "ouro": 110, "meta": 4, "prazo": 4, "campMin": 8, "peso": 2.0},
+	{"id": "eques", "nome": "Eques", "titulo": "Cavaleiro e mercador", "ouro": 12, "meta": 1, "prazo": 3, "campMin": 2, "peso": 50.0, "fem": false,
+		"historia": "Mercador de azeite e vinho de Cápua, enriqueceu abastecendo legiões. Quer um campeão para provar à elite que o seu dinheiro vale tanto quanto o sangue nobre."},
+	{"id": "edil", "nome": "Edil", "titulo": "Edil dos jogos", "ouro": 18, "meta": 2, "prazo": 4, "campMin": 2, "peso": 38.0, "fem": false,
+		"historia": "Cuida dos jogos da cidade e de agradar a plebe. Precisa de lutadores que encham a arena para ser eleito pretor."},
+	{"id": "matrona", "nome": "Matrona", "titulo": "Esposa de um pretor", "ouro": 28, "meta": 2, "prazo": 4, "campMin": 3, "peso": 26.0, "fem": true,
+		"historia": "Esposa de um pretor distante, entediada e ambiciosa. Patrocina gladiadores sem o marido saber: por poder, por gosto de sangue e por segredos que só a arena guarda."},
+	{"id": "pretor", "nome": "Pretor", "titulo": "Pretor da cidade", "ouro": 45, "meta": 2, "prazo": 3, "campMin": 4, "peso": 14.0, "fem": false,
+		"historia": "Juiz e magistrado, deve favores a muita gente. Usa gladiadores para quitar dívidas políticas e cobra resultado."},
+	{"id": "senador", "nome": "Senador", "titulo": "Senador de Roma", "ouro": 70, "meta": 3, "prazo": 4, "campMin": 6, "peso": 6.0, "fem": false,
+		"historia": "Velho de família antiga, move leis com ouro. Vê o ludus como peão nas disputas do Senado."},
+	{"id": "consul", "nome": "Cônsul", "titulo": "Cônsul de Roma", "ouro": 110, "meta": 4, "prazo": 4, "campMin": 8, "peso": 2.0, "fem": false,
+		"historia": "Um dos dois homens mais poderosos de Roma. O patrocínio dele muda o destino de um ludus, e cobra lealdade total."},
 ]
 const PRENOMES: Array = ["Marcus", "Lucius", "Gaius", "Publius", "Quintus", "Titus", "Aulus", "Gnaeus", "Decimus", "Servius", "Manius", "Sextus"]
 const GENTES: Array = ["Cornelius", "Fabius", "Valerius", "Claudius", "Aemilius", "Licinius", "Servilius", "Junius", "Porcius", "Sempronius", "Calpurnius", "Octavius", "Pompeius", "Hortensius"]
+const PRENOMES_F: Array = ["Cornelia", "Julia", "Livia", "Valeria", "Claudia", "Fulvia", "Aurelia", "Antonia", "Servilia", "Aemilia"]
+const COGNOMES_F: Array = ["Pulchra", "Rufa", "Maxima", "Lepida", "Crassa", "Flacca", "Varra", "Metella"]
 const COGNOMES: Array = ["Rufus", "Maximus", "Crassus", "Lepidus", "Nasica", "Flaccus", "Varro", "Scaevola", "Pulcher", "Cato", "Sulla", "Gracchus", "Piso", "Metellus"]
 
 
@@ -64,7 +72,9 @@ static func chance(aura: int) -> float:
 	return minf(CHANCE_MAX, CHANCE_BASE + CHANCE_POR_AURA * float(maxi(0, aura)))
 
 
-static func _nome_patrono(rng: Rng) -> String:
+static func _nome_patrono(rng: Rng, fem: bool = false) -> String:
+	if fem:
+		return "%s %s" % [PRENOMES_F[rng.inteiro(0, PRENOMES_F.size() - 1)], COGNOMES_F[rng.inteiro(0, COGNOMES_F.size() - 1)]]
 	return "%s %s %s" % [PRENOMES[rng.inteiro(0, PRENOMES.size() - 1)], GENTES[rng.inteiro(0, GENTES.size() - 1)], COGNOMES[rng.inteiro(0, COGNOMES.size() - 1)]]
 
 
@@ -77,7 +87,7 @@ static func _sortear_tipo(rng: Rng, camp: int, aura: int) -> Dictionary:
 		if camp < int(t["campMin"]):
 			continue
 		var p: float = float(t["peso"])
-		if i >= 3:
+		if i >= 4:
 			p *= 1.0 + float(aura) / 50.0 * float(i) / 2.0
 		elegiveis.append([t, p])
 		total += p
@@ -107,7 +117,7 @@ static func tentar_oferta(e: Dictionary, g: Dictionary, aura: int, rng: Rng) -> 
 	var t := _sortear_tipo(rng, int(e.get("campanha", 0)), aura)
 	var o := {
 		"id": Game.novo_id(e).replace("g", "p"), "gladId": g["id"], "gladNome": g["nome"],
-		"tipo": t["id"], "patrono": _nome_patrono(rng), "ouro": int(t["ouro"]), "meta": int(t["meta"]), "prazo": int(t["prazo"]),
+		"tipo": t["id"], "patrono": _nome_patrono(rng, bool(t["fem"])), "ouro": int(t["ouro"]), "meta": int(t["meta"]), "prazo": int(t["prazo"]),
 		"validoAte": int(e["turno"]) + VALIDADE_OFERTA, "vista": false,
 	}
 	_ofertas(e).append(o)

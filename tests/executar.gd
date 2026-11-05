@@ -251,7 +251,7 @@ func teste_patrocinio() -> void:
 	ok(not of.is_empty(), "uma oferta aparece")
 	ok(Patrocinio.tentar_oferta(e, g, 200, rng).is_empty(), "sem segunda oferta para o mesmo gladiador")
 	# tipo respeita a fama (fama 0: só Eques)
-	ok(["eques", "edil", "legado"].has(of["tipo"]), "com 2 lanistas só Eques, Edil ou Legado")
+	ok(["eques", "edil"].has(of["tipo"]), "com 2 lanistas só Eques ou Edil")
 	ok(Game.aceitar_patrocinio(e, of["id"]) == "", "aceitar oferta")
 	ok(not Patrocinio.contrato_do(e, g["id"]).is_empty(), "contrato criado")
 	ok(Patrocinio.ofertas(e).is_empty(), "oferta consumida")

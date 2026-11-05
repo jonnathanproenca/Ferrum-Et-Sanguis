@@ -3,7 +3,7 @@ extends VBoxContainer
 ## Oferta de patrocínio: retrato do patrício à esquerda (assets/patronos/<tipo>.png; sem arquivo, silhueta provisória)
 ## e a proposta à direita. Também lista os contratos ativos. Uso: ModalPatrocinio.abrir(no, oferta_id).
 
-const COR_TIPO := {"eques": "8a6a3a", "edil": "3a7a6a", "legado": "9a2a22", "pretor": "5a3a7a", "senador": "6a2a8a", "consul": "b8902a"}
+const COR_TIPO := {"eques": "8a6a3a", "edil": "3a7a6a", "matrona": "9a2a22", "pretor": "5a3a7a", "senador": "6a2a8a", "consul": "b8902a"}
 
 var _modal: Modal
 
@@ -81,6 +81,7 @@ func _cartao_oferta(o: Dictionary) -> Control:
 	linha.add_child(v)
 	v.add_child(Tema.rotulo(str(o["patrono"]), 26, Tema.OURO, true))
 	v.add_child(Tema.rotulo(str(t["titulo"]), 18, Tema.CINZA))
+	v.add_child(Tema.rotulo(str(t["historia"]), 15, Color("9a8a78")))
 	v.add_child(Tema.espaco(4))
 	v.add_child(Tema.rotulo("\"Vi %s lutar e o povo gritar o nome dele. Quero meu nome ligado à sua glória.\"" % o["gladNome"], 19, Tema.AREIA))
 	v.add_child(Tema.espaco(4))
