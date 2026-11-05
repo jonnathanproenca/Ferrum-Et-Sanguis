@@ -112,6 +112,33 @@ static func painel_visual() -> Control:
 	h.add_child(l)
 	return h
 
+## Tamanho da interface (zoom). Automático amplia em telas de toque.
+static func painel_escala() -> Control:
+	var h := Tema.hbox(12)
+	var ob := OptionButton.new()
+	ob.focus_mode = Control.FOCUS_NONE
+	ob.custom_minimum_size = Vector2(190, 40)
+	ob.add_theme_font_size_override("font_size", 17)
+	var vals := [0.0, 1.0, 1.25, 1.5, 1.8]
+	var nomes := ["Automático", "Normal", "Grande", "Muito grande", "Máximo"]
+	var atual := float(Jogo.prefs.get("escalaUi", 0.0))
+	var sel := 0
+	for i in range(vals.size()):
+		ob.add_item(nomes[i])
+		if is_equal_approx(vals[i], atual):
+			sel = i
+	ob.selected = sel
+	ob.item_selected.connect(func(i: int) -> void:
+		Jogo.prefs["escalaUi"] = vals[i]
+		Jogo.salvar_prefs()
+		Jogo.aplicar_escala())
+	h.add_child(ob)
+	var l := Tema.rotulo("Tamanho da interface", 18)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(l)
+	return h
+
 static func cheat_liberado() -> bool:
 	return bool(Jogo.prefs.get("cheatLiberado", false))
 
@@ -171,6 +198,7 @@ static func conteudo_opcoes() -> Control:
 	v.add_child(painel_audio())
 	v.add_child(_secao("Visual"))
 	v.add_child(painel_visual())
+	v.add_child(painel_escala())
 	if cheat_liberado():
 		v.add_child(_secao("Cheat mode"))
 		v.add_child(painel_cheats())

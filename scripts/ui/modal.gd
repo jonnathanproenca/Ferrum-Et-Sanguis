@@ -6,6 +6,7 @@ signal fechado
 
 var _corpo: VBoxContainer
 var _painel: PanelContainer
+var _vw := 1280.0
 
 ## Abre uma modal sobre `pai`. `conteudo` é colocado dentro de uma rolagem; `largura` é a largura do painel.
 static func abrir(pai: Node, titulo: String, conteudo: Control, largura: float = 560.0, com_fechar: bool = true) -> Modal:
@@ -13,6 +14,7 @@ static func abrir(pai: Node, titulo: String, conteudo: Control, largura: float =
 	while topo.get_parent() is Control:
 		topo = topo.get_parent()
 	var m := Modal.new()
+	m._vw = pai.get_viewport_rect().size.x if pai.is_inside_tree() else 1280.0
 	m._montar(titulo, conteudo, largura, com_fechar)
 	topo.add_child(m)
 	return m
@@ -38,7 +40,7 @@ func _montar(titulo: String, conteudo: Control, largura: float, com_fechar: bool
 	sb.shadow_color = Color(0, 0, 0, 0.7)
 	sb.shadow_size = 24
 	_painel.add_theme_stylebox_override("panel", sb)
-	_painel.custom_minimum_size = Vector2(largura, 0)
+	_painel.custom_minimum_size = Vector2(minf(largura, maxf(_vw - 24.0, 320.0)), 0)
 	centro.add_child(_painel)
 	_corpo = Tema.vbox(10)
 	_painel.add_child(_corpo)

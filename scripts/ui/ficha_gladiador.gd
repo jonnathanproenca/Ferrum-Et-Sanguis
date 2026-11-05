@@ -90,6 +90,7 @@ func _montar() -> void:
 	col_a.size_flags_stretch_ratio = 1.55
 	_corpo.add_child(col_a)
 	var tem_palus := Game.tem_melhoria(e, "palus")
+	col_a.add_child(_custo_unico(e, tem_palus))
 	for i in range(Model.ATRIBUTOS.size()):
 		col_a.add_child(_linha_atributo(Model.ATRIBUTOS[i], int(stats[Model.ATRIBUTOS[i]]), tem_palus, e, i == 0))
 	var col_d := Tema.vbox(6)
@@ -97,6 +98,35 @@ func _montar() -> void:
 	_corpo.add_child(col_d)
 	_derivados(col_d, lut, int(stats["aura"]))
 	_carga(col_d, esp, extra)
+
+
+## Custo único de treino (igual para qualquer atributo), mostrado uma só vez acima das linhas, como a caixa de "almas" da Fogueira.
+func _custo_unico(e: Dictionary, tem_palus: bool) -> Control:
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", Tema.caixa(Color("0a0705"), Tema.OURO_ESCURO, 3, 1, 6))
+	var h := Tema.hbox(8)
+	p.add_child(h)
+	var t := Tema.rotulo("Treinar +1 ponto", 16, Tema.CINZA)
+	t.autowrap_mode = TextServer.AUTOWRAP_OFF
+	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(t)
+	var custo := Game.custo_treino(e, g)
+	var v: Label
+	if not tem_palus:
+		v = Tema.rotulo("sem palus", 16, Color("a88a6a"))
+		p.tooltip_text = "Construa o palus para treinar."
+	else:
+		var falta := int(e["ouro"]) < custo
+		v = Tema.rotulo("%d ouro · 1 energia" % custo, 18, Color("d88a7a") if falta else Tema.OURO, true)
+		p.tooltip_text = "O custo é o mesmo para qualquer atributo e sobe a cada ponto treinado e a cada nível."
+	v.autowrap_mode = TextServer.AUTOWRAP_OFF
+	h.add_child(v)
+	var sp := Control.new()
+	sp.custom_minimum_size = Vector2(0, 6)
+	var col := Tema.vbox(0)
+	col.add_child(p)
+	col.add_child(sp)
+	return col
 
 
 func _faixa_gloria(e: Dictionary) -> Control:
@@ -192,8 +222,8 @@ func _botao_mais(a: String, treino: int, tem_palus: bool, e: Dictionary) -> Cont
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	b.add_theme_font_size_override("font_size", 13)
-	b.custom_minimum_size = Vector2(150, 28)
-	b.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	b.custom_minimum_size = Vector2(40, 28)
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	b.add_theme_stylebox_override("normal", _sb_botao(Color("3a2a14"), Tema.OURO_ESCURO))
 	b.add_theme_stylebox_override("hover", _sb_botao(Color("4a3618"), Tema.OURO))
 	b.add_theme_stylebox_override("pressed", _sb_botao(Color("6a1414"), Tema.OURO))
@@ -211,18 +241,16 @@ func _botao_mais(a: String, treino: int, tem_palus: bool, e: Dictionary) -> Cont
 		motivo = "Faltam %d de ouro." % (custo - int(e["ouro"]))
 	elif int(e["energia"]) < 1:
 		motivo = "Sem energia neste turno."
-	if not tem_palus:
-		b.text = "sem palus"
-	elif Game.atributo_no_maximo(g, a):
-		b.text = "máximo"
-	else:
-		b.text = "%d ouro · 1 energia" % custo
+	if tem_palus and Game.atributo_no_maximo(g, a):
+		b.text = "máx"
+		b.custom_minimum_size = Vector2(52, 28)
 	b.disabled = motivo != ""
 	b.tooltip_text = motivo if motivo != "" else "Treinar %s: %d de ouro e 1 de energia." % [Model.NOME_ATRIBUTO[a], custo]
 	var gl := Glifo.novo("mais", 16, Tema.OURO if not b.disabled else Color("6b5a4a"))
-	gl.position = Vector2(7, 6)
-	gl.size = Vector2(16, 16)
-	b.add_child(gl)
+	if b.text == "":
+		gl.position = Vector2(12, 6)
+		gl.size = Vector2(16, 16)
+		b.add_child(gl)
 	var id := str(g["id"])
 	b.pressed.connect(func() -> void:
 		if Jogo.resultado(Game.treinar(Jogo.e, id, a)):
@@ -232,8 +260,8 @@ func _botao_mais(a: String, treino: int, tem_palus: bool, e: Dictionary) -> Cont
 
 func _sb_botao(fundo: Color, borda: Color) -> StyleBoxFlat:
 	var sb := Tema.caixa(fundo, borda, 3, 1, 2)
-	sb.content_margin_left = 26
-	sb.content_margin_right = 8
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
 	return sb
 
 

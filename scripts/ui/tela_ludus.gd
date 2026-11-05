@@ -108,6 +108,10 @@ func _ao_redimensionar() -> void:
 	if w <= 0.0:
 		return
 	var cw: float = minf(w, 1180.0)
+	# em telas baixas (celular na horizontal) a cena cabe inteira na área visível; os cartões ficam abaixo, na rolagem
+	var h_vis: float = size.y
+	if h_vis > 100.0 and h_vis < 600.0:
+		cw = minf(cw, maxf(h_vis - 8.0, 160.0) * 1024.0 / 572.0)
 	_caixa_cena.custom_minimum_size = Vector2(cw, maxf(120.0, cw * 572.0 / 1024.0))
 	_grade.columns = clampi(int(w / LARGURA_CARTA), 1, 3)
 
@@ -446,7 +450,8 @@ class Carta extends PanelContainer:
 			par.add_child(_opcoes(ids, nomes, sel_estilo, func(i): sel_estilo = i))
 			var b := Tema.botao("Definir estilo (grátis)", "primario", 17)
 			b.pressed.connect(func():
-				Jogo.resultado(Game.escolher_estilo(Jogo.e, id, Model.CLASSES_IDS[sel_estilo])))
+				var cls: String = Model.CLASSES_IDS[sel_estilo]
+				(func() -> void: Jogo.resultado(Game.escolher_estilo(Jogo.e, id, cls))).call_deferred())
 			par.add_child(b)
 		var h2 := _linha()
 		v.add_child(h2)
@@ -458,7 +463,9 @@ class Carta extends PanelContainer:
 			par_c.add_child(_opcoes(cl, nomes_cl, sel_classe, func(i): sel_classe = i))
 			var bc := Tema.botao("Trocar estilo", "normal", 17)
 			bc.tooltip_text = "%d de ouro e %d de energia." % [Game.preco_troca_estilo(e, g), 2 if g["origem"] == "livre" else 1]
-			bc.pressed.connect(func(): Jogo.resultado(Game.trocar_classe(Jogo.e, id, cl[mini(sel_classe, cl.size() - 1)])))
+			bc.pressed.connect(func():
+				var cls: String = cl[mini(sel_classe, cl.size() - 1)]
+				(func() -> void: Jogo.resultado(Game.trocar_classe(Jogo.e, id, cls))).call_deferred())
 			par_c.add_child(bc)
 		if g["efeitos"].size() > 0:
 			if Game.tem_melhoria(e, "enfermaria"):

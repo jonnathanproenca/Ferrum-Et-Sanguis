@@ -109,10 +109,21 @@ func _criar_item(i: int) -> void:
 	raiz.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	raiz.mouse_filter = Control.MOUSE_FILTER_STOP
 	raiz.gui_input.connect(func(ev: InputEvent):
-		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
-			_marcar(i))
-	raiz.mouse_entered.connect(func(): _hover(i, true))
-	raiz.mouse_exited.connect(func(): _hover(i, false))
+		if ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT:
+			if ev.pressed:
+				_arrastando = true
+				_limpar_hover()
+				_marcar(i)
+			else:
+				_arrastando = false
+				_limpar_hover()
+		elif ev is InputEventMouseMotion and _arrastando:
+			# toque/arrasto: o destaque acompanha o dedo; fica no último lutador sob ele
+			var j := _item_em(ev.global_position)
+			if j >= 0 and j != _sel:
+				_marcar(j, false))
+	raiz.mouse_entered.connect(func(): if not _arrastando: _hover(i, true))
+	raiz.mouse_exited.connect(func(): if not _arrastando: _hover(i, false))
 	_palco.add_child(raiz)
 	var brilho := TextureRect.new()
 	brilho.texture = _glow_tex
@@ -145,7 +156,7 @@ func _posicionar() -> void:
 		return
 	var ph: float = _palco.size.y
 	var pw: float = _palco.size.x
-	var alt: float = clampf(ph * 0.5, 120.0, 400.0)
+	var alt: float = clampf(ph * (0.46 if ph < 380.0 else 0.5), 120.0, 400.0)
 	var esc: float = alt / 290.0
 	var pe_y: float = ph - 38.0
 	var n := _itens.size()
@@ -212,13 +223,31 @@ func _aplicar_visual(animar: bool) -> void:
 			raiz.position.y = base_y + alvo_pos.y
 			raiz.scale = alvo_esc
 
+var _arrastando := false
+
+## Índice do lanista sob o ponto global (o de maior z_index se houver sobreposição), ou -1.
+func _item_em(pos: Vector2) -> int:
+	var melhor := -1
+	var melhor_z := -9999
+	for i in range(_itens.size()):
+		var raiz: Control = _itens[i]["raiz"]
+		var loc := raiz.get_global_transform().affine_inverse() * pos
+		if Rect2(Vector2.ZERO, raiz.size).has_point(loc) and raiz.z_index > melhor_z:
+			melhor = i
+			melhor_z = raiz.z_index
+	return melhor
+
+func _limpar_hover() -> void:
+	for it in _itens:
+		it["hover"] = false
+
 func _hover(i: int, entrou: bool) -> void:
 	_itens[i]["hover"] = entrou
 	_aplicar_visual(true)
 
-func _marcar(i: int) -> void:
+func _marcar(i: int, contar := true) -> void:
 	# cheat: 25 toques seguidos no último lanista (como no original)
-	_toques = _toques + 1 if i == _lanistas.size() - 1 else 0
+	_toques = _toques + 1 if contar and i == _lanistas.size() - 1 else (_toques if not contar else 0)
 	if _toques >= TOQUES_CHEAT:
 		_toques = 0
 		TelaMenu.liberar_cheat(self)
@@ -261,21 +290,23 @@ func _atualizar_info() -> void:
 		_info_v.add_child(t)
 		return
 	var l: Dictionary = _lanistas[_sel]
-	var nome := Tema.rotulo(str(l["nome"]), 34, Color("f2e6c8"), true)
+	var curto := is_inside_tree() and get_viewport_rect().size.y < 600.0  # celular na horizontal: texto compacto
+	var nome := Tema.rotulo(str(l["nome"]), 26 if curto else 34, Color("f2e6c8"), true)
 	nome.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	nome.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_info_v.add_child(nome)
-	var tit := Tema.rotulo(str(l.get("titulo", "")), 20, Tema.OURO)
+	var tit := Tema.rotulo(str(l.get("titulo", "")), 16 if curto else 20, Tema.OURO)
 	tit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_info_v.add_child(tit)
-	var h := Tema.rotulo(str(l.get("historia", "")), 18, Tema.AREIA)
-	h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_info_v.add_child(h)
-	var esp := Tema.rotulo(str(l.get("especializacao", "")), 18, Tema.OURO_ESCURO)
+	if not curto:
+		var h := Tema.rotulo(str(l.get("historia", "")), 18, Tema.AREIA)
+		h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_info_v.add_child(h)
+	var esp := Tema.rotulo(str(l.get("especializacao", "")), 15 if curto else 18, Tema.OURO_ESCURO)
 	esp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_info_v.add_child(esp)
 	var b: Dictionary = l.get("bonus", {})
-	var bl := Tema.rotulo("%s: %s" % [b.get("nome", ""), b.get("descricao", "")], 19, Color("ffe9a8"))
+	var bl := Tema.rotulo("%s: %s" % [b.get("nome", ""), b.get("descricao", "")], 16 if curto else 19, Color("ffe9a8"))
 	bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_info_v.add_child(bl)
 

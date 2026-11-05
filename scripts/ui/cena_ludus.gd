@@ -236,7 +236,7 @@ func _ass() -> String:
 	for m in Game.MELHORIAS_LUDUS:
 		s += "1" if _tem(m["id"]) else "0"
 	for g in vivos:
-		s += "|" + str(g["id"])
+		s += "|" + str(g["id"]) + ":" + str(g.get("classe", "")) + ":" + str(g.get("semEstilo", false)) + ":" + str(g.get("look", ""))
 	return s
 
 func _feridos() -> int:

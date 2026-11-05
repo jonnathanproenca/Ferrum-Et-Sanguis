@@ -20,6 +20,16 @@ var _tempo_acc := 0.0
 
 func _ready() -> void:
 	_ler_prefs()
+	aplicar_escala()
+
+## Fator de zoom da interface. 0 = automático (celular/tablet ganha 1.4x, já que a janela física é grande, mas o dedo e o texto pedem mais).
+func aplicar_escala() -> void:
+	var f := float(prefs.get("escalaUi", 0.0))
+	if f <= 0.0:
+		f = 1.4 if DisplayServer.is_touchscreen_available() else 1.0
+	var w := get_window()
+	if w:
+		w.content_scale_factor = f
 
 func _process(delta: float) -> void:
 	if e.is_empty():
