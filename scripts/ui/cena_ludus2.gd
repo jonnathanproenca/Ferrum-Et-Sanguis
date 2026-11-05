@@ -27,6 +27,7 @@ class Grade extends Control:
 
 ## Doctore: corpo em 3 poses (guarda, preparar, golpe) + chicote em 4 quadros presos à mão por ponto e ângulo de cada pose.
 class Doctore extends Node2D:
+	const USAR_ROLO_SPRITE := false  ## chicote enrolado na mão desligado: o chicote só aparece ao chicotar
 	const USAR_ROLO := false  ## rolo desenhado em código desligado até existir o sprite do chicote enrolado
 	const DIR := "assets/ludus/doctore/"
 	var frente := 1.0
@@ -101,7 +102,7 @@ class Doctore extends Node2D:
 		_chicote.rotation = deg_to_rad(float(m["angulo"]))
 		_rolo.position = Vector2(m["mao"][0], m["mao"][1]) - anc
 		_rolo.rotation = 0.0
-		_rolo.visible = (pose == "guarda" and not ocupado) or (pose == "guarda" and _recolhendo and _coil > 0.5)
+		_rolo.visible = USAR_ROLO_SPRITE and ((pose == "guarda" and not ocupado) or (pose == "guarda" and _recolhendo and _coil > 0.5))
 
 	func chicotear() -> void:
 		ocupado = true
@@ -245,7 +246,9 @@ func _animar(delta: float) -> void:
 		var u := _tri(_ponto_doctore / 18.0)
 		var x := lerpf(250.0, 600.0, _suave(u))
 		var vai := fposmod(_ponto_doctore, 36.0) < 18.0
-		_doctore.position = Vector2(x, 458.0 + (0.0 if _doctore.ocupado else _suave(_tri(_t / 0.55)) * -1.5))
+		var passo := absf(sin(_t * 7.0))
+		_doctore.position = Vector2(x, 458.0 - (0.0 if _doctore.ocupado else passo * 3.5))
+		_doctore.rotation = 0.0 if _doctore.ocupado else sin(_t * 7.0) * 0.035
 		_doctore.scale.x = 0.6 * (1.0 if vai else -1.0)
 	if not _treinadores.is_empty() and is_visible_in_tree():
 		_prox_golpe -= delta
