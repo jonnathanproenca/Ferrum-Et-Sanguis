@@ -192,8 +192,16 @@ func _chicote(delta: float, rijo: float) -> void:
 		var dA := wrapf(mundo - float(_entrada[i]), -PI, PI)
 		_entrada[i] = mundo
 		var alvo: float = REPOUSO[i] * (1.0 - rijo)
-		_rel[i] = float(_rel[i]) - dA * 0.75
-		_vel[i] = float(_vel[i]) + (-90.0 * (float(_rel[i]) - alvo) - 9.0 * float(_vel[i])) * delta
-		_rel[i] = clampf(float(_rel[i]) + float(_vel[i]) * delta, -1.5, 1.5)
+		var lim := 1.5
+		if i == 0:
+			# no golpe, o chicote aponta para a frente (no espaço do doctore)
+			var frente := wrapf(-0.12 - mundo, -PI, PI)
+			alvo = lerpf(REPOUSO[0], frente, rijo)
+			lim = 3.1
+		_rel[i] = float(_rel[i]) - dA * 0.75 * (1.0 - rijo)
+		var k := lerpf(90.0, 420.0, rijo)
+		var c := lerpf(9.0, 30.0, rijo)
+		_vel[i] = float(_vel[i]) + (-k * (float(_rel[i]) - alvo) - c * float(_vel[i])) * delta
+		_rel[i] = clampf(float(_rel[i]) + float(_vel[i]) * delta, -lim, lim)
 		(_o[CADEIA[i]] as Node2D).rotation = _rel[i]
 		mundo += float(_rel[i])

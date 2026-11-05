@@ -17,7 +17,7 @@ func preparar(arvore: SceneTree) -> void:
 	var n := 0
 	for i in range(420):
 		await arvore.process_frame
-		if i % 6 == 0 and saida != "":
+		if i % 3 == 0 and saida != "":
 			var img := arvore.root.get_texture().get_image()
 			img.save_png("%s_%02d.png" % [saida, n])
 			n += 1
