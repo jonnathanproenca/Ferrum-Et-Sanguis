@@ -123,6 +123,17 @@ func ao_mostrar() -> void:
 		_doctore_ossos = bool(Jogo.prefs.get("doctoreOssos", false))
 		_criar_cena()
 	call_deferred("_ao_redimensionar")
+	call_deferred("_mostrar_oferta_nova")
+
+
+## Depois da luta: abre a oferta de patrocínio que ainda não foi vista.
+func _mostrar_oferta_nova() -> void:
+	if not is_inside_tree() or Jogo.e.is_empty():
+		return
+	for o in Patrocinio.ofertas(Jogo.e):
+		if not bool(o.get("vista", true)):
+			ModalPatrocinio.abrir(self, str(o["id"]))
+			return
 
 
 func atualizar() -> void:
@@ -141,6 +152,14 @@ func atualizar() -> void:
 	for r in [["palus", "Treino: construa os palus."], ["enfermaria", "Ferido: construa a enfermaria."], ["armaria", "Equipamento: construa a armaria."]]:
 		if not Game.tem_melhoria(e, r[0]):
 			_regras.add_child(_chip(r[1], Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
+
+	var n_of := Patrocinio.ofertas(e).size()
+	var n_ct := Patrocinio.contratos(e).size()
+	if n_of > 0 or n_ct > 0:
+		var bp := Tema.botao("Patrocínios (%d)" % (n_of + n_ct), "ouro", 15)
+		bp.custom_minimum_size = Vector2(0, 30)
+		bp.pressed.connect(func(): ModalPatrocinio.abrir(self))
+		_regras.add_child(bp)
 
 	# Cartões: campeões primeiro (ordem estável)
 	var ordenados: Array = e["gladiadores"].filter(func(g): return g["campeao"])

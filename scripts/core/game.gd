@@ -278,7 +278,7 @@ static func novo_jogo(semente: int, casa_id: String = "", dificuldade: String = 
 	var e := {
 		"versao": 5, "semente": semente if semente != 0 else 1, "casaId": "", "ouro": OURO_INICIAL, "energia": ENERGIA_TURNO,
 		"turno": 1, "proximoId": 1, "vitoriasTotais": 0, "fama": 0, "famaMax": 0, "campanha": 0, "libertados": [], "config": {"dificuldade": "medio"},
-		"gladiadores": [], "mercado": [], "inventario": [], "campeoesRivais": {}, "melhorias": {}, "log": [],
+		"gladiadores": [], "mercado": [], "inventario": [], "ofertas": [], "contratos": [], "campeoesRivais": {}, "melhorias": {}, "log": [],
 	}
 	if dificuldade != "":
 		e["config"] = {"dificuldade": dificuldade}
@@ -397,6 +397,10 @@ static func avancar_turno(e: Dictionary) -> String:
 		patrocinio = jsround(float(mini(PATROCINIO_MAX, PATROCINIO_BASE + PATROCINIO_POR_VITORIA * int(campeao["vitorias"]))) * (float(bp["valor"]) if not bp.is_empty() else 1.0))
 		e["ouro"] = int(e["ouro"]) + patrocinio
 		estatisticas(e)["ouroGanho"] += patrocinio
+	var contratos_pago := Patrocinio.fechar_rodada(e)
+	if contratos_pago > 0:
+		e["ouro"] = int(e["ouro"]) + contratos_pago
+		estatisticas(e)["ouroGanho"] += contratos_pago
 	var vivos := 0
 	for g in e["gladiadores"]:
 		if g["vivo"]:
@@ -410,6 +414,8 @@ static func avancar_turno(e: Dictionary) -> String:
 	e["ouro"] = int(e["ouro"]) - pago
 	var saldo: int = int(e["ouro"]) - ouro_antes
 	var p1: String = "patrocínio do campeão %s +%d" % [campeao["nome"], patrocinio] if patrocinio > 0 else "sem patrocínio"
+	if contratos_pago > 0:
+		p1 += ", patronos +%d" % contratos_pago
 	registrar(e, "Turno %d: %s, manutenção −%d (saldo %s%d de ouro)." % [int(e["turno"]), p1, custo, "+" if saldo >= 0 else "", saldo])
 	gerar_mercado(e)
 	gerar_armeiro_mestre(e)
@@ -717,6 +723,20 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 		bonus_pct = LOTACOES_POCO[lot]["bonus"]
 		if vitoria:
 			moedas = rng.inteiro(LOTACOES_POCO[lot]["moedas"][0], LOTACOES_POCO[lot]["moedas"][1])
+	var ofertas_novas: Array = []
+	if vitoria and not d["poco"] and not d.get("campanha", false):
+		var idx_star := -1
+		for i in range(d["ladoA"].size()):
+			var gv: Dictionary = d["ladoA"][i]
+			if not gv["vivo"]:
+				continue
+			Patrocinio.registrar_vitoria(e, gv["id"])
+			if idx_star < 0 or int(gv.get("gloria", 0)) > int(d["ladoA"][idx_star].get("gloria", 0)):
+				idx_star = i
+		if idx_star >= 0:
+			var of := Patrocinio.tentar_oferta(e, d["ladoA"][idx_star], int(fa[idx_star]["stats"]["aura"]), rng)
+			if not of.is_empty():
+				ofertas_novas.append(of)
 	var aura_bonus := 0
 	if vitoria and d["poco"] and not d.get("campanha", false):
 		var aura_max := 0
@@ -779,7 +799,7 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 		"titulo": d["titulo"], "arenaNome": d["arena"]["nome"], "arte": d["arena"]["arte"], "plateia": plateia,
 		"lutadoresA": va, "lutadoresB": vb, "eventos": r["eventos"], "vitoriaA": vitoria, "efeitosNovos": efeitos_novos,
 		"resumo": resumo, "trilha": d["trilha"], "marcos": marcos, "ouro": ouro,
-		"bonusPct": bonus_pct if vitoria else 0, "moedas": moedas, "auraBonus": aura_bonus, "fama": fama_delta, "gloria": gloria_delta,
+		"bonusPct": bonus_pct if vitoria else 0, "moedas": moedas, "auraBonus": aura_bonus, "ofertas": ofertas_novas, "fama": fama_delta, "gloria": gloria_delta,
 	}
 
 static func qualidade_rival(nivel: int, arena: Dictionary = {}) -> int:
@@ -1034,6 +1054,7 @@ static func aplicar_liberdade(e: Dictionary, g: Dictionary) -> Array:
 	return [msg]
 
 static func _remover_gladiador(e: Dictionary, g: Dictionary) -> void:
+	Patrocinio.remover_gladiador(e, g["id"])
 	e["gladiadores"] = e["gladiadores"].filter(func(x): return x["id"] != g["id"])
 	for slot in Model.SLOTS:
 		var id = g["equipamento"][slot]
@@ -1073,3 +1094,12 @@ static func dispensar_gladiador(e: Dictionary, id: String) -> String:
 	_remover_gladiador(e, g)
 	registrar(e, "%s foi dispensado." % g["nome"])
 	return ""
+
+
+# ---------- Patrocínio ----------
+
+static func aceitar_patrocinio(e: Dictionary, oferta_id: String) -> String:
+	return Patrocinio.aceitar(e, oferta_id)
+
+static func recusar_patrocinio(e: Dictionary, oferta_id: String) -> String:
+	return Patrocinio.recusar(e, oferta_id)

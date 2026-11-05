@@ -11,6 +11,7 @@ func _init() -> void:
 	teste_atributos()
 	teste_regras()
 	teste_fluxo()
+	teste_patrocinio()
 	print("TESTES: ", total, " FALHAS: ", falhas)
 	quit(1 if falhas > 0 else 0)
 
@@ -229,3 +230,68 @@ func teste_fluxo() -> void:
 				if e["gladiadores"].is_empty():
 					break
 			ok(true, "fluxo %s %d" % [dif, casa])
+
+func teste_patrocinio() -> void:
+	var e := novo()
+	var g: Dictionary = e["gladiadores"][0]
+	var rng := Rng.new(99)
+	# sem lanistas derrotados na campanha, ninguém oferece
+	e["campanha"] = 0
+	ok(Patrocinio.tentar_oferta(e, g, 200, rng).is_empty(), "sem campanha, sem oferta")
+	e["campanha"] = Patrocinio.CAMPANHA_MIN
+	# chance cresce com a Aura e tem teto
+	ok(Patrocinio.chance(0) < Patrocinio.chance(40), "chance sobe com Aura")
+	ok(Patrocinio.chance(9999) <= Patrocinio.CHANCE_MAX, "chance tem teto")
+	# oferta (força o sorteio com Aura enorme até aparecer)
+	var of := {}
+	for i in range(200):
+		of = Patrocinio.tentar_oferta(e, g, 200, rng)
+		if not of.is_empty():
+			break
+	ok(not of.is_empty(), "uma oferta aparece")
+	ok(Patrocinio.tentar_oferta(e, g, 200, rng).is_empty(), "sem segunda oferta para o mesmo gladiador")
+	# tipo respeita a fama (fama 0: só Eques)
+	ok(["eques", "edil", "legado"].has(of["tipo"]), "com 2 lanistas só Eques, Edil ou Legado")
+	ok(Game.aceitar_patrocinio(e, of["id"]) == "", "aceitar oferta")
+	ok(not Patrocinio.contrato_do(e, g["id"]).is_empty(), "contrato criado")
+	ok(Patrocinio.ofertas(e).is_empty(), "oferta consumida")
+	# rodada: paga e, sem vitórias dentro do prazo, rompe sem multa
+	var ouro0: int = int(e["ouro"])
+	e["energia"] = 0
+	var c := Patrocinio.contrato_do(e, g["id"])
+	var prazo: int = int(c["prazo"])
+	for i in range(prazo):
+		e["energia"] = 0
+		Game.avancar_turno(e)
+	ok(Patrocinio.contrato_do(e, g["id"]).is_empty(), "meta não cumprida: contrato rompido")
+	ok(int(e["ouro"]) != ouro0, "ouro mudou nas rodadas")
+	# meta cumprida renova
+	var e2 := novo()
+	e2["campanha"] = 2
+	var g2: Dictionary = e2["gladiadores"][0]
+	var of2 := {}
+	for i in range(200):
+		of2 = Patrocinio.tentar_oferta(e2, g2, 200, rng)
+		if not of2.is_empty():
+			break
+	Game.aceitar_patrocinio(e2, of2["id"])
+	var c2 := Patrocinio.contrato_do(e2, g2["id"])
+	for i in range(int(c2["meta"])):
+		Patrocinio.registrar_vitoria(e2, g2["id"])
+	for i in range(int(c2["prazo"])):
+		e2["energia"] = 0
+		Game.avancar_turno(e2)
+	ok(not Patrocinio.contrato_do(e2, g2["id"]).is_empty(), "meta cumprida: contrato renovado")
+	# gladiador removido leva o contrato
+	Game.dispensar_gladiador(e2, g2["id"]) if not g2["campeao"] else null
+	# oferta expira
+	var e3 := novo()
+	e3["campanha"] = 2
+	var g3: Dictionary = e3["gladiadores"][0]
+	for i in range(200):
+		if not Patrocinio.tentar_oferta(e3, g3, 200, rng).is_empty():
+			break
+	for i in range(Patrocinio.VALIDADE_OFERTA):
+		e3["energia"] = 0
+		Game.avancar_turno(e3)
+	ok(Patrocinio.ofertas(e3).is_empty(), "oferta vence com as rodadas")

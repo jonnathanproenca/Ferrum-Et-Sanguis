@@ -1,7 +1,7 @@
 class_name Glifo
 extends Control
 ## Ícones desenhados em código (a fonte não tem estes símbolos): "ok", "falha", "caveira", "espadas", "mais", "seta_esq", "coroa" e um por atributo
-## ("forca" espada, "destreza" alvo, "vitalidade" coração, "resistencia" raio, "inteligencia" olho, "aura" estrela).
+## "peso" e "coroa_fama"; ("forca" espada, "destreza" alvo, "vitalidade" coração, "resistencia" raio, "inteligencia" olho, "aura" estrela).
 
 var tipo := "ok"
 var cor := Color("7fbf5a")
@@ -122,6 +122,31 @@ func _draw() -> void:
 				var r := s * (0.46 if k % 2 == 0 else 0.2)
 				est.append(o + Vector2(s * 0.5, s * 0.54) + Vector2(cos(a), sin(a)) * r)
 			_poli(est, cor, sombra)
+		"peso":
+			# pesa: trapézio com alça em anel
+			var al := PackedVector2Array()
+			for k in range(13):
+				var a := PI + PI * float(k) / 12.0
+				al.append(o + Vector2(s * 0.5, s * 0.3) + Vector2(cos(a), sin(a)) * s * 0.17)
+			draw_polyline(al, sombra, lw * 0.7 + 2.0, true)
+			draw_polyline(al, cor, lw * 0.7, true)
+			_poli([o + Vector2(s * 0.32, s * 0.3), o + Vector2(s * 0.68, s * 0.3), o + Vector2(s * 0.92, s * 0.9), o + Vector2(s * 0.08, s * 0.9)], cor, sombra)
+		"coroa_fama":
+			# coroa de louros: dois ramos de folhas em arco e uma estrela no topo
+			for lado in [-1.0, 1.0]:
+				for k in range(5):
+					var t := float(k) / 4.0
+					var pos := o + Vector2(s * (0.5 + lado * (0.34 - 0.16 * t)), s * (0.82 - 0.5 * t))
+					var fo := PackedVector2Array([pos + Vector2(0, -s * 0.12), pos + Vector2(lado * s * 0.12, 0), pos + Vector2(0, s * 0.12), pos + Vector2(-lado * s * 0.04, 0)])
+					draw_colored_polygon(fo, cor)
+					if s > 40.0:
+						draw_polyline(PackedVector2Array([fo[0], fo[1], fo[2], fo[3], fo[0]]), sombra, 1.0, true)
+			var est2: Array = []
+			for k in range(10):
+				var a2 := -PI / 2.0 + PI * float(k) / 5.0
+				var r2 := s * (0.2 if k % 2 == 0 else 0.09)
+				est2.append(o + Vector2(s * 0.5, s * 0.3) + Vector2(cos(a2), sin(a2)) * r2)
+			_poli(est2, cor, sombra)
 		"cadeado":
 			var ar := PackedVector2Array()
 			for k in range(13):
