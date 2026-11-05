@@ -25,48 +25,27 @@ class Grade extends Control:
 		draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w * 0.16, 0), Vector2(w * 0.16, h), Vector2(0, h)]), PackedColorArray([esc, branco, branco, esc]))
 		draw_polygon(PackedVector2Array([Vector2(w * 0.84, 0), Vector2(w, 0), Vector2(w, h), Vector2(w * 0.84, h)]), PackedColorArray([branco, esc, esc, branco]))
 
-## Doctore: corpo em 3 poses (guarda, preparar, golpe) + chicote em 4 quadros presos à mão por ponto e ângulo de cada pose.
+## Doctore: animação em quadros (caminhada em loop + chicotada), recortada de vídeo, com a âncora nos pés de cada quadro.
 class Doctore extends Node2D:
-	const USAR_ROLO_SPRITE := false  ## chicote enrolado na mão desligado: o chicote só aparece ao chicotar
-	const USAR_ROLO := false  ## rolo desenhado em código desligado até existir o sprite do chicote enrolado
 	const DIR := "assets/ludus/doctore/"
 	var frente := 1.0
-	var ocupado := false
+	var ocupado := false  ## true enquanto toca a chicotada
 	var _meta: Dictionary
-	var _corpo := Sprite2D.new()
-	var _chicote := Sprite2D.new()
-	var _rolo := Sprite2D.new()  ## chicote recolhido, pendurado na mão
+	var _spr := Sprite2D.new()
 	var _tex := {}
-	var _seq: Array = []
-	var _seq_t := 0.0
-	var _t := 0.0
+	var _clip := "andar"
+	var _t_clip := 0.0
 	var _proximo := 3.0
-	var _pose := "guarda"
-	var _quadro := 1
-	var _passo_t := 0.0
-	const CICLO := ["anda_2", "anda_3", "anda_6", "anda_5"]
-	var _recolhendo := false
-	var _rec_t := 0.0
-	var _coil := 1.0   ## 0..1: quanto do chicote já está enrolado na mão
 
 	func _init() -> void:
 		_meta = Util.ler_json("res://" + DIR + "doctore.json")
-		for n in CICLO:
-			_tex[n] = Tema.textura(DIR + n + ".png")
-		for n in ["corpo_guarda", "corpo_prepara", "corpo_golpe", "chicote_1", "chicote_2", "chicote_3", "chicote_4"]:
-			_tex[n] = Tema.textura(DIR + n + ".png")
-		_corpo.centered = false
-		_chicote.centered = false
-		_rolo.texture = Tema.textura(DIR + "rolo.png")
-		_rolo.centered = false
-		var rp: Array = _meta["rolo"]["pivo"]
-		_rolo.offset = -Vector2(rp[0], rp[1])
-		add_child(_corpo)
-		add_child(_chicote)
-		add_child(_rolo)
+		for nome in ["andar", "chicote"]:
+			for q: Dictionary in _meta[nome]:
+				_tex[q["f"]] = Tema.textura(DIR + str(q["f"]))
+		_spr.centered = false
+		add_child(_spr)
 		scale = Vector2(0.6, 0.6)
-		_aplicar("guarda", 1)
-		_chicote.visible = false
+		_mostrar(0)
 
 	func _draw() -> void:
 		var pts := PackedVector2Array()
@@ -74,99 +53,39 @@ class Doctore extends Node2D:
 			var a := TAU * i / 24.0
 			pts.append(Vector2(cos(a) * 62.0, sin(a) * 9.0))
 		draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
-		if USAR_ROLO and _pose == "guarda" and _coil > 0.01:
-			_desenhar_rolo()
 
-	## Chicote enrolado na mão (desenhado em código): cabo curto e três voltas de couro.
-	func _desenhar_rolo() -> void:
-		var m: Dictionary = _meta["corpo_guarda"]
-		var mao := Vector2(m["mao"][0], m["mao"][1]) - Vector2(m["ancora"][0], m["ancora"][1])
-		var k := _coil
-		draw_line(mao + Vector2(-6, 2), mao + Vector2(14 * k, -2 * k), Color(0.08, 0.05, 0.03), 6.0, true)
-		draw_line(mao + Vector2(-6, 2), mao + Vector2(14 * k, -2 * k), Color(0.50, 0.33, 0.16), 3.5, true)
-		var c := mao + Vector2(4, 11)
-		for i in range(3):
-			var r := (9.0 - i * 2.2) * k
-			draw_set_transform(c + Vector2(0, i * 1.5), 0.0, Vector2(1.0, 0.78))
-			draw_arc(Vector2.ZERO, r, 0.0, TAU, 20, Color(0.08, 0.05, 0.03), 5.0, true)
-			draw_arc(Vector2.ZERO, r, 0.0, TAU, 20, Color(0.42 + i * 0.05, 0.27 + i * 0.03, 0.13), 2.6, true)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-	func _aplicar(pose: String, quadro: int) -> void:
-		_pose = pose
-		_quadro = quadro
-		var m: Dictionary = _meta["corpo_" + pose]
-		var anc := Vector2(m["ancora"][0], m["ancora"][1])
-		_corpo.texture = _tex["corpo_" + pose]
-		_corpo.position = -anc
-		var c: Dictionary = _meta["chicote_%d" % quadro]
-		_chicote.texture = _tex["chicote_%d" % quadro]
-		_chicote.offset = -Vector2(c["pivo"][0], c["pivo"][1])
-		_chicote.position = Vector2(m["mao"][0], m["mao"][1]) - anc
-		_chicote.rotation = deg_to_rad(float(m["angulo"]))
-		_rolo.position = Vector2(m["mao"][0], m["mao"][1]) - anc
-		_rolo.rotation = 0.0
-		_rolo.visible = USAR_ROLO_SPRITE and ((pose == "guarda" and not ocupado) or (pose == "guarda" and _recolhendo and _coil > 0.5))
+	func _mostrar(i: int) -> void:
+		var q: Dictionary = (_meta[_clip] as Array)[i]
+		_spr.texture = _tex[q["f"]]
+		_spr.position = -Vector2(q["ancora"][0], q["ancora"][1])
 
 	func chicotear() -> void:
 		ocupado = true
-		_recolhendo = false
-		_chicote.visible = true
-		_chicote.scale = Vector2.ONE
-		_coil = 0.0
-		queue_redraw()
-		_seq = [[0.30, "prepara", 2], [0.10, "golpe", 3], [0.16, "golpe", 4], [0.20, "golpe", 3]]
-		_seq_t = 0.0
-		_rolo.modulate.a = 1.0
-		_aplicar("prepara", 2)
+		_clip = "chicote"
+		_t_clip = 0.0
 
 	func _process(delta: float) -> void:
-		_t += delta
-		if ocupado:
-			_seq_t += delta
-			var acum := 0.0
-			var fim := true
-			for passo in _seq:
-				acum += float(passo[0])
-				if _seq_t < acum:
-					if _pose != passo[1] or _quadro != passo[2]:
-						_aplicar(passo[1], passo[2])
-					fim = false
-					break
-			if fim:
-				if not _recolhendo:
-					_recolhendo = true
-					_rec_t = 0.0
-					_aplicar("guarda", 1)
-				_rec_t += delta
-				var q := clampf(_rec_t / 0.45, 0.0, 1.0)
-				_chicote.scale = Vector2.ONE * (1.0 - q)
-				_chicote.modulate.a = 1.0 - q * 0.6
-				_coil = q
-				queue_redraw()
-				if q >= 1.0:
-					ocupado = false
-					_recolhendo = false
-					_chicote.visible = false
-					_chicote.modulate.a = 1.0
-					_proximo = randf_range(3.0, 7.0)
+		_t_clip += delta
+		var n: int = (_meta[_clip] as Array).size()
+		var fps: float = float(_meta["fps"])
+		var q := int(_t_clip * fps)
+		if _clip == "chicote":
+			if q >= n:
+				ocupado = false
+				_clip = "andar"
+				_t_clip = float(_meta["volta"]) / fps
+				_proximo = randf_range(3.0, 7.0)
+				q = int(_t_clip * fps)
+				n = (_meta[_clip] as Array).size()
+				_mostrar(q % n)
+				return
+			_mostrar(q)
 			return
 		_proximo -= delta
 		if _proximo <= 0.0:
 			chicotear()
 			return
-		_passo_t += delta
-		_andar(int(_passo_t / 0.16) % CICLO.size())
-
-	## Quadro do ciclo de caminhada (corpo; o chicote fica escondido enquanto anda).
-	func _andar(i: int) -> void:
-		var n: String = CICLO[i]
-		var m: Dictionary = _meta[n]
-		_corpo.texture = _tex[n]
-		_corpo.position = -Vector2(m["ancora"][0], m["ancora"][1])
-		_pose = "anda"
-		_chicote.visible = false
-		_rolo.visible = false
+		_mostrar(q % n)
 
 
 var _palco2: Node2D
@@ -257,11 +176,10 @@ func _reposicionar() -> void:
 func _animar(delta: float) -> void:
 	super._animar(delta)
 	if _doctore and is_instance_valid(_doctore):
-		if not _doctore.ocupado:
-			_ponto_doctore += delta
-		var u := _tri(_ponto_doctore / 18.0)
-		var x := lerpf(250.0, 600.0, _suave(u))
-		var vai := fposmod(_ponto_doctore, 36.0) < 18.0
+		_ponto_doctore += delta
+		var u := _tri(_ponto_doctore / 8.0)
+		var x := lerpf(250.0, 600.0, u)
+		var vai := fposmod(_ponto_doctore, 16.0) < 8.0
 		_doctore.position = Vector2(x, 458.0)
 		_doctore.scale.x = 0.6 * (1.0 if vai else -1.0)
 	if not _treinadores.is_empty() and is_visible_in_tree():
