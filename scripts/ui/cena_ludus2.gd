@@ -43,12 +43,16 @@ class Doctore extends Node2D:
 	var _proximo := 3.0
 	var _pose := "guarda"
 	var _quadro := 1
+	var _passo_t := 0.0
+	const CICLO := ["anda_2", "anda_3", "anda_6", "anda_5"]
 	var _recolhendo := false
 	var _rec_t := 0.0
 	var _coil := 1.0   ## 0..1: quanto do chicote já está enrolado na mão
 
 	func _init() -> void:
 		_meta = Util.ler_json("res://" + DIR + "doctore.json")
+		for n in CICLO:
+			_tex[n] = Tema.textura(DIR + n + ".png")
 		for n in ["corpo_guarda", "corpo_prepara", "corpo_golpe", "chicote_1", "chicote_2", "chicote_3", "chicote_4"]:
 			_tex[n] = Tema.textura(DIR + n + ".png")
 		_corpo.centered = false
@@ -151,6 +155,18 @@ class Doctore extends Node2D:
 		if _proximo <= 0.0:
 			chicotear()
 			return
+		_passo_t += delta
+		_andar(int(_passo_t / 0.16) % CICLO.size())
+
+	## Quadro do ciclo de caminhada (corpo; o chicote fica escondido enquanto anda).
+	func _andar(i: int) -> void:
+		var n: String = CICLO[i]
+		var m: Dictionary = _meta[n]
+		_corpo.texture = _tex[n]
+		_corpo.position = -Vector2(m["ancora"][0], m["ancora"][1])
+		_pose = "anda"
+		_chicote.visible = false
+		_rolo.visible = false
 
 
 var _palco2: Node2D
@@ -246,9 +262,7 @@ func _animar(delta: float) -> void:
 		var u := _tri(_ponto_doctore / 18.0)
 		var x := lerpf(250.0, 600.0, _suave(u))
 		var vai := fposmod(_ponto_doctore, 36.0) < 18.0
-		var passo := absf(sin(_t * 7.0))
-		_doctore.position = Vector2(x, 458.0 - (0.0 if _doctore.ocupado else passo * 3.5))
-		_doctore.rotation = 0.0 if _doctore.ocupado else sin(_t * 7.0) * 0.035
+		_doctore.position = Vector2(x, 458.0)
 		_doctore.scale.x = 0.6 * (1.0 if vai else -1.0)
 	if not _treinadores.is_empty() and is_visible_in_tree():
 		_prox_golpe -= delta
