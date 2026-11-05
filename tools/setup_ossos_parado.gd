@@ -12,5 +12,5 @@ func preparar(arvore: SceneTree) -> void:
 	d._proximo = 999.0
 	arvore.root.add_child(d)
 	d._t = float(OS.get_environment("FASE")) if OS.get_environment("FASE") != "" else 0.0
-	for i in 5:
+	for i in 120:
 		await arvore.process_frame

@@ -24,7 +24,7 @@ const OSSOS := [
 	["pe_t", "canela_t", Vector2(-5, 207), Vector2(47, 81), 0.0, 0, Vector2(1.1, 1.1)],
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
-const REPOUSO := [0.0, 0.05, 0.3, 0.4, 0.4, 0.3, 0.15]
+const REPOUSO := [0.0, -0.5, -0.65, -0.75, -0.75, -0.55, -0.3]
 const PES := 476.0
 const LF := 0.34  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
 
@@ -65,7 +65,7 @@ func _init() -> void:
 	var cabo := _peca("w_cabo", Vector2(0, 4.4))
 	(_o["braco_f_ant"] as Node2D).add_child(cabo)
 	cabo.position = Vector2(162, 174) * ESC
-	cabo.rotation = 1.92
+	cabo.rotation = -1.22
 	_o["w_cabo"] = cabo
 	var pai: Node2D = cabo
 	var comp_pai: float = 19.35
@@ -125,24 +125,34 @@ func _process(delta: float) -> void:
 	if _acao >= 0.0:
 		_acao += delta
 		var u := _acao
-		if u < 0.45:
-			var k := _suave(u / 0.45)
-			braco = lerpf(0.0, 2.3, k)
-			ante = lerpf(0.0, 1.0, k)
-			tronco = lerpf(0.0, -0.12, k)
-		elif u < 0.65:
-			var k := (u - 0.45) / 0.2
+		if u < 0.55:
+			# levanta o braço acima da cabeça (pela frente)
+			var k := _suave(u / 0.55)
+			braco = lerpf(0.0, -3.0, k)
+			ante = lerpf(0.0, 0.5, k)
+			tronco = lerpf(0.0, -0.08, k)
+		elif u < 0.72:
+			# chicoteia para a frente
+			var k := (u - 0.55) / 0.17
 			var e := 1.0 - (1.0 - k) * (1.0 - k)
-			braco = lerpf(2.3, -0.9, e)
-			ante = lerpf(1.0, -0.3, e)
-			tronco = lerpf(-0.12, 0.15, e)
+			braco = lerpf(-3.0, -1.75, e)
+			ante = lerpf(0.5, -0.4, e)
+			tronco = lerpf(-0.08, 0.12, e)
 			rijo = e
-		elif u < 1.25:
-			var k := _suave((u - 0.65) / 0.6)
-			braco = lerpf(-0.9, 0.0, k)
-			ante = lerpf(-0.3, 0.0, k)
-			tronco = lerpf(0.15, 0.0, k)
-			rijo = 1.0 - k
+		elif u < 0.92:
+			# recua a mão para estalar
+			var k := _suave((u - 0.72) / 0.2)
+			braco = lerpf(-1.75, -1.35, k)
+			ante = lerpf(-0.4, 0.2, k)
+			tronco = 0.12
+			rijo = 1.0 - k * 0.6
+		elif u < 1.6:
+			# abaixa para a posição natural
+			var k := _suave((u - 0.92) / 0.68)
+			braco = lerpf(-1.35, 0.0, k)
+			ante = lerpf(0.2, 0.0, k)
+			tronco = lerpf(0.12, 0.0, k)
+			rijo = 0.4 * (1.0 - k)
 		else:
 			_acao = -1.0
 			ocupado = false
