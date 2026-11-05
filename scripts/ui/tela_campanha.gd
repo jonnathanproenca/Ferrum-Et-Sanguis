@@ -139,11 +139,16 @@ func _trilha(indice: int, passos: Array) -> Control:
 			sb.shadow_color = Color(VERMELHO_VIVO, 0.7)
 			sb.shadow_size = 8
 		pc.add_theme_stylebox_override("panel", sb)
-		var l := Tema.rotulo("v" if feito else str(i + 1), 15, Color("1a0f08") if feito else (Color.WHITE if atual else Color("7a6650")))
-		l.autowrap_mode = TextServer.AUTOWRAP_OFF
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		pc.add_child(l)
+		if feito:
+			var gk := Glifo.novo("ok", 18, Color("1a0f08"))
+			gk.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			pc.add_child(gk)
+		else:
+			var l := Tema.rotulo(str(i + 1), 15, Color.WHITE if atual else Color("7a6650"))
+			l.autowrap_mode = TextServer.AUTOWRAP_OFF
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			pc.add_child(l)
 		h.add_child(pc)
 		if atual:
 			var tw := pc.create_tween().set_loops()
@@ -230,13 +235,12 @@ func _palco(d: Dictionary, final: bool, misterio: bool) -> Control:
 			tw.tween_property(tr, "position:y", -3.0, 1.1).set_trans(Tween.TRANS_SINE)
 			tw.tween_property(tr, "position:y", 2.0, 1.1).set_trans(Tween.TRANS_SINE)
 		if estado == "vencido":
-			var x := Tema.rotulo("X", 30, VERMELHO_VIVO)
-			x.autowrap_mode = TextServer.AUTOWRAP_OFF
-			x.add_theme_color_override("font_outline_color", Color.BLACK)
-			x.add_theme_constant_override("outline_size", 6)
+			var x := Glifo.novo("falha", 56, VERMELHO_VIVO)
 			x.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-			x.grow_horizontal = Control.GROW_DIRECTION_BOTH
-			x.grow_vertical = Control.GROW_DIRECTION_BOTH
+			x.offset_left = -28
+			x.offset_right = 28
+			x.offset_top = -28
+			x.offset_bottom = 28
 			fig.add_child(x)
 		if not final:
 			var num := PanelContainer.new()
@@ -371,15 +375,25 @@ func _duelo(d: Dictionary, final: bool, misterio: bool, formato: int) -> Control
 		rg.add_child(a)
 		rg.add_child(b)
 	v.add_child(rg)
-	var morte := Tema.rotulo("☠ Até a morte: nesta luta ninguém se rende.", 17, Color("ff8a72"))
-	morte.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var morte := Tema.hbox(6)
+	morte.add_child(Glifo.novo("caveira", 22, Color("ff8a72")))
+	var ml := Tema.rotulo("Até a morte: nesta luta ninguém se rende.", 17, Color("ff8a72"))
+	ml.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ml.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	morte.add_child(ml)
 	v.add_child(morte)
 
 	# requisitos
 	var rq := Tema.vbox(2)
 	for r in d["requisitos"]:
 		var ok: bool = r["ok"]
-		rq.add_child(Tema.rotulo("%s %s" % ["+" if ok else "-", r["texto"]], 18, Tema.VERDE if ok else Color("d98a6a")))
+		var linha := Tema.hbox(6)
+		linha.add_child(Glifo.novo("ok" if ok else "falha", 20, Tema.VERDE if ok else Color("e0644a")))
+		var rl := Tema.rotulo(str(r["texto"]), 18, Tema.VERDE if ok else Color("d98a6a"))
+		rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		rl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		linha.add_child(rl)
+		rq.add_child(linha)
 	v.add_child(rq)
 
 	var pronto: bool = d["pronto"] and sel.size() == formato and int(e["energia"]) >= formato
