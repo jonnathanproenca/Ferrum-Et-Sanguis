@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b4qyuj7tmc1qa"
-path="res://.godot/imported/pompeia_pessoas.png-abad91a23b900ccb17e0f72b8972af7d.ctex"
+uid="uid://chf6jdbww14vv"
+path="res://.godot/imported/pompeia_publico.png-ebef02753a2b97b59485f403ba24841d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/arenas/novo/pompeia_pessoas.png"
-dest_files=["res://.godot/imported/pompeia_pessoas.png-abad91a23b900ccb17e0f72b8972af7d.ctex"]
+source_file="res://assets/arenas/novo/pompeia_publico.png"
+dest_files=["res://.godot/imported/pompeia_publico.png-ebef02753a2b97b59485f403ba24841d.ctex"]
 
 [params]
 
