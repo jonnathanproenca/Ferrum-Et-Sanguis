@@ -90,11 +90,13 @@ func _ready() -> void:
 	_toast.z_index = 100
 	add_child(_toast)
 
+	Jogo.iniciar_luta.connect(func(payload, ao_fim, ao_desistir, ao_pular): TelaLuta.abrir(self, payload, ao_fim, ao_desistir, ao_pular))
 	Jogo.mudou.connect(_atualizar_barra)
 	Jogo.aviso.connect(avisar)
 	Jogo.abrir_aba.connect(abrir)
 	_atualizar_barra()
 	abrir("ludus")
+	Tutorial.verificar(self)
 
 func _stat(pai: Control, cor: Color) -> Label:
 	var l := Tema.rotulo("", 20, cor)
@@ -113,6 +115,7 @@ func abrir(aba: String) -> void:
 		_telas[k].visible = (k == aba)
 		_botoes[k].button_pressed = (k == aba)
 	_telas[aba].ao_mostrar()
+	Tutorial.verificar(self)
 
 func aba_atual() -> String:
 	return _aba
@@ -130,6 +133,7 @@ func _atualizar_barra() -> void:
 	_l_turno.text = "Turno %d" % int(e["turno"])
 	_l_vit.text = "Vitórias %d" % int(e["vitoriasTotais"])
 	_b_turno.disabled = false
+	Tutorial.verificar(self)
 
 func avisar(texto: String) -> void:
 	_toast.text = " " + texto + " "
