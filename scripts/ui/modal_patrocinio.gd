@@ -90,6 +90,7 @@ func _cartao_oferta(o: Dictionary) -> Control:
 	v.add_child(Tema.rotulo("Se falhar, só perde o contrato. A proposta vale até a rodada %d." % int(o["validoAte"]), 16, Tema.CINZA))
 	v.add_child(Tema.espaco(6))
 	var bs := Tema.hbox(10)
+	bs.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(bs)
 	var ba := Tema.botao("Aceitar", "primario", 20)
 	ba.custom_minimum_size = Vector2(150, 48)
@@ -101,6 +102,8 @@ func _cartao_oferta(o: Dictionary) -> Control:
 	bs.add_child(br)
 	var bd := Tema.botao("Decidir depois", "normal", 16)
 	bd.pressed.connect(func(): _modal.fechar())
+	bd.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	bd.custom_minimum_size = Vector2(200, 36)
 	v.add_child(bd)
 	return linha
 
