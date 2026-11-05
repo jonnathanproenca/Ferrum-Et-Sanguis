@@ -28,9 +28,11 @@ const AMULETO_OBJETO := {"galia": "Torque", "germania": "Runa", "tracia": "Talis
 const AMULETO_EPITETO := {"forca": "do Urso", "destreza": "do Falcão", "vitalidade": "do Carvalho", "resistencia": "da Rocha", "inteligencia": "da Coruja", "aura": "da Lua"}
 const AMULETO_PRECO := 90
 const NIVEL_MAXIMO := 15
+const XP_BASE := 60
+const XP_CRESCIMENTO := 20
 const TENDENCIA_PONTOS := 2
 const PRECO_CONDICAO := {"jovem": 20, "maduro": 0, "cicatrizado": -20}
-const AJUSTE_RIVAL := {"treinoPorNivel": 1, "divisorQualidade": 4, "qualidadeArena": [0, 1, 2]}
+const AJUSTE_RIVAL := {"treinoPorNivel": 2, "divisorQualidade": 4, "qualidadeArena": [0, 1, 2]}
 const PENALIDADE_EFEITO := {"sangramento": "vitalidade", "envenenamento": "resistencia", "contusao": "forca", "queimadura": "destreza"}
 
 const NOME_BASICO := {
@@ -228,7 +230,20 @@ static func gerar_escravo(rng: Rng, id: String) -> Dictionary:
 	return g
 
 static func atualizar_nivel(g: Dictionary) -> void:
-	g["nivel"] = mini(NIVEL_MAXIMO, maxi(int(g["nivel"]), 1 + int(floor(float(g["xp"]) / 50.0))))
+	g["nivel"] = mini(NIVEL_MAXIMO, maxi(int(g["nivel"]), nivel_por_xp(int(g["xp"]))))
+
+## XP acumulado para chegar ao nível n: cada nível custa mais que o anterior (60 + 20 por nível já atingido).
+static func xp_do_nivel(n: int) -> int:
+	var t := 0
+	for l in range(1, n):
+		t += XP_BASE + XP_CRESCIMENTO * (l - 1)
+	return t
+
+static func nivel_por_xp(xp: int) -> int:
+	var n := 1
+	while n < NIVEL_MAXIMO and xp >= xp_do_nivel(n + 1):
+		n += 1
+	return n
 
 static func soma_treino(g: Dictionary) -> int:
 	var t := 0

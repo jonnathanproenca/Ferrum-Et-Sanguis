@@ -114,7 +114,7 @@ static func _tour(e: Dictionary) -> Array:
 	]))
 	p.append_array(_com_aba("arenas", [
 		{"titulo": "Arenas: escalar e lutar", "texto": "Toque nos gladiadores para escalar 1 ou 2 e escolha a arena. Cada gladiador gasta 1 de energia; no 2×2 a recompensa em ouro dobra. Quem cai abaixo de 25% de vida se rende, então a luta termina antes da morte."},
-		{"titulo": "Fama e dificuldade", "texto": "Você começa em Pompeia. A fama do ludus cresce com as vitórias (Pompeia +1, Cápua +2, Coliseu +3) e abre as arenas: Cápua com 8 de fama e o Coliseu com 24. Os gladiadores também ganham glória. Quanto melhor a arena, mais forte o rival e maior a recompensa."},
+		{"titulo": "Fama e dificuldade", "texto": "Você começa em Pompeia. A fama do ludus cresce com as vitórias (Pompeia +1, Cápua +1, Coliseu +2) e abre as arenas: Cápua com 10 de fama e o Coliseu com 40. Os gladiadores também ganham glória. Quanto melhor a arena, mais forte o rival e maior a recompensa."},
 		{"titulo": "O Poço", "texto": "No Poço os golpes deixam efeitos persistentes (sangramento, veneno, contusão, queimadura), que enfraquecem o gladiador até serem tratados. Quem luta no Poço não volta às arenas de honra, e o campeão não entra. Perder no Poço custa 3 de fama; vencer rende fama, glória e às vezes moedas extras pela sorte de Aura."},
 		{"titulo": "Durante a luta", "texto": "Pular luta mostra o resultado na hora, com 10% a menos de ouro. Desistir conta como derrota, sem recompensa, e a energia gasta não volta."},
 	]))

@@ -28,14 +28,14 @@
       40,
       60
     ],
-    "dificuldade": 0.15,
+    "dificuldade": 0.2,
     "nivelRival": [
       3,
-      9
+      11
     ],
-    "famaVitoria": 2,
+    "famaVitoria": 1,
     "gloria": 25,
-    "famaMin": 8
+    "famaMin": 10
   },
   {
     "id": "coliseu",
@@ -47,14 +47,14 @@
       80,
       120
     ],
-    "dificuldade": 0.2,
+    "dificuldade": 0.28,
     "nivelRival": [
       6,
-      14
+      15
     ],
-    "famaVitoria": 3,
+    "famaVitoria": 2,
     "gloria": 60,
-    "famaMin": 24
+    "famaMin": 40
   },
   {
     "id": "poco",

@@ -14,6 +14,10 @@ const PRECO_TREINO := 20
 const TREINO_POR_NIVEL := 12
 const TREINO_POR_PONTO := 4  # por ponto já treinado, somando TODOS os atributos
 const FAMA_CAMPANHA := 5
+## Patrocínio por turno do campeão: base + por vitória, com teto (antes crescia sem limite e dominava a economia).
+const PATROCINIO_BASE := 20
+const PATROCINIO_POR_VITORIA := 2
+const PATROCINIO_MAX := 120
 const GLORIA_DERROTA := 0.25
 const AURA_CHANCE := 0.02
 const AURA_CHANCE_MAX := 0.6
@@ -390,7 +394,7 @@ static func avancar_turno(e: Dictionary) -> String:
 			break
 	if not campeao.is_empty() and campeao["vivo"]:
 		var bp := bonus_da_casa(e, "patrocinio")
-		patrocinio = jsround(float(20 + 5 * int(campeao["vitorias"])) * (float(bp["valor"]) if not bp.is_empty() else 1.0))
+		patrocinio = jsround(float(mini(PATROCINIO_MAX, PATROCINIO_BASE + PATROCINIO_POR_VITORIA * int(campeao["vitorias"]))) * (float(bp["valor"]) if not bp.is_empty() else 1.0))
 		e["ouro"] = int(e["ouro"]) + patrocinio
 		estatisticas(e)["ouroGanho"] += patrocinio
 	var vivos := 0

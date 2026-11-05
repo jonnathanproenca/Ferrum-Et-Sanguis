@@ -92,7 +92,6 @@ func _montar_fundo() -> void:
 	var p := CPUParticles2D.new()
 	p.amount = 46
 	p.lifetime = 7.0
-	p.preprocess = 7.0
 	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 	p.direction = Vector2(0.15, -1)
 	p.spread = 18.0

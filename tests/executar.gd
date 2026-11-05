@@ -204,8 +204,8 @@ func teste_regras() -> void:
 	# arena liberada por fama máxima
 	var e6 := novo()
 	ok(not Game.arena_liberada(e6, Game.arena_por_id("capua"))["liberada"], "Cápua fechada sem fama")
-	e6["famaMax"] = 8
-	ok(Game.arena_liberada(e6, Game.arena_por_id("capua"))["liberada"], "Cápua abre com 8 de fama")
+	e6["famaMax"] = 10
+	ok(Game.arena_liberada(e6, Game.arena_por_id("capua"))["liberada"], "Cápua abre com 10 de fama")
 	# requisitos novos da campanha
 	var e7 := novo()
 	var d := Game.proximo_desafio(e7)
