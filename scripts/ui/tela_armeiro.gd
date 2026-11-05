@@ -18,6 +18,8 @@ var _t_inv: Label
 var _conteudo: VBoxContainer
 var _b_mestre: Button
 var _b_catalogo: Button
+var _b_amu: Button
+var _regiao := ""
 var _modo := "mestre"
 var _filtro_slot := ""
 var _filtro_classe := ""
@@ -126,6 +128,10 @@ func construir() -> void:
 	_b_catalogo.toggle_mode = true
 	_b_catalogo.pressed.connect(func(): _modo = "catalogo"; atualizar())
 	cab.add_child(_b_catalogo)
+	_b_amu = Tema.botao("Amuletos", "normal", 18)
+	_b_amu.toggle_mode = true
+	_b_amu.pressed.connect(func(): _modo = "amuletos"; _regiao = ""; atualizar())
+	cab.add_child(_b_amu)
 	var dsc := ScrollContainer.new()
 	dsc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	dsc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -164,11 +170,14 @@ func atualizar() -> void:
 		Game.gerar_armeiro_mestre(e)
 	_b_mestre.button_pressed = _modo == "mestre"
 	_b_catalogo.button_pressed = _modo == "catalogo"
+	_b_amu.button_pressed = _modo == "amuletos"
 	_gladiador(e)
 	_inventario(e)
 	Tema.limpar(_conteudo)
 	if _modo == "mestre":
 		_pagina_mestre(e)
+	elif _modo == "amuletos":
+		_pagina_amuletos(e)
 	else:
 		_pagina_catalogo(e)
 
@@ -192,8 +201,12 @@ func _inventario(e: Dictionary) -> void:
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var nome := Tema.rotulo(_nome_item(item), 17, IconeItem.cor_qualidade(item["qualidade"]))
 		v.add_child(nome)
-		v.add_child(Tema.rotulo(IconeItem.fmt_bonus(item["bonus"]), 14, Tema.CINZA))
-		v.add_child(Tema.rotulo(_req_texto(item), 13, Tema.CINZA))
+		var bonus_txt := IconeItem.fmt_bonus(item["bonus"])
+		if item.get("amuleto", false):
+			bonus_txt = "%s · %s" % [Model.terra_por_id(item["terra"])["nome"], bonus_txt]
+		v.add_child(Tema.rotulo(bonus_txt, 14, Tema.CINZA))
+		if not item.get("amuleto", false):
+			v.add_child(Tema.rotulo(_req_texto(item), 13, Tema.CINZA))
 		h.add_child(v)
 		var q := Tema.rotulo("×%d" % int(contagem[id]), 18, Tema.OURO)
 		q.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -202,7 +215,7 @@ func _inventario(e: Dictionary) -> void:
 		var be := Tema.botao("Equipar", "normal", 15)
 		be.custom_minimum_size = Vector2(84, 32)
 		be.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		be.disabled = g.is_empty() or (motivo != "" and motivo.begins_with("Este item não serve"))
+		be.disabled = g.is_empty() or (motivo != "" and (motivo.begins_with("Este item não serve") or motivo.begins_with("Este amuleto")))
 		if motivo != "":
 			be.tooltip_text = motivo
 		var iid: String = str(id)
@@ -277,6 +290,8 @@ func _req_texto(item: Dictionary) -> String:
 func _motivo_equipar(e: Dictionary, g: Dictionary, item: Dictionary) -> String:
 	if g.is_empty():
 		return "Sem gladiador com estilo."
+	if item.get("amuleto", false) and item["terra"] != g["terra"]:
+		return "Este amuleto pertence a %s; %s é de %s." % [Model.terra_por_id(item["terra"])["nome"], g["nome"], Model.terra_por_id(g["terra"])["nome"]]
 	if not (g["classe"] in item["classes"]):
 		return "Este item não serve ao estilo de %s." % g["nome"]
 	var extra := Game.extra_da_casa(e)
@@ -317,6 +332,130 @@ func _pagina_mestre(e: Dictionary) -> void:
 		if item.is_empty():
 			continue
 		grade.add_child(_carta(e, item, true))
+
+func _pagina_amuletos(e: Dictionary) -> void:
+	var intro := Tema.rotulo("Cada amuleto pertence a uma região: só gladiadores nascidos nela podem usá-lo. Bônus de +1 a +5 em um atributo, conforme a raridade.", 15, Tema.CINZA)
+	_conteudo.add_child(intro)
+	var regs: Array = []
+	for g in e["gladiadores"]:
+		if g["vivo"] and not regs.has(str(g["terra"])):
+			regs.append(str(g["terra"]))
+	if regs.is_empty():
+		_conteudo.add_child(Tema.rotulo("Nenhum gladiador vivo no ludus: sem região para comprar amuletos.", 17, Tema.OCRE))
+		return
+	if not regs.has(_regiao):
+		var g := _glad_sel(e)
+		_regiao = str(g["terra"]) if not g.is_empty() and regs.has(str(g["terra"])) else regs[0]
+	var rh := Tema.hbox(8)
+	_conteudo.add_child(rh)
+	var lr := Tema.rotulo("Região", 16, Tema.CINZA)
+	lr.autowrap_mode = TextServer.AUTOWRAP_OFF
+	rh.add_child(lr)
+	var os := OptionButton.new()
+	os.focus_mode = Control.FOCUS_NONE
+	os.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for i in regs.size():
+		var n := 0
+		for g in e["gladiadores"]:
+			if g["vivo"] and g["terra"] == regs[i]:
+				n += 1
+		os.add_item("%s (%d)" % [Model.terra_por_id(regs[i])["nome"], n])
+	os.select(regs.find(_regiao))
+	os.item_selected.connect(func(i): _regiao = regs[i]; atualizar())
+	rh.add_child(os)
+	var cat := Game.catalogo_amuletos(_regiao)
+	var grade := GridContainer.new()
+	grade.columns = 6
+	grade.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grade.add_theme_constant_override("h_separation", 4)
+	grade.add_theme_constant_override("v_separation", 4)
+	_conteudo.add_child(grade)
+	grade.add_child(Control.new())
+	for q in range(Model.QUALIDADE_MAX + 1):
+		var lq := Tema.rotulo(Model.QUALIDADES[q], 12, IconeItem.cor_qualidade(q))
+		lq.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lq.autowrap_mode = TextServer.AUTOWRAP_OFF
+		lq.clip_text = true
+		lq.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lq.custom_minimum_size = Vector2(50, 0)
+		grade.add_child(lq)
+	var fama := int(e.get("fama", 0))
+	for a in Model.ATRIBUTOS:
+		var base := Model.item_por_id(cat[a][0])
+		var hc := Tema.hbox(4)
+		hc.custom_minimum_size = Vector2(150, 0)
+		hc.add_child(Glifo.novo(a, 20, Tema.OURO))
+		var vc := Tema.vbox(0)
+		vc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var ln := Tema.rotulo(str(base["nome"]), 12, Tema.AREIA)
+		ln.autowrap_mode = TextServer.AUTOWRAP_OFF
+		ln.clip_text = true
+		ln.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vc.add_child(ln)
+		var le := Tema.rotulo("+ %s" % Model.NOME_ATRIBUTO[a], 12, Tema.CINZA)
+		le.autowrap_mode = TextServer.AUTOWRAP_OFF
+		vc.add_child(le)
+		hc.add_child(vc)
+		grade.add_child(hc)
+		for id in cat[a]:
+			grade.add_child(_celula_amuleto(e, Model.item_por_id(id), fama))
+
+func _celula_amuleto(e: Dictionary, item: Dictionary, fama: int) -> Control:
+	var q: int = int(item["qualidade"])
+	var cor := IconeItem.cor_qualidade(q)
+	var preco: int = Game.preco_item(e, item)
+	var fama_min := int(item.get("famaMin", 0))
+	var sem_fama: bool = fama < fama_min
+	var sem_ouro: bool = int(e["ouro"]) < preco
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(50, 78)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var bloq := sem_fama or sem_ouro
+	var borda := Color("8a2a22") if sem_fama else (cor.darkened(0.4) if sem_ouro else cor)
+	b.add_theme_stylebox_override("normal", Tema.caixa(Color("211612").lerp(cor, 0.1), borda, 6, 2, 3))
+	b.add_theme_stylebox_override("hover", Tema.caixa(Color("2c1d15").lerp(cor, 0.2), borda.lightened(0.3), 6, 2, 3))
+	b.add_theme_stylebox_override("pressed", Tema.caixa(Color("160e0a"), borda, 6, 2, 3))
+	b.add_theme_stylebox_override("disabled", Tema.caixa(Color("1a1210"), borda, 6, 2, 3))
+	b.disabled = bloq
+	if sem_fama:
+		b.tooltip_text = "Trancado: exige %d de fama (você tem %d)." % [fama_min, fama]
+	elif sem_ouro:
+		b.tooltip_text = "Faltam %d de ouro." % (preco - int(e["ouro"]))
+	else:
+		b.tooltip_text = "%s (%s): %s. Comprar por %d de ouro." % [item["nome"], Model.QUALIDADES[q], IconeItem.fmt_bonus(item["bonus"]), preco]
+	var v := Tema.vbox(0)
+	v.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var topo := Tema.hbox(0)
+	topo.alignment = BoxContainer.ALIGNMENT_CENTER
+	topo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if sem_fama:
+		topo.add_child(Glifo.novo("cadeado", 28, Color("e0483a")))
+	else:
+		var ic := IconeItem.criar(item, 28)
+		if sem_ouro:
+			ic.modulate = Color(1, 1, 1, 0.55)
+		topo.add_child(ic)
+	v.add_child(topo)
+	var lb := Tema.rotulo("+%d" % int(item["bonus"].values()[0]), 15, cor)
+	lb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lb.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(lb)
+	var lp := Tema.rotulo(str(preco), 13, Color("e06a5a") if sem_ouro else Tema.OURO)
+	lp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lp.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(lp)
+	b.add_child(v)
+	var iid: String = str(item["id"])
+	b.pressed.connect(func():
+		if Jogo.resultado(Game.comprar_item(Jogo.e, iid)):
+			Som.sfx("sfx/moeda"))
+	return b
 
 func _grade() -> GridContainer:
 	var g := GridContainer.new()

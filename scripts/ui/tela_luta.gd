@@ -127,7 +127,7 @@ func _ajustar_palco() -> void:
 	_palco.position = _palco_pos
 
 func _posicoes(n: int, lado: String, centro: float, f: float) -> Array:
-	var s := 1.0 if lado == "A" else -1.0
+	var s := -1.0 if lado == "A" else 1.0
 	if n == 1:
 		return [Vector2(centro + s * 75.0 * f * E, Y_PES)]
 	return [Vector2(centro + s * 150.0 * f * E, Y_PES - 30.0 * f * E), Vector2(centro + s * 80.0 * f * E, Y_PES + 28.0 * f * E)]
@@ -141,7 +141,7 @@ func _criar_lutadores() -> void:
 		for i in range(lista.size()):
 			var v: Dictionary = lista[i]
 			var escala := (1.0 if lista.size() == 1 else 0.76) * f
-			var l := LutadorLuta.new(str(v["id"]), str(v["classe"]), escala, lado == "A", f, pos[i])
+			var l := LutadorLuta.new(str(v["id"]), str(v["classe"]), escala, lado == "B", f, pos[i])
 			l.z_index = int(pos[i].y)
 			_palco.add_child(l)
 			_lutadores[v["id"]] = l
@@ -195,8 +195,8 @@ func _montar_ui() -> void:
 	col_a.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var col_b := Tema.vbox(6)
 	col_b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hb.add_child(col_b)
 	hb.add_child(col_a)
+	hb.add_child(col_b)
 	for lado in ["A", "B"]:
 		var lista: Array = _payload["lutadores" + lado]
 		for v in lista:
@@ -204,7 +204,7 @@ func _montar_ui() -> void:
 
 func _criar_ficha(v: Dictionary, lado: String, compacto: bool) -> Control:
 	var info: Dictionary = _fichas[v["id"]]
-	var espelhado := lado == "A"
+	var espelhado := lado == "B"
 	var ps := 46 if compacto else 62
 	var linha := Tema.hbox(10)
 	linha.layout_direction = Control.LAYOUT_DIRECTION_RTL if espelhado else Control.LAYOUT_DIRECTION_LTR

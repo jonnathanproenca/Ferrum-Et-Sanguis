@@ -10,6 +10,8 @@ const COR_FAIXA := {"leve": Color("6aa6d8"), "normal": Color("8fbf7a"), "pesado"
 const NOME_FAIXA := {"leve": "Leve", "normal": "Normal", "pesado": "Pesado", "sobrecarga": "Sobrecarga"}
 
 var g: Dictionary = {}
+## false: esconde o cabeçalho (nome/classe), p.ex. quando a modal já mostra isso.
+var mostrar_cabecalho := true
 var _corpo: BoxContainer
 
 
@@ -61,17 +63,19 @@ func _montar() -> void:
 	add_child(v)
 
 	# Cabeçalho
-	var cab := Tema.hbox(10)
-	v.add_child(cab)
-	var nome := Tema.rotulo(str(g["nome"]), 24, Tema.OURO, true)
-	nome.autowrap_mode = TextServer.AUTOWRAP_OFF
-	nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	nome.clip_text = true
-	cab.add_child(nome)
-	var cl := "Sem estilo" if g.get("semEstilo", false) else str(Model.classes()[g["classe"]]["nome"])
-	var sub := Tema.rotulo("%s · Nível %d" % [cl, int(g["nivel"])], 16, Tema.CINZA)
-	sub.autowrap_mode = TextServer.AUTOWRAP_OFF
-	cab.add_child(sub)
+	if mostrar_cabecalho:
+		var cab := Tema.hbox(10)
+		v.add_child(cab)
+		var nome := Tema.rotulo(str(g["nome"]), 24, Tema.OURO, true)
+		nome.autowrap_mode = TextServer.AUTOWRAP_OFF
+		nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nome.clip_text = true
+		cab.add_child(nome)
+		var cl := "Sem estilo" if g.get("semEstilo", false) else str(Model.classes()[g["classe"]]["nome"])
+		var sub := Tema.rotulo("%s · Nível %d" % [cl, int(g["nivel"])], 16, Tema.CINZA)
+		sub.autowrap_mode = TextServer.AUTOWRAP_OFF
+		cab.add_child(sub)
+
 
 	# Glória
 	v.add_child(_faixa_gloria(e))

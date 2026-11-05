@@ -122,6 +122,15 @@ func _draw() -> void:
 				var r := s * (0.46 if k % 2 == 0 else 0.2)
 				est.append(o + Vector2(s * 0.5, s * 0.54) + Vector2(cos(a), sin(a)) * r)
 			_poli(est, cor, sombra)
+		"cadeado":
+			var ar := PackedVector2Array()
+			for k in range(13):
+				var a := PI + PI * float(k) / 12.0
+				ar.append(o + Vector2(s * 0.5, s * 0.4) + Vector2(cos(a), sin(a)) * s * 0.22)
+			draw_polyline(ar, sombra, lw * 0.8 + 2.0, true)
+			draw_polyline(ar, cor, lw * 0.8, true)
+			draw_rect(Rect2(o + Vector2(s * 0.2, s * 0.42), Vector2(s * 0.6, s * 0.46)), cor)
+			draw_rect(Rect2(o + Vector2(s * 0.2, s * 0.42), Vector2(s * 0.6, s * 0.46)), sombra, false, 1.0)
 
 func _poli(pts: Array, cor_: Color, sombra: Color) -> void:
 	var a := PackedVector2Array(pts)

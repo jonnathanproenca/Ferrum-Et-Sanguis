@@ -1,6 +1,6 @@
 class_name TelaLudus
 extends Tela
-## Aba "ludus": cena do morro, cartões dos gladiadores (treino, estilo, tratamento, venda, equipamento) e registro.
+## Aba "ludus": cena do morro, cartões compactos dos gladiadores (estilo, tratamento, venda; ficha e equipamento na modal) e registro.
 
 const NOME_CONDICAO := {"jovem": "Jovem", "maduro": "Maduro", "cicatrizado": "Cicatrizado"}
 const ESCALA_STAT := 24.0
@@ -266,8 +266,6 @@ class Carta extends PanelContainer:
 	var aberto := false
 	var sel_estilo := 0
 	var sel_classe := 0
-	var _slots_box: Control
-	var _btn_eq: Button
 	var _ult_classe := ""
 
 	func _init() -> void:
@@ -296,10 +294,6 @@ class Carta extends PanelContainer:
 		v.add_child(topo)
 		topo.add_child(_thumb(e))
 		topo.add_child(_info(e))
-		var ficha := FichaGladiador.new()
-		ficha.construir(g)
-		v.add_child(ficha)
-		_equipamento(v, e)
 
 	# --- miniatura com moldura da melhor peça ---
 	func _thumb(_e: Dictionary) -> Control:
@@ -379,6 +373,12 @@ class Carta extends PanelContainer:
 			for ef in g["efeitos"]:
 				fe.add_child(TelaLudus._chip("%s %d" % [Game.NOME_EFEITO[ef["tipo"]], int(ef["severidade"])], Color("3a1010"), Color("aa3333"), Color("ffb3a0"), 14))
 
+		var bf := Tema.botao("Ficha e equipamento", "ouro", 18)
+		bf.custom_minimum_size = Vector2(0, 44)
+		bf.tooltip_text = "Atributos, treino, Glória e equipamento de %s." % g["nome"]
+		var gid: String = g["id"]
+		bf.pressed.connect(func(): ModalGladiador.abrir(self, gid))
+		v.add_child(bf)
 		if g["vivo"]:
 			_acoes(v, e)
 		_venda(v, e)
@@ -477,107 +477,3 @@ class Carta extends PanelContainer:
 				if Jogo.resultado(Game.vender_gladiador(Jogo.e, id)):
 					Som.sfx("sfx/moeda"))
 			h.add_child(b)
-
-	# --- equipamento ---
-	func _opcoes_slot(e: Dictionary, slot: String) -> Array:
-		var ids: Array = []
-		for id in e["inventario"]:
-			var item := Model.item_por_id(id)
-			if not item.is_empty() and item["slot"] == slot and g["classe"] in item["classes"] and not ids.has(id):
-				ids.append(id)
-		var atual = g["equipamento"][slot]
-		if atual != null and not ids.has(atual):
-			ids.append(atual)
-		return ids.map(func(i): return Model.item_por_id(i))
-
-	func _equipamento(v: VBoxContainer, e: Dictionary) -> void:
-		if g.get("semEstilo", false):
-			v.add_child(Tema.rotulo("Equipamento: defina o estilo primeiro.", 15, Tema.CINZA))
-			return
-		if not Game.tem_melhoria(e, "armaria"):
-			v.add_child(Tema.rotulo("Equipamento: construa a armaria.", 15, Tema.CINZA))
-			return
-		v.add_child(HSeparator.new())
-		var cab := Tema.hbox(10)
-		v.add_child(cab)
-		_btn_eq = Tema.botao("", "normal", 17)
-		_btn_eq.pressed.connect(_alternar)
-		cab.add_child(_btn_eq)
-		# prévia dos itens equipados
-		var prev := Tema.hbox(4)
-		prev.alignment = BoxContainer.ALIGNMENT_BEGIN
-		cab.add_child(prev)
-		for slot in Model.SLOTS:
-			var a = g["equipamento"][slot]
-			prev.add_child(TelaLudus.icone_item(Model.item_por_id(a) if a != null else {}, 30))
-
-		var gr := GridContainer.new()
-		gr.columns = 2
-		gr.add_theme_constant_override("h_separation", 12)
-		gr.add_theme_constant_override("v_separation", 10)
-		_slots_box = gr
-		v.add_child(gr)
-		for slot in Model.SLOTS:
-			gr.add_child(_slot(e, slot))
-		_slots_box.visible = aberto
-		_atualizar_texto_toggle()
-
-	func _alternar() -> void:
-		aberto = not aberto
-		if _slots_box:
-			_slots_box.visible = aberto
-		_atualizar_texto_toggle()
-
-	func _atualizar_texto_toggle() -> void:
-		if _btn_eq:
-			_btn_eq.text = "Equipamento · " + ("ocultar" if aberto else "mostrar")
-
-	func _slot(e: Dictionary, slot: String) -> Control:
-		var atual = g["equipamento"][slot]
-		var item_atual := Model.item_por_id(atual) if atual != null else {}
-		var v := Tema.vbox(4)
-		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var topo := Tema.hbox(8)
-		v.add_child(topo)
-		var ic := TelaLudus.icone_item(item_atual, 46)
-		ic.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		topo.add_child(ic)
-		var info := Tema.vbox(0)
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		topo.add_child(info)
-		info.add_child(Tema.rotulo(Model.NOME_SLOT[slot], 14, Tema.OCRE))
-		if item_atual.is_empty():
-			info.add_child(Tema.rotulo("vazio", 14, Tema.CINZA))
-		else:
-			var q: int = int(item_atual["qualidade"])
-			var ln := Tema.rotulo("%s · %s" % [item_atual["nome"], Model.QUALIDADES[q]], 16, TelaLudus.cor_qualidade(q))
-			ln.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info.add_child(ln)
-			info.add_child(Tema.rotulo(TelaLudus.fmt_bonus(item_atual["bonus"]), 14, Tema.CINZA))
-		var opcoes := _opcoes_slot(e, slot)
-		var ob := OptionButton.new()
-		ob.focus_mode = Control.FOCUS_NONE
-		ob.fit_to_longest_item = false
-		ob.clip_text = true
-		ob.add_theme_font_size_override("font_size", 15)
-		ob.custom_minimum_size = Vector2(120, 34)
-		ob.add_item("— vazio —")
-		ob.set_item_metadata(0, "")
-		var sel := 0
-		for i in range(opcoes.size()):
-			var it: Dictionary = opcoes[i]
-			var peso := " (%s)" % it["peso"] if it.get("peso") else ""
-			var qtxt := " [%s]" % Model.QUALIDADES[int(it["qualidade"])] if int(it["qualidade"]) > 0 else ""
-			ob.add_item("%s%s%s · %s" % [it["nome"], qtxt, peso, TelaLudus.fmt_bonus(it["bonus"])])
-			ob.set_item_metadata(i + 1, it["id"])
-			ob.set_item_icon(i + 1, null)
-			if atual != null and it["id"] == atual:
-				sel = i + 1
-		ob.selected = sel
-		var gid: String = g["id"]
-		ob.item_selected.connect(func(idx: int):
-			var item_id: String = str(ob.get_item_metadata(idx))
-			if not Jogo.resultado(Game.equipar(Jogo.e, gid, slot, item_id)):
-				atualizar(g))
-		v.add_child(ob)
-		return v
