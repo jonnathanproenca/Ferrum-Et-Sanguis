@@ -110,6 +110,18 @@ func _montar_cena() -> void:
 	_plateia.vel = vel
 	_palco.add_child(_plateia)
 	_plateia.montar(_arena_id, str(_payload.get("plateia", "meia")))
+	if ArenaNova.existe(_arena_id):
+		var nova := ArenaNova.new()
+		nova.vel = vel
+		_palco.add_child(nova)
+		if nova.montar(_arena_id, str(_payload.get("plateia", "meia")), PALCO):
+			bg.visible = false
+			_plateia.visible = false
+			_plateia.set_process(false)
+			if nova.posicoes.size() > 0:
+				_plateia.espectadores = nova.posicoes
+		else:
+			nova.queue_free()
 	_criar_lutadores()
 	_flash = ColorRect.new()
 	_flash.color = Color(1, 1, 1, 0)

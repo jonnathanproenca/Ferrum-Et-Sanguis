@@ -120,7 +120,7 @@ func _ready() -> void:
 	_fb.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fb.modulate.a = 0.0
 	add_child(_fb)
-	if DisplayServer.is_touchscreen_available():
+	if OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios"):
 		_montar_botoes()
 	else:
 		var dica := Tema.rotulo("A/D ou setas: andar  ·  Espaço: esquivar  ·  Botão direito: defender (erga no momento do golpe = parry)  ·  Clique: ataque leve  ·  Segure o clique: ataque pesado  ·  Esc: sair", 15, Tema.CINZA)
@@ -146,7 +146,7 @@ func _ajustar() -> void:
 # ---------- Botões de toque ----------
 
 func _montar_botoes() -> void:
-	var defs := [["esq", "◀", "hold"], ["dir", "▶", "hold"], ["esquiva", "ESQ", "tap"], ["defesa", "DEF", "hold"], ["leve", "LEVE", "tap"], ["pesado", "PESADO", "tap"]]
+	var defs := [["esq", "<", "hold"], ["dir", ">", "hold"], ["esquiva", "ESQ", "tap"], ["defesa", "DEF", "hold"], ["leve", "LEVE", "tap"], ["pesado", "PESADO", "tap"]]
 	for d in defs:
 		var p := PanelContainer.new()
 		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
