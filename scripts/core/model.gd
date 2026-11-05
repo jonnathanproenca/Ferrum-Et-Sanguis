@@ -2,7 +2,7 @@ class_name Model
 extends RefCounted
 ## Modelo de dados: classes, itens, origens e gladiadores (porte fiel de model.ts).
 
-const ATRIBUTOS: Array = ["forca", "agilidade", "vitalidade", "sorte"]
+const ATRIBUTOS: Array = ["forca", "destreza", "vitalidade", "resistencia", "inteligencia", "aura"]
 const SLOTS: Array = ["arma", "acessorio", "elmo", "peito", "pe", "calca"]
 const CLASSES_IDS: Array = ["murmilo", "retiario", "tracio", "samnita"]
 const QUALIDADES: Array = ["Normal", "Superior", "Rara", "Épica", "Lendária"]
@@ -10,14 +10,24 @@ const COR_QUALIDADE: Array = ["#9aa0a6", "#4caf50", "#3d8bfd", "#a855f7", "#ff9f
 const QUALIDADE_MAX := 4
 const BONUS_QUALIDADE: Array = [0, 1, 2, 3, 4]
 const PRECO_QUALIDADE: Array = [1.0, 1.5, 2.5, 4.0, 7.0]
-const FOCO_SLOT := {"arma": "forca", "acessorio": "vitalidade", "elmo": "sorte", "peito": "vitalidade", "pe": "agilidade", "calca": "agilidade"}
+const FOCO_SLOT := {"arma": "forca", "acessorio": "inteligencia", "elmo": "aura", "peito": "vitalidade", "pe": "destreza", "calca": "resistencia"}
 const NOME_SLOT := {"arma": "Arma", "acessorio": "Escudo / acessório", "elmo": "Elmo", "peito": "Peitoral", "pe": "Calçado", "calca": "Calça"}
-const NOME_ATRIBUTO := {"forca": "Força", "agilidade": "Agilidade", "vitalidade": "Vitalidade", "sorte": "Sorte"}
+const NOME_ATRIBUTO := {"forca": "Força", "destreza": "Destreza", "vitalidade": "Vitalidade", "resistencia": "Resistência", "inteligencia": "Inteligência", "aura": "Aura"}
+const SIGLA_ATRIBUTO := {"forca": "FOR", "destreza": "DES", "vitalidade": "VIT", "resistencia": "RES", "inteligencia": "INT", "aura": "AUR"}
+## Qualidade: peso extra por nível e Fama mínima para comprar.
+const PESO_QUALIDADE: Array = [1.0, 1.12, 1.24, 1.36, 1.5]
+const FAMA_QUALIDADE: Array = [0, 6, 14, 28, 48]
+const FORCA_QUALIDADE: Array = [0, 1, 2, 3, 4]
+## Peso do equipamento: carga máxima = 20 + 2 × Força (sem itens); faixas pela fração da carga.
+const CARGA_BASE := 20
+const CARGA_POR_FORCA := 2
+## Glória: títulos por pontuação mínima.
+const TITULOS_GLORIA: Array = [[0, "Novato"], [100, "Conhecido"], [400, "Temido"], [1000, "Campeão"], [2500, "Lenda"]]
 const NIVEL_MAXIMO := 15
 const TENDENCIA_PONTOS := 2
 const PRECO_CONDICAO := {"jovem": 20, "maduro": 0, "cicatrizado": -20}
 const AJUSTE_RIVAL := {"treinoPorNivel": 1, "divisorQualidade": 4, "qualidadeArena": [0, 1, 2]}
-const PENALIDADE_EFEITO := {"sangramento": "vitalidade", "envenenamento": "agilidade", "contusao": "forca", "queimadura": "sorte"}
+const PENALIDADE_EFEITO := {"sangramento": "vitalidade", "envenenamento": "resistencia", "contusao": "forca", "queimadura": "destreza"}
 
 const NOME_BASICO := {
 	"arma": {"murmilo": "Gládio simples", "retiario": "Tridente simples", "tracio": "Sica simples", "samnita": "Gládio simples", "dimachaerus": "Gládios simples"},
@@ -109,7 +119,8 @@ static func qualidade_de(id) -> int:
 	return int(separar_id(id)["qualidade"]) if id != null else 0
 
 static func _item_basico(slot: String, classe: String) -> Dictionary:
-	return {"id": "basico_%s_%s" % [slot, classe], "nome": NOME_BASICO[slot][classe], "slot": slot, "bonus": {}, "classes": [classe], "preco": 25, "basico": true}
+	var pesos := {"arma": 2, "acessorio": 3, "elmo": 2, "peito": 3, "pe": 1, "calca": 1}
+	return {"id": "basico_%s_%s" % [slot, classe], "nome": NOME_BASICO[slot][classe], "slot": slot, "bonus": {}, "classes": [classe], "preco": 25, "basico": true, "peso": pesos[slot], "forcaMin": 0, "famaMin": 0}
 
 ## Item completo (com qualidade aplicada). Devolve {} se não existir.
 static func item_por_id(id: String) -> Dictionary:
@@ -139,6 +150,9 @@ static func item_por_id(id: String) -> Dictionary:
 		bonus.erase(foco)
 	r["id"] = id
 	r["qualidade"] = qualidade
+	r["peso"] = maxi(1, jsround(float(item["peso"]) * float(PESO_QUALIDADE[qualidade])))
+	r["forcaMin"] = (int(item["forcaMin"]) + int(FORCA_QUALIDADE[qualidade])) if int(item["forcaMin"]) > 0 else 0
+	r["famaMin"] = int(item.get("famaMin", 0)) + int(FAMA_QUALIDADE[qualidade])
 	r["preco"] = jsround(float(item["preco"]) * float(PRECO_QUALIDADE[qualidade]))
 	return r
 
@@ -159,7 +173,7 @@ static func sortear_equipamento(rng: Rng, classe: String, qual_max: int = 0) -> 
 	return eq
 
 static func gerar_gladiador(rng: Rng, id: String, classe: String, nivel: int, origem: String, campeao: bool = false, qual_max: int = 0) -> Dictionary:
-	var treino := {"forca": 0, "agilidade": 0, "vitalidade": 0, "sorte": 0}
+	var treino := {"forca": 0, "destreza": 0, "vitalidade": 0, "resistencia": 0, "inteligencia": 0, "aura": 0}
 	var pontos: int
 	if origem == "livre":
 		pontos = jsround(float((nivel - 1) * int(AJUSTE_RIVAL["treinoPorNivel"]))) + rng.inteiro(0, 2)
@@ -174,7 +188,7 @@ static func gerar_gladiador(rng: Rng, id: String, classe: String, nivel: int, or
 	return {
 		"id": id, "nome": nome, "classe": classe, "origem": origem, "terra": terra["id"], "look": look,
 		"campeao": campeao, "lenda": false, "nivel": nivel, "xp": 0, "treino": treino, "equipamento": equipamento,
-		"vivo": true, "pocoOnly": false, "vitorias": 0, "vitoriasPoco": 0, "derrotas": 0, "efeitos": [],
+		"vivo": true, "gloria": 0, "pocoOnly": false, "vitorias": 0, "vitoriasPoco": 0, "derrotas": 0, "efeitos": [],
 	}
 
 static func gerar_escravo(rng: Rng, id: String) -> Dictionary:
@@ -205,17 +219,21 @@ static func soma_treino(g: Dictionary) -> int:
 static func aparencia_de(g: Dictionary) -> Dictionary:
 	return {"terra": g["terra"], "look": g["look"], "classe": g["classe"], "campeao": g["campeao"], "equipamento": g["equipamento"]}
 
-## Atributos finais: classe + nível + treino + itens + especialidade (+2) + campeão (+2) + lenda (+1) + extra − efeitos.
-static func stats_do_gladiador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
+## Atributos sem itens: classe + nível + treino + especialidade/campeão/lenda + extra (usado nos requisitos de Força).
+static func stats_sem_itens(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
 	var base: Dictionary = classes()[g["classe"]]["stats"]
-	var s := {
-		"forca": int(base["forca"]) + int(g["nivel"]) - 1,
-		"agilidade": int(base["agilidade"]),
-		"vitalidade": int(base["vitalidade"]) + int(g["nivel"]) - 1,
-		"sorte": int(base["sorte"]),
-	}
+	var s := {}
 	for a in ATRIBUTOS:
-		s[a] += int(g["treino"][a]) + (2 if especialidade == g["classe"] else 0) + (2 if g["campeao"] else 0) + (1 if g["lenda"] else 0) + int(extra.get(a, 0))
+		s[a] = int(base[a])
+	s["forca"] += int(g["nivel"]) - 1
+	s["vitalidade"] += int(g["nivel"]) - 1
+	for a in ATRIBUTOS:
+		s[a] += int(g["treino"].get(a, 0)) + (2 if especialidade == g["classe"] else 0) + (2 if g["campeao"] else 0) + (1 if g["lenda"] else 0) + int(extra.get(a, 0))
+	return s
+
+## Atributos finais: sem itens + itens − efeitos.
+static func stats_do_gladiador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
+	var s := stats_sem_itens(g, especialidade, extra)
 	for slot in SLOTS:
 		var id = g["equipamento"][slot]
 		if id == null:
@@ -229,8 +247,51 @@ static func stats_do_gladiador(g: Dictionary, especialidade: String = "", extra:
 		s[a] = maxi(1, s[a])
 	return s
 
+## Peso total do equipamento vestido.
+static func carga_atual(g: Dictionary) -> int:
+	var t := 0
+	for slot in SLOTS:
+		var id = g["equipamento"][slot]
+		if id != null:
+			t += int(item_por_id(id).get("peso", 0))
+	return t
+
+static func carga_maxima(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> int:
+	return CARGA_BASE + CARGA_POR_FORCA * int(stats_sem_itens(g, especialidade, extra)["forca"])
+
+## "leve" (até 30%), "normal" (até 70%), "pesado" (até 100%), "sobrecarga" (acima).
+static func faixa_carga(atual: int, maxima: int) -> String:
+	var f: float = float(atual) / float(maxi(1, maxima))
+	if f <= 0.3:
+		return "leve"
+	if f <= 0.7:
+		return "normal"
+	if f <= 1.0:
+		return "pesado"
+	return "sobrecarga"
+
+static func titulo_gloria(gloria: int) -> String:
+	var t: String = TITULOS_GLORIA[0][1]
+	for x in TITULOS_GLORIA:
+		if gloria >= int(x[0]):
+			t = x[1]
+	return t
+
+## {"atual", "minimo", "proximo"} do título de Glória.
+static func progresso_gloria(gloria: int) -> Dictionary:
+	var minimo := 0
+	var prox := -1
+	for x in TITULOS_GLORIA:
+		if gloria >= int(x[0]):
+			minimo = int(x[0])
+		elif prox < 0:
+			prox = int(x[0])
+	return {"titulo": titulo_gloria(gloria), "minimo": minimo, "proximo": prox}
+
 static func para_lutador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
-	return Combat.criar_lutador(g["id"], g["nome"], stats_do_gladiador(g, especialidade, extra), classes()[g["classe"]]["passiva"])
+	var f := Combat.criar_lutador(g["id"], g["nome"], stats_do_gladiador(g, especialidade, extra), classes()[g["classe"]]["passiva"])
+	f["faixa"] = faixa_carga(carga_atual(g), carga_maxima(g, especialidade, extra))
+	return f
 
 static func preco_gladiador(g: Dictionary) -> int:
 	if g["origem"] == "livre":

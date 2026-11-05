@@ -11,6 +11,12 @@ const CUSTO_POR_GLADIADOR := 5
 const CUSTO_POR_GLADIADOR_REFEITORIO := 3
 const CAPACIDADE_BASE := 4
 const PRECO_TREINO := 20
+const TREINO_POR_NIVEL := 12
+const TREINO_POR_PONTO := 4
+const FAMA_CAMPANHA := 5
+const GLORIA_DERROTA := 0.25
+const AURA_CHANCE := 0.02
+const AURA_CHANCE_MAX := 0.6
 const TREINO_MAXIMO := 10
 const MAX_LOG := 40
 const CHANCE_LIBERTO := 0.03
@@ -40,16 +46,16 @@ const MELHORIAS_LUDUS: Array = [
 const DIFICULDADES_ORDEM: Array = ["facil", "medio", "dificil", "extremo"]
 const REGRAS := {
 	"facil": {"nome": "Fácil", "campeao": 0, "lenda": 3, "liberdade": null, "precos": 0.8, "arenaBase": 0.9, "arenaFator": 0.7, "campReq": 0.7,
-		"campMult": [0.55, 0.5, 0.74, 0.83, 0.95, 1.04, 1.08, 1.06, 1.32, 1.01],
+		"campMult": [0.55, 0.55, 0.57, 0.64, 0.61, 0.66, 0.78, 0.73, 0.75, 0.75],
 		"resumo": "Já começa com campeão. Lenda com 3 vitórias. Nunca é libertado. Preços −20%, rivais mais fracos."},
 	"medio": {"nome": "Médio", "campeao": 3, "lenda": 9, "liberdade": null, "precos": 1.0, "arenaBase": 1.0, "arenaFator": 1.0, "campReq": 1.0,
-		"campMult": [0.6, 0.89, 1.03, 1.12, 1.12, 1.31, 1.21, 1.27, 1.45, 1.18],
+		"campMult": [0.65, 0.65, 0.67, 0.75, 0.72, 0.78, 0.92, 0.86, 0.88, 0.88],
 		"resumo": "Campeão com 3 vitórias, lenda com 9. Nunca é libertado. Preços e rivais padrão."},
 	"dificil": {"nome": "Difícil", "campeao": 6, "lenda": 15, "liberdade": 30, "precos": 1.25, "arenaBase": 1.05, "arenaFator": 1.15, "campReq": 1.6,
-		"campMult": [0.66, 0.95, 1.06, 1.15, 1.18, 1.38, 1.25, 1.31, 1.48, 1.24],
+		"campMult": [0.7, 0.7, 0.72, 0.81, 0.78, 0.84, 0.99, 0.93, 0.95, 0.95],
 		"resumo": "Campeão com 6 vitórias, lenda com 15. Libertado após 30 lutas como lenda. Preços +25%, rivais mais fortes."},
 	"extremo": {"nome": "Extremo", "campeao": 15, "lenda": 45, "liberdade": 5, "precos": 1.6, "arenaBase": 1.1, "arenaFator": 1.3, "campReq": 2.4,
-		"campMult": [1.03, 1.21, 1.37, 1.25, 1.39, 1.45, 1.41, 1.38, 1.64, 1.25],
+		"campMult": [0.78, 0.78, 0.8, 0.9, 0.86, 0.94, 1.1, 1.03, 1.06, 1.06],
 		"resumo": "Campeão com 15 vitórias, lenda com 45. Libertado após só 5 lutas como lenda. Preços +60%, rivais brutais."},
 }
 const CHEATS_NOMES := {
@@ -219,8 +225,11 @@ static func multiplicador_arena(arena: Dictionary, dif: String = "medio") -> flo
 static func batalhas_do_ludus(e: Dictionary) -> int:
 	return int(e["batalhasTotais"]) if e.has("batalhasTotais") else int(e["vitoriasTotais"])
 
+static func fama_do_ludus(e: Dictionary) -> int:
+	return int(e.get("fama", 0))
+
 static func arena_liberada(e: Dictionary, arena: Dictionary) -> Dictionary:
-	var faltam: int = maxi(0, int(arena["batalhasMin"]) - batalhas_do_ludus(e))
+	var faltam: int = maxi(0, int(arena["famaMin"]) - int(e.get("famaMax", 0)))
 	return {"liberada": faltam == 0, "faltam": faltam}
 
 static func hash_texto(t: String) -> int:
@@ -255,8 +264,8 @@ static func criar_campeao_rival(rng: Rng, l: Dictionary, indice: int) -> Diction
 
 static func novo_jogo(semente: int, casa_id: String = "", dificuldade: String = "") -> Dictionary:
 	var e := {
-		"versao": 4, "semente": semente if semente != 0 else 1, "casaId": "", "ouro": OURO_INICIAL, "energia": ENERGIA_TURNO,
-		"turno": 1, "proximoId": 1, "vitoriasTotais": 0, "campanha": 0, "libertados": [], "config": {"dificuldade": "medio"},
+		"versao": 5, "semente": semente if semente != 0 else 1, "casaId": "", "ouro": OURO_INICIAL, "energia": ENERGIA_TURNO,
+		"turno": 1, "proximoId": 1, "vitoriasTotais": 0, "fama": 0, "famaMax": 0, "campanha": 0, "libertados": [], "config": {"dificuldade": "medio"},
 		"gladiadores": [], "mercado": [], "inventario": [], "campeoesRivais": {}, "melhorias": {}, "log": [],
 	}
 	if dificuldade != "":
@@ -436,6 +445,8 @@ static func comprar_item(e: Dictionary, item_id: String) -> String:
 	var item := Model.item_por_id(item_id)
 	if item.is_empty():
 		return "Item inexistente."
+	if int(e.get("fama", 0)) < int(item["famaMin"]):
+		return "Exige %d de fama (você tem %d)." % [int(item["famaMin"]), int(e.get("fama", 0))]
 	err = pagar(e, 0, preco_item(e, item))
 	if err != "": return err
 	e["inventario"].append(item_id)
@@ -464,6 +475,15 @@ static func equipar(e: Dictionary, glad_id: String, slot: String, item_id: Strin
 		return "Este item não serve a este slot."
 	if not (g["classe"] in item["classes"]):
 		return "Este item não serve a esta classe."
+	var casa_esp: String = str(lanista_da_casa(e).get("especialidade", ""))
+	var base_stats := Model.stats_sem_itens(g, casa_esp, extra_da_casa(e))
+	if int(base_stats["forca"]) < int(item["forcaMin"]):
+		return "Exige Força %d (%s tem %d). Treine Força." % [int(item["forcaMin"]), g["nome"], int(base_stats["forca"])]
+	var peso_sem: int = Model.carga_atual(g)
+	if antigo != null:
+		peso_sem -= int(Model.item_por_id(antigo).get("peso", 0))
+	if peso_sem + int(item["peso"]) > Model.carga_maxima(g, casa_esp, extra_da_casa(e)):
+		return "Peso demais para %s (carga máxima %d)." % [g["nome"], Model.carga_maxima(g, casa_esp, extra_da_casa(e))]
 	var idx: int = e["inventario"].find(item_id)
 	if idx < 0:
 		return "Item não está no armeiro."
@@ -516,6 +536,11 @@ static func trocar_classe(e: Dictionary, glad_id: String, classe: String) -> Str
 	registrar(e, "%s passou a lutar como %s." % [g["nome"], Model.classes()[classe]["nome"]])
 	return ""
 
+## Custo de treinar 1 ponto: sobe com o nível do gladiador e com os pontos já treinados no atributo.
+static func custo_treino(e: Dictionary, g: Dictionary, atributo: String) -> int:
+	var base: int = PRECO_TREINO + TREINO_POR_NIVEL * (int(g["nivel"]) - 1) + TREINO_POR_PONTO * int(g["treino"].get(atributo, 0))
+	return jsround(float(base) * float(regras_de(e)["precos"]))
+
 static func treinar(e: Dictionary, glad_id: String, atributo: String) -> String:
 	var err := _exigir_melhoria(e, "palus")
 	if err != "": return err
@@ -526,7 +551,9 @@ static func treinar(e: Dictionary, glad_id: String, atributo: String) -> String:
 	if err != "": return err
 	if int(g["treino"][atributo]) >= TREINO_MAXIMO:
 		return "Treino máximo atingido neste atributo."
-	err = pagar(e, 1, PRECO_TREINO)
+	if not (atributo in Model.ATRIBUTOS):
+		return "Atributo inexistente."
+	err = pagar(e, 1, custo_treino(e, g, atributo))
 	if err != "": return err
 	g["treino"][atributo] = int(g["treino"][atributo]) + 1
 	g["xp"] = int(g["xp"]) + 10
@@ -580,7 +607,7 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 	var casa := lanista_da_casa(e)
 	var forte: Dictionary = {}
 	if _cheat(e, "vencer"):
-		forte = {"forca": 80, "agilidade": 80, "vitalidade": 300, "sorte": 80}
+		forte = {"forca": 80, "destreza": 80, "vitalidade": 300, "resistencia": 80, "inteligencia": 80, "aura": 80}
 	elif _cheat(e, "vida"):
 		forte = {"vitalidade": 300}
 	var extra_a: Dictionary = extra_da_casa(e).duplicate()
@@ -642,6 +669,32 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 		bonus_pct = LOTACOES_POCO[lot]["bonus"]
 		if vitoria:
 			moedas = rng.inteiro(LOTACOES_POCO[lot]["moedas"][0], LOTACOES_POCO[lot]["moedas"][1])
+	var aura_bonus := 0
+	if vitoria and d["poco"] and not d.get("campanha", false):
+		var aura_max := 0
+		for f in fa:
+			aura_max = maxi(aura_max, int(f["stats"]["aura"]))
+		var chance_aura: float = minf(AURA_CHANCE_MAX, AURA_CHANCE * float(aura_max))
+		if rng.proximo() < chance_aura:
+			aura_bonus = rng.inteiro(8, 20)
+			moedas += aura_bonus
+	# Fama (do ludus) e Glória (do gladiador)
+	var mult_camp: int = 2 if d.get("campanha", false) else 1
+	var fama_delta := 0
+	var gloria_delta := 0
+	var arena_d: Dictionary = d["arena"]
+	if vitoria:
+		fama_delta = (FAMA_CAMPANHA if d.get("campanha", false) else int(arena_d.get("famaVitoria", 1)))
+		gloria_delta = int(arena_d.get("gloria", 10)) * mult_camp
+	else:
+		gloria_delta = jsround(float(int(arena_d.get("gloria", 10)) * mult_camp) * GLORIA_DERROTA)
+		if d["poco"] and not d.get("campanha", false):
+			fama_delta = -mini(int(e.get("fama", 0)), int(arena_d.get("famaDerrota", 3)))
+	e["fama"] = maxi(0, int(e.get("fama", 0)) + fama_delta)
+	e["famaMax"] = maxi(int(e.get("famaMax", 0)), int(e["fama"]))
+	for g in d["ladoA"]:
+		if g["vivo"]:
+			g["gloria"] = int(g.get("gloria", 0)) + gloria_delta
 	if vitoria:
 		e["vitoriasTotais"] = int(e["vitoriasTotais"]) + 1
 		var base := rng.inteiro(d["recompensa"][0], d["recompensa"][1])
@@ -678,7 +731,7 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 		"titulo": d["titulo"], "arenaNome": d["arena"]["nome"], "arte": d["arena"]["arte"], "plateia": plateia,
 		"lutadoresA": va, "lutadoresB": vb, "eventos": r["eventos"], "vitoriaA": vitoria, "efeitosNovos": efeitos_novos,
 		"resumo": resumo, "trilha": d["trilha"], "marcos": marcos, "ouro": ouro,
-		"bonusPct": bonus_pct if vitoria else 0, "moedas": moedas,
+		"bonusPct": bonus_pct if vitoria else 0, "moedas": moedas, "auraBonus": aura_bonus, "fama": fama_delta, "gloria": gloria_delta,
 	}
 
 static func qualidade_rival(nivel: int, arena: Dictionary = {}) -> int:
@@ -717,7 +770,7 @@ static func lutar_arena(e: Dictionary, glad_ids: Array, arena_id: String) -> Dic
 		lado_a.append(g)
 	var fama := arena_liberada(e, arena)
 	if not fama["liberada"]:
-		return {"erro": "%s só abre depois de %d batalhas (faltam %d)." % [arena["nome"], int(arena["batalhasMin"]), int(fama["faltam"])]}
+		return {"erro": "%s só abre com %d de fama (faltam %d)." % [arena["nome"], int(arena["famaMin"]), int(fama["faltam"])]}
 	for g in lado_a:
 		var err := _exigir_vivo(g)
 		if err == "": err = _exigir_com_estilo(g)
@@ -793,6 +846,10 @@ static func texto_requisito(r: Dictionary) -> String:
 			return "Um gladiador com %d vitórias no Poço" % int(r["valor"])
 		"gladiadorEquipado":
 			return "Um gladiador equipado com %s" % Model.item_por_id(str(r.get("item", "")))["nome"]
+		"fama":
+			return "%d de fama" % int(r["valor"])
+		"gloriaGladiador":
+			return "Um gladiador com %d de Glória" % int(r["valor"])
 	return ""
 
 static func valor_requisito(e: Dictionary, r: Dictionary) -> int:
@@ -810,6 +867,10 @@ static func _cumpre(e: Dictionary, r: Dictionary) -> bool:
 			return vivos.any(func(g): return int(g["vitoriasPoco"]) >= v)
 		"gladiadorEquipado":
 			return vivos.any(func(g): return g["equipamento"].values().has(r.get("item", "")))
+		"fama":
+			return int(e.get("fama", 0)) >= v
+		"gloriaGladiador":
+			return vivos.any(func(g): return int(g.get("gloria", 0)) >= v)
 	return false
 
 ## Próximo desafio da campanha; {} se a campanha acabou.
@@ -881,7 +942,7 @@ static func lutar_campanha(e: Dictionary, glad_ids: Array) -> Dictionary:
 		"arena": arena_por_id("poco" if regra["efeitosPoco"] else "coliseu"),
 		"titulo": "%s: %s" % [desafio["passo"]["titulo"], regra["nome"]],
 		"trilha": "poco" if regra["efeitosPoco"] else "campanha:%s" % lanista["id"],
-		"poco": regra["efeitosPoco"], "mortal": true, "recompensa": [100 * formato, 140 * formato], "rng": rng,
+		"poco": regra["efeitosPoco"], "mortal": true, "campanha": true, "recompensa": [100 * formato, 140 * formato], "rng": rng,
 	})
 	if payload["vitoriaA"]:
 		e["campanha"] = int(e["campanha"]) + 1

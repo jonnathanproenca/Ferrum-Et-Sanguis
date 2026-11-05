@@ -7,7 +7,14 @@
     "passiva": "guarda",
     "passivaNome": "Guarda alta",
     "passivaDescricao": "+2 na rolagem de defesa.",
-    "stats": { "forca": 9, "agilidade": 6, "vitalidade": 12, "sorte": 5 }
+    "stats": {
+      "forca": 9,
+      "destreza": 6,
+      "vitalidade": 11,
+      "resistencia": 9,
+      "inteligencia": 5,
+      "aura": 4
+    }
   },
   "retiario": {
     "nome": "Retiário",
@@ -16,7 +23,14 @@
     "passiva": "rede",
     "passivaNome": "Rede",
     "passivaDescricao": "Quando acerta, o oponente sofre -2 na próxima defesa.",
-    "stats": { "forca": 6, "agilidade": 12, "vitalidade": 8, "sorte": 7 }
+    "stats": {
+      "forca": 8,
+      "destreza": 11,
+      "vitalidade": 9,
+      "resistencia": 8,
+      "inteligencia": 11,
+      "aura": 6
+    }
   },
   "tracio": {
     "nome": "Trácio",
@@ -25,7 +39,14 @@
     "passiva": "sequencia",
     "passivaNome": "Sequência",
     "passivaDescricao": "15% de chance de golpear duas vezes na mesma rodada.",
-    "stats": { "forca": 10, "agilidade": 10, "vitalidade": 7, "sorte": 6 }
+    "stats": {
+      "forca": 10,
+      "destreza": 11,
+      "vitalidade": 9,
+      "resistencia": 8,
+      "inteligencia": 6,
+      "aura": 5
+    }
   },
   "samnita": {
     "nome": "Samnita",
@@ -34,7 +55,14 @@
     "passiva": "resistencia",
     "passivaNome": "Couraça",
     "passivaDescricao": "Reduz 2 do dano recebido.",
-    "stats": { "forca": 9, "agilidade": 8, "vitalidade": 10, "sorte": 6 }
+    "stats": {
+      "forca": 9,
+      "destreza": 7,
+      "vitalidade": 9,
+      "resistencia": 8,
+      "inteligencia": 7,
+      "aura": 5
+    }
   },
   "dimachaerus": {
     "nome": "Dimachaerus",
@@ -43,6 +71,13 @@
     "passiva": "sequencia",
     "passivaNome": "Duas lâminas",
     "passivaDescricao": "15% de chance de golpear duas vezes na mesma rodada.",
-    "stats": { "forca": 11, "agilidade": 11, "vitalidade": 8, "sorte": 6 }
+    "stats": {
+      "forca": 11,
+      "destreza": 11,
+      "vitalidade": 8,
+      "resistencia": 6,
+      "inteligencia": 6,
+      "aura": 6
+    }
   }
 }

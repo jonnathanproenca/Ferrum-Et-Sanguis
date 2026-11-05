@@ -9,12 +9,14 @@
       20,
       30
     ],
-    "batalhasMin": 0,
     "dificuldade": 0,
     "nivelRival": [
       1,
       5
-    ]
+    ],
+    "famaVitoria": 1,
+    "gloria": 10,
+    "famaMin": 0
   },
   {
     "id": "capua",
@@ -26,12 +28,14 @@
       40,
       60
     ],
-    "batalhasMin": 8,
     "dificuldade": 0.15,
     "nivelRival": [
       3,
       9
-    ]
+    ],
+    "famaVitoria": 2,
+    "gloria": 25,
+    "famaMin": 8
   },
   {
     "id": "coliseu",
@@ -43,12 +47,14 @@
       80,
       120
     ],
-    "batalhasMin": 24,
     "dificuldade": 0.2,
     "nivelRival": [
       6,
       14
-    ]
+    ],
+    "famaVitoria": 3,
+    "gloria": 60,
+    "famaMin": 24
   },
   {
     "id": "poco",
@@ -66,11 +72,14 @@
       75,
       75
     ],
-    "batalhasMin": 0,
     "dificuldade": 0.3,
     "nivelRival": [
       1,
       8
-    ]
+    ],
+    "famaVitoria": 2,
+    "gloria": 40,
+    "famaMin": 0,
+    "famaDerrota": 3
   }
 ]

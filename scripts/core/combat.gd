@@ -10,41 +10,81 @@ const CHANCE_SEQUENCIA := 0.15
 const CHANCE_EFEITO_PADRAO := 0.5
 const RENDICAO_PADRAO := 0.25
 
-static func criar_lutador(id: String, nome: String, stats: Dictionary, passiva: String = "") -> Dictionary:
-	var hp_max: int = 50 + int(stats["vitalidade"]) * 5
-	return {"id": id, "nome": nome, "stats": stats.duplicate(), "hpMax": hp_max, "hp": hp_max, "passiva": passiva}
+## Constantes de balanceamento (todas as fórmulas de atributos ficam aqui).
+const HP_BASE := 50
+const HP_POR_VIT := 6
+const EST_BASE := 30
+const EST_POR_RES := 3
+const EST_REGEN := 4
+const EST_GOLPE := 8
+const EST_PESADO := 16
+const ACERTO_BASE := 55.0
+const ACERTO_POR_DES := 1.5
+const ACERTO_MIN := 20.0
+const ACERTO_MAX := 95.0
+const DEFESA_POR_INT := 1.5
+const DEFESA_MAX := 60.0
+const DANO_BASE := 6.0
+const DANO_POR_FOR := 0.7
+const CHANCE_CRITICO := 0.05
+const EXAUSTO_ACERTO := 20.0
+const EXAUSTO_DANO := 0.6
+const FAIXA_DEFESA := {"leve": 8.0, "normal": 0.0, "pesado": -8.0, "sobrecarga": -8.0}
+const FAIXA_REGEN := {"leve": 2, "normal": 0, "pesado": -2, "sobrecarga": -2}
+const RESISTENCIA_EFEITO := 0.02
 
-static func bonus(valor: int) -> int:
-	return int(floor(float(valor - 5) / 2.0))
+static func criar_lutador(id: String, nome: String, stats: Dictionary, passiva: String = "") -> Dictionary:
+	var hp_max: int = HP_BASE + int(stats["vitalidade"]) * HP_POR_VIT
+	var est_max: int = EST_BASE + int(stats["resistencia"]) * EST_POR_RES
+	return {"id": id, "nome": nome, "stats": stats.duplicate(), "hpMax": hp_max, "hp": hp_max, "passiva": passiva,
+		"estMax": est_max, "est": est_max, "faixa": "normal"}
+
+static func chance_acerto(atq: Dictionary, exausto: bool = false) -> float:
+	var c: float = ACERTO_BASE + ACERTO_POR_DES * float(atq["stats"]["destreza"]) - (EXAUSTO_ACERTO if exausto else 0.0)
+	return clampf(c, ACERTO_MIN, ACERTO_MAX)
+
+static func chance_defesa(def: Dictionary, preso: bool = false) -> float:
+	var c: float = DEFESA_POR_INT * float(def["stats"]["inteligencia"]) + float(FAIXA_DEFESA.get(def.get("faixa", "normal"), 0.0))
+	if def["passiva"] == "guarda":
+		c += 8.0
+	if preso:
+		c -= 10.0
+	return clampf(c, 0.0, DEFESA_MAX)
+
+static func dano_base(atq: Dictionary) -> float:
+	return DANO_BASE + DANO_POR_FOR * float(atq["stats"]["forca"])
 
 ## Um golpe. `presos` e `cargas` são Dictionaries mutáveis (conjunto e mapa).
 static func resolver_ataque(atq: Dictionary, def: Dictionary, rng: Rng, rodada: int, presos: Dictionary, cargas: Dictionary) -> Dictionary:
-	var rol_atq: int = rng.d20()
-	var rol_def: int = rng.d20()
-	var bonus_atq: int = bonus(int(atq["stats"]["agilidade"])) + bonus(int(atq["stats"]["sorte"]))
-	var bonus_def: int = bonus(int(def["stats"]["agilidade"]))
-	if def["passiva"] == "guarda":
-		bonus_def += 2
-	if presos.has(def["id"]):
-		bonus_def -= 2
-		presos.erase(def["id"])
 	var pesado: bool = int(cargas.get(atq["id"], 0)) >= CARGA_PESADO
 	if pesado:
 		cargas[atq["id"]] = 0
-	var critico: bool = rol_atq == 20
+	var custo: int = EST_PESADO if pesado else EST_GOLPE
+	var exausto: bool = int(atq["est"]) < custo
+	atq["est"] = maxi(0, int(atq["est"]) - custo)
+	var preso: bool = presos.has(def["id"])
+	if preso:
+		presos.erase(def["id"])
+	var p_acerto := chance_acerto(atq, exausto)
+	var p_defesa := chance_defesa(def, preso)
+	var r1: float = rng.proximo()
+	var r2: float = rng.proximo()
+	var critico: bool = r1 < CHANCE_CRITICO
 	var base := {
 		"rodada": rodada, "atacante": atq["id"], "defensor": def["id"],
-		"rolagemAtaque": rol_atq, "rolagemDefesa": rol_def,
-		"bonusAtaque": bonus_atq, "bonusDefesa": bonus_def,
+		"chanceAcerto": p_acerto, "chanceDefesa": p_defesa, "exausto": exausto,
+		"rolagemAtaque": int(r1 * 100.0), "rolagemDefesa": int(r2 * 100.0),
 	}
-	if not critico and not pesado and rol_atq + bonus_atq <= rol_def + bonus_def:
-		var tipo := "esquiva" if rol_def >= 15 else "defesa"
-		var evento := {"tipo": tipo, "ator": atq["id"], "alvo": def["id"]}
+	var errou: bool = not critico and not pesado and r1 * 100.0 >= p_acerto
+	var defendeu: bool = not critico and not pesado and not errou and r2 * 100.0 < p_defesa
+	if errou or defendeu:
+		var evento := {"tipo": "esquiva" if errou else "defesa", "ator": atq["id"], "alvo": def["id"]}
 		cargas[def["id"]] = mini(CARGA_PESADO, int(cargas.get(def["id"], 0)) + 1)
 		var oc := base.duplicate()
 		oc["dano"] = 0
 		return {"evento": evento, "oculto": oc, "acertou": false}
-	var dano: int = maxi(1, bonus(int(atq["stats"]["forca"])) + 6 + (6 if critico else 0) - bonus(int(def["stats"]["vitalidade"])))
+	var dano_f: float = dano_base(atq) * (EXAUSTO_DANO if exausto else 1.0)
+	var dano: int = maxi(1, int(floor(dano_f + 0.5)) + (6 if critico else 0))
 	if def["passiva"] == "resistencia":
 		dano = maxi(1, dano - 2)
 	if pesado:
@@ -61,13 +101,13 @@ static func resolver_ataque(atq: Dictionary, def: Dictionary, rng: Rng, rodada: 
 		"acertou": true,
 	}
 
-## Ordena por agilidade decrescente, estável (como o sort do JavaScript).
-static func _ordenar_agilidade(lista: Array) -> Array:
+## Ordena por destreza decrescente, estável (iniciativa).
+static func _ordenar_destreza(lista: Array) -> Array:
 	var r: Array = lista.duplicate()
 	for i in range(1, r.size()):
 		var x = r[i]
 		var j := i - 1
-		while j >= 0 and int(r[j]["stats"]["agilidade"]) < int(x["stats"]["agilidade"]):
+		while j >= 0 and int(r[j]["stats"]["destreza"]) < int(x["stats"]["destreza"]):
 			r[j + 1] = r[j]
 			j -= 1
 		r[j + 1] = x
@@ -138,7 +178,7 @@ static func simular_equipes(lado_a: Array, lado_b: Array, semente: int, opcoes: 
 		eventos.append(r["evento"])
 		ocultos.append(r["oculto"])
 		anunciar_carga.call(atq, def)
-		if r["acertou"] and int(def["hp"]) > 0 and efeitos_poco and rng.proximo() < chance:
+		if r["acertou"] and int(def["hp"]) > 0 and efeitos_poco and rng.proximo() < chance * maxf(0.2, 1.0 - RESISTENCIA_EFEITO * float(def["stats"]["resistencia"])):
 			aplicar_efeito.call(def, TIPOS_EFEITO[rng.inteiro(0, TIPOS_EFEITO.size() - 1)])
 		apurar.call(def)
 		if r["acertou"] and atq["passiva"] == "sequencia" and not fora.has(def["id"]) and rng.proximo() < CHANCE_SEQUENCIA:
@@ -150,7 +190,7 @@ static func simular_equipes(lado_a: Array, lado_b: Array, semente: int, opcoes: 
 
 	var rodada := 1
 	while rodada <= MAX_RODADAS and vivos.call("A").size() > 0 and vivos.call("B").size() > 0:
-		var ordem: Array = _ordenar_agilidade(todos.filter(func(f): return not fora.has(f["id"])))
+		var ordem: Array = _ordenar_destreza(todos.filter(func(f): return not fora.has(f["id"])))
 		for atq in ordem:
 			if fora.has(atq["id"]):
 				continue
@@ -174,6 +214,9 @@ static func simular_equipes(lado_a: Array, lado_b: Array, semente: int, opcoes: 
 				eventos.append({"tipo": "efeito", "alvo": f["id"], "nome": s["tipo"], "dano": s["dano"], "hpRestante": f["hp"]})
 				apurar.call(f)
 			statuses[f["id"]] = lista.filter(func(s): return int(s["rodadas"]) > 0)
+		for f in todos:
+			if not fora.has(f["id"]):
+				f["est"] = clampi(int(f["est"]) + EST_REGEN + int(FAIXA_REGEN.get(f.get("faixa", "normal"), 0)), 0, int(f["estMax"]))
 		rodada += 1
 
 	var a_vivo: bool = vivos.call("A").size() > 0

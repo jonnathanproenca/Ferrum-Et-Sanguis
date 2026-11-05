@@ -7,6 +7,10 @@
         {
           "tipo": "vitoriasTotais",
           "valor": 3
+        },
+        {
+          "tipo": "fama",
+          "valor": 3
         }
       ],
       "regra": {
@@ -24,13 +28,17 @@
         {
           "tipo": "vitoriasTotais",
           "valor": 5
+        },
+        {
+          "tipo": "fama",
+          "valor": 6
         }
       ],
       "regra": {
         "nome": "Areia pesada",
-        "descricao": "O rival luta em areia encharcada: -1 de agilidade.",
+        "descricao": "O rival luta em areia encharcada: -1 de destreza.",
         "bonus": {
-          "agilidade": -1
+          "destreza": -1
         },
         "efeitosPoco": false,
         "letal": false
@@ -43,6 +51,10 @@
         {
           "tipo": "gladiadorVitorias",
           "valor": 4
+        },
+        {
+          "tipo": "fama",
+          "valor": 10
         }
       ],
       "regra": {
@@ -79,6 +91,14 @@
         {
           "tipo": "vitoriasTotais",
           "valor": 10
+        },
+        {
+          "tipo": "fama",
+          "valor": 20
+        },
+        {
+          "tipo": "gloriaGladiador",
+          "valor": 150
         }
       ],
       "regra": {
@@ -99,6 +119,10 @@
           "tipo": "gladiadorVitorias",
           "valor": 6,
           "classe": "murmilo"
+        },
+        {
+          "tipo": "fama",
+          "valor": 28
         }
       ],
       "regra": {
@@ -122,13 +146,17 @@
         {
           "tipo": "gladiadorEquipado",
           "item": "gladio"
+        },
+        {
+          "tipo": "fama",
+          "valor": 36
         }
       ],
       "regra": {
         "nome": "Tempestade",
-        "descricao": "Vento forte: efeitos do Poço e +1 de sorte ao rival.",
+        "descricao": "Vento forte: efeitos do Poço e +1 de aura ao rival.",
         "bonus": {
-          "sorte": 1
+          "aura": 1
         },
         "efeitosPoco": true,
         "letal": false
@@ -141,13 +169,21 @@
         {
           "tipo": "gladiadorPoco",
           "valor": 4
+        },
+        {
+          "tipo": "fama",
+          "valor": 42
+        },
+        {
+          "tipo": "gloriaGladiador",
+          "valor": 400
         }
       ],
       "regra": {
         "nome": "Fosso",
-        "descricao": "Luta no fosso: efeitos do Poço e +1 de agilidade ao rival.",
+        "descricao": "Luta no fosso: efeitos do Poço e +1 de destreza ao rival.",
         "bonus": {
-          "agilidade": 1
+          "destreza": 1
         },
         "efeitosPoco": true,
         "letal": false
@@ -164,6 +200,14 @@
         {
           "tipo": "gladiadorVitorias",
           "valor": 8
+        },
+        {
+          "tipo": "fama",
+          "valor": 55
+        },
+        {
+          "tipo": "gloriaGladiador",
+          "valor": 700
         }
       ],
       "regra": {
@@ -188,14 +232,22 @@
         {
           "tipo": "vitoriasTotais",
           "valor": 30
+        },
+        {
+          "tipo": "fama",
+          "valor": 70
+        },
+        {
+          "tipo": "gloriaGladiador",
+          "valor": 1200
         }
       ],
       "regra": {
         "nome": "Espártaco, o invicto",
-        "descricao": "O campeão de Batiatus é o gladiador mais temido de Roma: +3 de força e de agilidade.",
+        "descricao": "O campeão de Batiatus é o gladiador mais temido de Roma: +3 de força e de destreza.",
         "bonus": {
           "forca": 3,
-          "agilidade": 3
+          "destreza": 3
         },
         "efeitosPoco": false,
         "letal": true
