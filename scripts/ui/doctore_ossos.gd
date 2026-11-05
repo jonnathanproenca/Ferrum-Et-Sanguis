@@ -19,7 +19,7 @@ const OSSOS := [
 	["coxa_f", "quadril", Vector2(6, 0), Vector2(48, 28), -0.2, 3, Vector2(0.7, 1.55)],
 	["canela_f", "coxa_f", Vector2(42, 212), Vector2(58, 22), 0.2, 4, Vector2(0.85, 1.25)],
 	["coxa_t", "quadril", Vector2(-4, 0), Vector2(48, 28), -0.2, 1, Vector2(0.7, 1.55)],
-	["canela_t", "coxa_t", Vector2(42, 212), Vector2(50, 55), 0.2, 1, Vector2(0.85, 1.25)],
+	["canela_t", "coxa_t", Vector2(42, 212), Vector2(58, 22), 0.2, 1, Vector2(0.85, 1.25)],
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
 const REPOUSO := [0.0, 0.05, 0.3, 0.4, 0.4, 0.3, 0.15]
