@@ -23,7 +23,6 @@ var _fundo_sem: Label
 
 
 func _init() -> void:
-	estilo = int(OS.get_environment("BONECO")) if OS.get_environment("BONECO") != "" else 0
 	custom_minimum_size = Vector2(LARGURA, ALTURA)
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -60,8 +59,6 @@ func atualizar(g_: Dictionary = {}) -> void:
 		s.definir(item, motivo)
 
 
-## nível de detalhe 0..4 (0 = cru ... 4 = completo com fundo romano)
-var estilo := 0
 
 func _juntas(aberto: bool) -> Dictionary:
 	var j := {
@@ -218,38 +215,12 @@ func _draw() -> void:
 	for i in range(14):
 		var k := float(i) / 13.0
 		draw_circle(c, 210.0 * (1.0 - k), Color(0.80, 0.55, 0.25, 0.012 + 0.012 * k))
-	match estilo:
-		0: # bronze: pele, volume e anatomia, cenário de arena
-			_fundo_romano(false)
-			_silhueta(Color(0.05, 0.03, 0.02), 2.5)
-			_silhueta(Color(0.47, 0.32, 0.22), 0.0)
-			_luz_lateral(Color(0.64, 0.45, 0.30, 0.75), 9.0)
-			draw_line(Vector2(256, 110), Vector2(250, 210), Color(0.27, 0.16, 0.10, 0.7), 8.0, true)
-			_anatomia(Color(0.20, 0.11, 0.07, 0.75), true)
-			_subligaculo(Color(0.52, 0.09, 0.07))
-			draw_arc(Vector2(220, 30), 21.0, PI + 0.2, TAU - 0.2, 14, Color(0.10, 0.06, 0.04), 7.0, true)
-		1: # cinema: silhueta escura com luz alaranjada das tochas nos contornos
-			_fundo_romano(true)
-			draw_circle(Vector2(220, 384), 70.0, Color(1.0, 0.55, 0.2, 0.06))
-			_silhueta(Color(1.0, 0.62, 0.28, 0.55), 2.2)
-			_silhueta(Color(0.065, 0.045, 0.04), 0.0)
-			_anatomia(Color(1.0, 0.65, 0.3, 0.16), false)
-			_subligaculo(Color(0.26, 0.05, 0.04))
-		2: # afresco: pintura pompeiana, figura terracota com contorno preto
-			draw_rect(Rect2(6, 6, LARGURA - 12, ALTURA - 12), Color(0.46, 0.14, 0.09))
-			draw_rect(Rect2(14, 14, LARGURA - 28, ALTURA - 28), Color(0.54, 0.18, 0.11))
-			for x in range(14, int(LARGURA) - 28, 26):
-				draw_rect(Rect2(x, 14, 13, 10), Color(0.08, 0.05, 0.04))
-				draw_rect(Rect2(x + 13, ALTURA - 24, 13, 10), Color(0.08, 0.05, 0.04))
-			draw_rect(Rect2(14, 14, LARGURA - 28, ALTURA - 28), Color(0.93, 0.78, 0.40, 0.85), false, 2.0)
-			draw_circle(Vector2(220, 212), 170.0, Color(0.88, 0.62, 0.30, 0.12))
-			_silhueta(Color(0.06, 0.04, 0.03), 3.5)
-			_silhueta(Color(0.80, 0.46, 0.26), 0.0)
-			draw_line(Vector2(180, 108), Vector2(188, 210), Color(0.90, 0.58, 0.34), 8.0, true)
-			draw_line(Vector2(256, 110), Vector2(250, 210), Color(0.62, 0.32, 0.18), 8.0, true)
-			_anatomia(Color(0.06, 0.04, 0.03, 0.8), true)
-			_subligaculo(Color(0.93, 0.88, 0.76))
-			draw_arc(Vector2(220, 28), 21.0, PI + 0.2, TAU - 0.2, 14, Color(0.06, 0.04, 0.03), 8.0, true)
+	_fundo_romano(true)
+	draw_circle(Vector2(220, 384), 70.0, Color(1.0, 0.55, 0.2, 0.06))
+	_silhueta(Color(1.0, 0.62, 0.28, 0.55), 2.2)
+	_silhueta(Color(0.065, 0.045, 0.04), 0.0)
+	_anatomia(Color(1.0, 0.65, 0.3, 0.16), false)
+	_subligaculo(Color(0.26, 0.05, 0.04))
 	draw_rect(r, Color(Tema.OURO_ESCURO, 0.9), false, 2.0)
 	draw_rect(Rect2(Vector2(5, 5), size - Vector2(10, 10)), Color(Tema.OURO_ESCURO, 0.3), false, 1.0)
 

@@ -8,7 +8,8 @@ const LARGURA_CARTA := 600
 
 var _raiz: VBoxContainer
 var _caixa_cena: Control
-var _cena: CenaLudus
+var _cena: Control
+var _cena_nova := false
 var _fim: PanelContainer
 var _l_fim_sub: Label
 var _l_fim_stats: Label
@@ -30,9 +31,7 @@ func construir() -> void:
 	_caixa_cena.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_caixa_cena.custom_minimum_size = Vector2(0, 300)
 	_raiz.add_child(_caixa_cena)
-	_cena = CenaLudus.new()
-	_cena.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_caixa_cena.add_child(_cena)
+	_criar_cena()
 
 	# Fim de jogo
 	_fim = Tema.painel(Color("2a0f0c"), Tema.OURO_ESCURO)
@@ -92,6 +91,16 @@ func construir() -> void:
 	call_deferred("_ao_redimensionar")
 
 
+func _criar_cena() -> void:
+	if _cena != null:
+		_caixa_cena.remove_child(_cena)
+		_cena.queue_free()
+	_cena_nova = bool(Jogo.prefs.get("ludusNovo", false))
+	_cena = CenaLudus2.new() if _cena_nova else CenaLudus.new()
+	_cena.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_caixa_cena.add_child(_cena)
+
+
 func _ao_redimensionar() -> void:
 	if _raiz == null:
 		return
@@ -105,6 +114,8 @@ func _ao_redimensionar() -> void:
 
 func ao_mostrar() -> void:
 	super.ao_mostrar()
+	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova:
+		_criar_cena()
 	call_deferred("_ao_redimensionar")
 
 

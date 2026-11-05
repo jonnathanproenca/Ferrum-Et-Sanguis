@@ -88,6 +88,30 @@ static func painel_audio() -> Control:
 		v.add_child(h)
 	return v
 
+## Alterna entre o ludus antigo e o novo (pátio ao entardecer). Vale para todas as partidas.
+static func painel_visual() -> Control:
+	var h := Tema.hbox(12)
+	var b := Tema.botao("")
+	b.toggle_mode = true
+	b.custom_minimum_size = Vector2(124, 36)
+	var pintar := func(on: bool) -> void:
+		b.set_pressed_no_signal(on)
+		b.text = "LIGADO" if on else "desligado"
+		b.add_theme_stylebox_override("normal", Tema.caixa(Tema.SANGUE if on else Tema.PAINEL, Tema.OURO_ESCURO if on else Tema.BORDA, 6, 1, 4))
+		b.add_theme_stylebox_override("pressed", Tema.caixa(Tema.SANGUE, Tema.OURO, 6, 1, 4))
+	pintar.call(bool(Jogo.prefs.get("ludusNovo", false)))
+	b.pressed.connect(func() -> void:
+		var novo: bool = not bool(Jogo.prefs.get("ludusNovo", false))
+		Jogo.prefs["ludusNovo"] = novo
+		Jogo.salvar_prefs()
+		pintar.call(novo))
+	h.add_child(b)
+	var l := Tema.rotulo("Novo visual do ludus (teste)", 18)
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	h.add_child(l)
+	return h
+
 static func cheat_liberado() -> bool:
 	return bool(Jogo.prefs.get("cheatLiberado", false))
 
@@ -145,6 +169,8 @@ static func conteudo_opcoes() -> Control:
 	var v := Tema.vbox(14)
 	v.add_child(_secao("Som"))
 	v.add_child(painel_audio())
+	v.add_child(_secao("Visual"))
+	v.add_child(painel_visual())
 	if cheat_liberado():
 		v.add_child(_secao("Cheat mode"))
 		v.add_child(painel_cheats())
