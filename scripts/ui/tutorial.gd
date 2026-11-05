@@ -68,11 +68,11 @@ static func paginas_de(id: String, e: Dictionary) -> Array:
 				{"titulo": "Até a morte", "texto": "Nas lutas da campanha ninguém se rende: vai até a morte. Alguns passos são 2×2. Prepare seu time antes de entrar na arena."},
 			]
 		"treino":
-			return _com_aba("ludus", [{"titulo": "Treinar gladiadores", "texto": "Com o palus pronto, cada card de gladiador ganha botões de treino. Treinar custa 1 de energia e 20 de ouro, soma +1 no atributo escolhido (máximo 10 por atributo) e dá experiência. Escravos recém-comprados treinam mesmo sem estilo."}])
+			return _com_aba("ludus", [{"titulo": "Treinar gladiadores", "texto": "O treino exige o palus construído. Cada card de gladiador ganha botões para os 6 atributos (Força, Destreza, Vitalidade, Resistência, Inteligência e Aura). Treinar custa 1 de energia e ouro: o preço sobe com o nível do gladiador e com os pontos já treinados no atributo. Soma +1 (máximo 10 por atributo) e dá experiência. Escravos recém-comprados treinam mesmo sem estilo. Força alta também aumenta a carga que ele aguenta."}])
 		"armeiro":
 			return _com_aba("armeiro", [
 				{"titulo": "Peças especiais", "texto": "O armeiro mestre oferece 5 peças por rodada, todas melhores que as básicas. As chances de qualidade: Superior 60%, Rara 25%, Épica 11% e Lendária 4%. Cada rodada tem no máximo 3 verdes, 2 azuis, 2 roxas e 1 laranja."},
-				{"titulo": "Equipar", "texto": "Comprada a peça, ela vai para o armeiro. Abra o card do gladiador e escolha a peça em cada espaço: arma, elmo, peito, acessório, perna e pé. Cada peça serve a certos estilos. As básicas já vêm com o estilo."},
+				{"titulo": "Equipar", "texto": "Comprada a peça, ela vai para o armeiro. Abra o card do gladiador e escolha a peça em cada espaço: arma, elmo, peito, acessório, perna e pé. Cada peça serve a certos estilos e tem peso, Força mínima para vestir e Fama mínima do ludus para comprar. Peça pesada demais não pode ser vestida: veja a barra de carga. As básicas já vêm com o estilo."},
 			])
 		"enfermaria":
 			return _com_aba("enfermaria", [{"titulo": "Tratar os feridos", "texto": "O médico trata os efeitos persistentes que o Poço deixa. Tratar custa 1 de energia e 30 de ouro por ponto de severidade, e remove todos os efeitos do gladiador. Sem tratamento, os efeitos continuam reduzindo os atributos."}])
@@ -99,7 +99,7 @@ static func _progressao(e: Dictionary) -> String:
 static func _tour(e: Dictionary) -> Array:
 	var p: Array = []
 	p.append_array(_com_aba("ludus", [
-		{"titulo": "Bem-vindo, lanista de %s" % Game.lanista_da_casa(e)["nome"], "texto": "Esta é a tela do ludus: aqui ficam os seus gladiadores. Toque num card para ver atributos, equipamento e ações. Na barra de cima estão ouro, energia, turno e vitórias. As abas levam às outras partes do ludus."},
+		{"titulo": "Bem-vindo, lanista de %s" % Game.lanista_da_casa(e)["nome"], "texto": "Esta é a tela do ludus: aqui ficam os seus gladiadores. Toque num card para ver atributos, equipamento e ações. Na barra de cima estão ouro, energia, turno, vitórias e fama. As abas levam às outras partes do ludus."},
 		{"titulo": "Energia e turnos", "texto": "Cada rodada dá 3 de energia. Lutar, treinar, tratar feridos e trocar de estilo gastam energia. Quando ela acabar, toque em Próximo turno: o ludus paga a manutenção (10 de ouro + 5 por gladiador vivo) e o campeão rende patrocínio (20 + 5 por vitória dele). O mercado se renova a cada turno."},
 		{"titulo": "Campeão, lenda e liberdade", "texto": _progressao(e)},
 	]))
@@ -114,12 +114,12 @@ static func _tour(e: Dictionary) -> Array:
 	]))
 	p.append_array(_com_aba("arenas", [
 		{"titulo": "Arenas: escalar e lutar", "texto": "Toque nos gladiadores para escalar 1 ou 2 e escolha a arena. Cada gladiador gasta 1 de energia; no 2×2 a recompensa em ouro dobra. Quem cai abaixo de 25% de vida se rende, então a luta termina antes da morte."},
-		{"titulo": "Fama e dificuldade", "texto": "Você começa em Pompeia. Cápua abre com 8 batalhas disputadas e o Coliseu com 24, vencendo ou não. Quanto melhor a arena, mais forte o rival e maior a recompensa."},
-		{"titulo": "O Poço", "texto": "No Poço os golpes deixam efeitos persistentes (sangramento, veneno, contusão, queimadura), que enfraquecem o gladiador até serem tratados. Quem luta no Poço não volta às arenas de honra, e o campeão não entra."},
+		{"titulo": "Fama e dificuldade", "texto": "Você começa em Pompeia. A fama do ludus cresce com as vitórias (Pompeia +1, Cápua +2, Coliseu +3) e abre as arenas: Cápua com 8 de fama e o Coliseu com 24. Os gladiadores também ganham glória. Quanto melhor a arena, mais forte o rival e maior a recompensa."},
+		{"titulo": "O Poço", "texto": "No Poço os golpes deixam efeitos persistentes (sangramento, veneno, contusão, queimadura), que enfraquecem o gladiador até serem tratados. Quem luta no Poço não volta às arenas de honra, e o campeão não entra. Perder no Poço custa 3 de fama; vencer rende fama, glória e às vezes moedas extras pela sorte de Aura."},
 		{"titulo": "Durante a luta", "texto": "Pular luta mostra o resultado na hora, com 10% a menos de ouro. Desistir conta como derrota, sem recompensa, e a energia gasta não volta."},
 	]))
 	p.append_array(_com_aba("ludus", [
-		{"titulo": "Primeiro passo", "texto": "De volta ao ludus. Vá ao Mercado, compre escravos, escolha o estilo deles e mande-os para Pompeia. Ouro e fama abrem o resto. Boa sorte, lanista!"},
+		{"titulo": "Primeiro passo", "texto": "De volta ao ludus. Vá ao Mercado, compre escravos, escolha o estilo deles e mande-os para Pompeia. Ouro e fama abrem o resto: itens melhores exigem fama e Força. Boa sorte, lanista!"},
 	]))
 	return p
 

@@ -88,6 +88,15 @@ func teste_atributos() -> void:
 	ok(Combat.dano_base(Model.para_lutador(lutador("murmilo", 1, {"forca": 10}))) > Combat.dano_base(fraco), "FOR aumenta dano")
 	ok(Model.faixa_carga(5, 40) == "leve" and Model.faixa_carga(20, 40) == "normal" and Model.faixa_carga(35, 40) == "pesado" and Model.faixa_carga(45, 40) == "sobrecarga", "faixas de carga")
 	ok(Model.titulo_gloria(0) == "Novato" and Model.titulo_gloria(150) == "Conhecido" and Model.titulo_gloria(500) == "Temido" and Model.titulo_gloria(1000) == "Campeão" and Model.titulo_gloria(9999) == "Lenda", "títulos de Glória")
+	var inte := Model.para_lutador(lutador("murmilo", 1, {"inteligencia": 15}))
+	var leve_c := Combat.chance_defesa(inte)
+	inte["cargaPct"] = 0.5
+	var normal_c := Combat.chance_defesa(inte)
+	inte["cargaPct"] = 0.95
+	var pesado_c := Combat.chance_defesa(inte)
+	inte["cargaPct"] = 1.0
+	var cheio_c := Combat.chance_defesa(inte)
+	ok(normal_c > pesado_c and pesado_c > cheio_c and cheio_c < normal_c * 0.5, "peso alto reduz muito a defesa mesmo com INT alta (%.0f > %.0f > %.0f)" % [normal_c, pesado_c, cheio_c])
 	var pesado := Model.item_por_id("peso_inexistente")
 	ok(pesado.is_empty(), "item inexistente")
 	ok(int(Model.item_por_id("maca")["peso"]) > int(Model.item_por_id("adaga")["peso"]), "maça pesa mais que adaga")
@@ -115,6 +124,16 @@ func teste_regras() -> void:
 	ok(Game.comprar_item(e2, "maca@3") != "", "item épico exige fama")
 	e2["fama"] = 100
 	ok(Game.comprar_item(e2, "maca@3") == "", "item épico com fama")
+	# vender item: 40% do valor pago
+	var ev := novo()
+	ev["fama"] = 100
+	var ouro_v: int = ev["ouro"]
+	ok(Game.comprar_item(ev, "maca@2") == "", "compra para vender")
+	var pago: int = ouro_v - int(ev["ouro"])
+	var antes_v: int = ev["ouro"]
+	ok(Game.vender_item(ev, "maca@2") == "", "vender item")
+	ok(int(ev["ouro"]) - antes_v == Model.jsround(float(pago) * 0.4), "venda devolve 40%% (%d de %d)" % [int(ev["ouro"]) - antes_v, pago])
+	ok(Game.vender_item(ev, "maca@2") != "", "não vende item que não tem")
 	# força para equipar
 	var e3 := novo()
 	var gl: Dictionary = e3["gladiadores"][0]

@@ -55,12 +55,10 @@ static func criar(item: Dictionary, tam: int = 44) -> Control:
 	p.add_child(tr)
 	return p
 
-const ABREV := {"forca": "FOR", "agilidade": "AGI", "vitalidade": "VIT", "sorte": "SOR"}
-
 static func fmt_bonus(b: Dictionary) -> String:
 	var partes: Array = []
-	for k in b:
-		var v: int = int(b[k])
+	for k in Model.ATRIBUTOS:
+		var v: int = int(b.get(k, 0))
 		if v != 0:
-			partes.append("%s %s%d" % [ABREV[k], "+" if v > 0 else "", v])
+			partes.append("%s %s%d" % [Model.SIGLA_ATRIBUTO[k], "+" if v > 0 else "", v])
 	return ", ".join(partes) if not partes.is_empty() else "sem bônus"

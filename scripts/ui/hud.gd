@@ -14,6 +14,7 @@ var _l_ouro: Label
 var _l_energia: Label
 var _l_turno: Label
 var _l_vit: Label
+var _l_fama: Label
 var _b_turno: Button
 var _toast: Label
 var _toast_tween: Tween
@@ -39,6 +40,7 @@ func _ready() -> void:
 	_l_energia = _stat(h, Color("7fb6e8"))
 	_l_turno = _stat(h, Tema.AREIA)
 	_l_vit = _stat(h, Tema.AREIA)
+	_l_fama = _stat(h, Color("e0b0f0"))
 	var esp := Control.new()
 	esp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(esp)
@@ -132,6 +134,7 @@ func _atualizar_barra() -> void:
 	_l_energia.text = "Energia %d" % int(e["energia"])
 	_l_turno.text = "Turno %d" % int(e["turno"])
 	_l_vit.text = "Vitórias %d" % int(e["vitoriasTotais"])
+	_l_fama.text = "Fama %d" % int(e.get("fama", 0))
 	_b_turno.disabled = false
 	Tutorial.verificar(self)
 

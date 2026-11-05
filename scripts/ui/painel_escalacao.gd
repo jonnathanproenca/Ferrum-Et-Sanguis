@@ -5,9 +5,7 @@ extends VBoxContainer
 ## API: `formato` (1 ou 2 gladiadores; 0 = livre entre 1 e 2), `atualizar()`, `ids()`. Sinal `mudou_equipe`.
 signal mudou_equipe
 
-const ABREV := {"forca": "FOR", "agilidade": "AGI", "vitalidade": "VIT", "sorte": "SOR"}
-const COR_ATRIB := {"forca": Color("e07a5f"), "agilidade": Color("8fd0a0"), "vitalidade": Color("e8b4b4"), "sorte": Color("f2d28a")}
-const LARGURA_CARTAO := 156.0
+const LARGURA_CARTAO := 172.0
 
 var formato := 0:
 	set(v):
@@ -44,7 +42,7 @@ func _ready() -> void:
 	h.add_child(_b_limpar)
 	_rolagem = ScrollContainer.new()
 	_rolagem.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_rolagem.custom_minimum_size = Vector2(0, 226)
+	_rolagem.custom_minimum_size = Vector2(0, 262)
 	_rolagem.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	add_child(_rolagem)
 	_faixa = Tema.hbox(10)
@@ -146,6 +144,13 @@ func _cartao(g: Dictionary, n_sel: int, max_n: int, pos: int, casa: Dictionary, 
 	lt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lt.autowrap_mode = TextServer.AUTOWRAP_OFF
 	v.add_child(lt)
+	# Glória e título
+	var gl := int(g.get("gloria", 0))
+	var lg := Tema.rotulo("%s · %d" % [Model.titulo_gloria(gl), gl], 14, Tema.OURO)
+	lg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lg.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lg.tooltip_text = "Glória: %d" % gl
+	v.add_child(lg)
 	# atributos finais (como na luta)
 	var st := Model.stats_do_gladiador(g, str(casa.get("especialidade", "")), extra)
 	var grade := GridContainer.new()
@@ -153,15 +158,19 @@ func _cartao(g: Dictionary, n_sel: int, max_n: int, pos: int, casa: Dictionary, 
 	grade.add_theme_constant_override("h_separation", 8)
 	grade.add_theme_constant_override("v_separation", 0)
 	for a in Model.ATRIBUTOS:
-		var l := Tema.rotulo("%s %d" % [ABREV[a], int(st[a])], 15, COR_ATRIB[a])
+		var l := Tema.rotulo("%s %d" % [Model.SIGLA_ATRIBUTO[a], int(st[a])], 14, Tema.COR_ATRIBUTO[a])
 		l.autowrap_mode = TextServer.AUTOWRAP_OFF
+		l.tooltip_text = str(Model.NOME_ATRIBUTO[a])
 		grade.add_child(l)
-	var lv := Tema.rotulo("PV %d" % (50 + int(st["vitalidade"]) * 5), 15, Tema.CINZA)
-	lv.autowrap_mode = TextServer.AUTOWRAP_OFF
-	grade.add_child(lv)
 	var cg := CenterContainer.new()
 	cg.add_child(grade)
 	v.add_child(cg)
+	var hp: int = Combat.HP_BASE + Combat.HP_POR_VIT * int(st["vitalidade"])
+	var est: int = Combat.EST_BASE + Combat.EST_POR_RES * int(st["resistencia"])
+	var lv := Tema.rotulo("PV %d · EST %d" % [hp, est], 14, Tema.CINZA)
+	lv.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lv.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(lv)
 	_ignorar_mouse(p)
 	# selo numerado (sobre o canto do cartão, fora do layout do painel)
 	var raiz := Control.new()

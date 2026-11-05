@@ -15,6 +15,10 @@ const AREIA := Color("e8d5b0")
 const VERDE := Color("8fbf7a")
 const CINZA := Color("a8957f")
 
+## Cor de cada um dos 6 atributos (forca, destreza, vitalidade, resistencia, inteligencia, aura).
+const COR_ATRIBUTO := {"forca": Color("d9694a"), "destreza": Color("8fcf7a"), "vitalidade": Color("e08a9a"),
+	"resistencia": Color("d9a63e"), "inteligencia": Color("6aa6d8"), "aura": Color("b894e0")}
+
 static var _tema: Theme
 static var fonte_titulo: Font
 static var fonte_corpo: Font

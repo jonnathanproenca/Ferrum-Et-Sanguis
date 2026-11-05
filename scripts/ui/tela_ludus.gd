@@ -2,8 +2,6 @@ class_name TelaLudus
 extends Tela
 ## Aba "ludus": cena do morro, cartões dos gladiadores (treino, estilo, tratamento, venda, equipamento) e registro.
 
-const ABREV := {"forca": "FOR", "agilidade": "AGI", "vitalidade": "VIT", "sorte": "SOR"}
-const COR_ATRIBUTO := {"forca": Color("c0553a"), "agilidade": Color("7fbf6a"), "vitalidade": Color("d49a3a"), "sorte": Color("6aa6d8")}
 const NOME_CONDICAO := {"jovem": "Jovem", "maduro": "Maduro", "cicatrizado": "Cicatrizado"}
 const ESCALA_STAT := 24.0
 const LARGURA_CARTA := 600
@@ -155,7 +153,7 @@ func atualizar() -> void:
 	for l in e["log"]:
 		if n >= 8:
 			break
-		var lb := Tema.rotulo("•  " + str(l), 16, Tema.AREIA if n == 0 else Tema.CINZA)
+		var lb := Tema.rotulo("·  " + str(l), 16, Tema.AREIA if n == 0 else Tema.CINZA)
 		_registro.add_child(lb)
 		n += 1
 	if n == 0:
@@ -187,7 +185,7 @@ static func fmt_bonus(b: Dictionary) -> String:
 	for a in Model.ATRIBUTOS:
 		var v: int = int(b.get(a, 0))
 		if v != 0:
-			partes.append("%s %s%d" % [ABREV[a], "+" if v > 0 else "", v])
+			partes.append("%s %s%d" % [Model.SIGLA_ATRIBUTO[a], "+" if v > 0 else "", v])
 	return ", ".join(partes) if partes.size() > 0 else "sem bônus"
 
 
@@ -267,7 +265,6 @@ class Carta extends PanelContainer:
 	var g: Dictionary = {}
 	var aberto := false
 	var sel_estilo := 0
-	var sel_atributo := 0
 	var sel_classe := 0
 	var _slots_box: Control
 	var _btn_eq: Button
@@ -299,6 +296,9 @@ class Carta extends PanelContainer:
 		v.add_child(topo)
 		topo.add_child(_thumb(e))
 		topo.add_child(_info(e))
+		var ficha := FichaGladiador.new()
+		ficha.construir(g)
+		v.add_child(ficha)
 		_equipamento(v, e)
 
 	# --- miniatura com moldura da melhor peça ---
@@ -371,29 +371,6 @@ class Carta extends PanelContainer:
 		passiva.modulate = Color(1, 1, 1, 0.9)
 		v.add_child(passiva)
 
-		# Atributos finais
-		var stats := Model.stats_do_gladiador(g, str(casa.get("especialidade", "")), Game.extra_da_casa(e))
-		var hs := Tema.hbox(10)
-		v.add_child(hs)
-		for a in Model.ATRIBUTOS:
-			var col := Tema.vbox(2)
-			col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			var hl := Tema.hbox(5)
-			var la := Tema.rotulo(TelaLudus.ABREV[a], 14, Tema.OCRE)
-			la.autowrap_mode = TextServer.AUTOWRAP_OFF
-			hl.add_child(la)
-			var lv := Tema.rotulo(str(stats[a]), 22, Tema.AREIA)
-			lv.autowrap_mode = TextServer.AUTOWRAP_OFF
-			hl.add_child(lv)
-			col.add_child(hl)
-			var br := BarraStat.new()
-			br.valor = float(stats[a])
-			br.maximo = TelaLudus.ESCALA_STAT
-			br.cor = TelaLudus.COR_ATRIBUTO[a]
-			col.add_child(br)
-			col.tooltip_text = "%s: %d (treino %d/%d)" % [Model.NOME_ATRIBUTO[a], int(stats[a]), int(g["treino"][a]), Game.TREINO_MAXIMO]
-			hs.add_child(col)
-
 		# Efeitos persistentes do Poço
 		if g["efeitos"].size() > 0:
 			var fe := HFlowContainer.new()
@@ -462,18 +439,6 @@ class Carta extends PanelContainer:
 			par.add_child(b)
 		var h2 := _linha()
 		v.add_child(h2)
-		if Game.tem_melhoria(e, "palus"):
-			var at: Array = Model.ATRIBUTOS.duplicate()
-			var nomes_at: Array = at.map(func(a): return "%s · %d/%d" % [Model.NOME_ATRIBUTO[a], int(g["treino"][a]), Game.TREINO_MAXIMO])
-			var par_t := Tema.hbox(4)
-			h2.add_child(par_t)
-			par_t.add_child(_opcoes(at, nomes_at, sel_atributo, func(i): sel_atributo = i))
-			var bt := Tema.botao("Treinar", "normal", 17)
-			bt.tooltip_text = "%d de ouro e 1 de energia." % Game.PRECO_TREINO
-			bt.pressed.connect(func(): Jogo.resultado(Game.treinar(Jogo.e, id, Model.ATRIBUTOS[sel_atributo])))
-			par_t.add_child(bt)
-		else:
-			h2.add_child(_nota("Treino: construa os palus."))
 		if not (g["campeao"] or g.get("semEstilo", false)):
 			var cl: Array = Model.CLASSES_IDS.filter(func(c): return c != g["classe"])
 			var nomes_cl: Array = cl.map(func(c): return Model.classes()[c]["nome"])

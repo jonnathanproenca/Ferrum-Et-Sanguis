@@ -24,6 +24,10 @@ var _filtro_classe := ""
 var _t_bigorna := 0.0
 var _prox_bigorna := BIGORNA_IMPACTO
 var _tocando := false
+var _glad_id := ""
+var _sel_glad: OptionButton
+var _barra_carga: CargaBarra
+var _l_forca: Label
 
 func construir() -> void:
 	# ---- Aviso (armaria não construída)
@@ -97,6 +101,21 @@ func construir() -> void:
 	raiz.add_child(dir)
 	var dv := Tema.vbox(8)
 	dir.add_child(dv)
+	var gh := Tema.hbox(8)
+	dv.add_child(gh)
+	var lg := Tema.rotulo("Gladiador", 16, Tema.CINZA)
+	lg.autowrap_mode = TextServer.AUTOWRAP_OFF
+	gh.add_child(lg)
+	_sel_glad = OptionButton.new()
+	_sel_glad.focus_mode = Control.FOCUS_NONE
+	_sel_glad.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_sel_glad.item_selected.connect(func(i): _glad_id = str(_sel_glad.get_item_metadata(i)); atualizar())
+	gh.add_child(_sel_glad)
+	_l_forca = Tema.rotulo("", 16, Tema.OCRE)
+	_l_forca.autowrap_mode = TextServer.AUTOWRAP_OFF
+	gh.add_child(_l_forca)
+	_barra_carga = CargaBarra.new()
+	dv.add_child(_barra_carga)
 	var cab := Tema.hbox(8)
 	dv.add_child(cab)
 	_b_mestre = Tema.botao("Armeiro mestre", "normal", 18)
@@ -145,6 +164,7 @@ func atualizar() -> void:
 		Game.gerar_armeiro_mestre(e)
 	_b_mestre.button_pressed = _modo == "mestre"
 	_b_catalogo.button_pressed = _modo == "catalogo"
+	_gladiador(e)
 	_inventario(e)
 	Tema.limpar(_conteudo)
 	if _modo == "mestre":
@@ -161,6 +181,7 @@ func _inventario(e: Dictionary) -> void:
 	if contagem.is_empty():
 		_lista_inv.add_child(Tema.rotulo("Nenhum item guardado.", 16, Tema.CINZA))
 		return
+	var g := _glad_sel(e)
 	for id in contagem:
 		var item := Model.item_por_id(id)
 		if item.is_empty():
@@ -172,16 +193,108 @@ func _inventario(e: Dictionary) -> void:
 		var nome := Tema.rotulo(_nome_item(item), 17, IconeItem.cor_qualidade(item["qualidade"]))
 		v.add_child(nome)
 		v.add_child(Tema.rotulo(IconeItem.fmt_bonus(item["bonus"]), 14, Tema.CINZA))
+		v.add_child(Tema.rotulo(_req_texto(item), 13, Tema.CINZA))
 		h.add_child(v)
 		var q := Tema.rotulo("×%d" % int(contagem[id]), 18, Tema.OURO)
 		q.autowrap_mode = TextServer.AUTOWRAP_OFF
 		h.add_child(q)
-		_lista_inv.add_child(h)
+		var motivo := _motivo_equipar(e, g, item)
+		var be := Tema.botao("Equipar", "normal", 15)
+		be.custom_minimum_size = Vector2(84, 32)
+		be.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		be.disabled = g.is_empty() or (motivo != "" and motivo.begins_with("Este item não serve"))
+		if motivo != "":
+			be.tooltip_text = motivo
+		var iid: String = str(id)
+		var sl: String = str(item["slot"])
+		be.pressed.connect(func():
+			if g.is_empty():
+				return
+			Jogo.resultado(Game.equipar(Jogo.e, str(g["id"]), sl, iid)))
+		h.add_child(be)
+		var bv := Tema.botao("Vender %d" % Game.valor_venda_item(e, item), "ouro", 15)
+		bv.custom_minimum_size = Vector2(96, 32)
+		bv.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bv.disabled = bool(item.get("basico", false))
+		bv.tooltip_text = "O kit básico não pode ser vendido." if bv.disabled else "Recupera 40%% do valor pago (%d de ouro)." % Game.valor_venda_item(e, item)
+		bv.pressed.connect(func(): Jogo.resultado(Game.vender_item(Jogo.e, iid)))
+		h.add_child(bv)
+		if motivo != "" and not be.disabled:
+			var av := Tema.rotulo(motivo, 13, Color("e06a5a"))
+			var col := Tema.vbox(2)
+			col.add_child(h)
+			col.add_child(av)
+			_lista_inv.add_child(col)
+		else:
+			_lista_inv.add_child(h)
+
+## Gladiador escolhido na lista (primeiro vivo com estilo se nada escolhido).
+func _glad_sel(e: Dictionary) -> Dictionary:
+	var vivos := _vivos(e)
+	for g in vivos:
+		if str(g["id"]) == _glad_id:
+			return g
+	return vivos[0] if not vivos.is_empty() else {}
+
+func _vivos(e: Dictionary) -> Array:
+	return e["gladiadores"].filter(func(g): return g["vivo"] and not g.get("semEstilo", false))
+
+func _esp(e: Dictionary) -> String:
+	return str(Game.lanista_da_casa(e).get("especialidade", ""))
+
+## Atualiza o seletor e a barra de carga do gladiador escolhido.
+func _gladiador(e: Dictionary) -> void:
+	var vivos := _vivos(e)
+	_sel_glad.clear()
+	var g := _glad_sel(e)
+	for i in vivos.size():
+		_sel_glad.add_item(str(vivos[i]["nome"]))
+		_sel_glad.set_item_metadata(i, vivos[i]["id"])
+		if not g.is_empty() and vivos[i]["id"] == g["id"]:
+			_sel_glad.select(i)
+	_sel_glad.disabled = vivos.is_empty()
+	if g.is_empty():
+		_glad_id = ""
+		_l_forca.text = ""
+		_barra_carga.definir(0, 0)
+		return
+	_glad_id = str(g["id"])
+	var extra := Game.extra_da_casa(e)
+	var fs: int = int(Model.stats_sem_itens(g, _esp(e), extra)["forca"])
+	_l_forca.text = "Força %d" % fs
+	_barra_carga.definir(Model.carga_atual(g), Model.carga_maxima(g, _esp(e), extra))
+
+## Texto de requisitos: Peso, Força mínima e Fama mínima.
+func _req_texto(item: Dictionary) -> String:
+	var t := "Peso %d" % int(item.get("peso", 0))
+	if int(item.get("forcaMin", 0)) > 0:
+		t += " · Força mín. %d" % int(item["forcaMin"])
+	if int(item.get("famaMin", 0)) > 0:
+		t += " · Fama mín. %d" % int(item["famaMin"])
+	return t
+
+## "" se o gladiador consegue vestir; senão o motivo (classe, Força ou peso).
+func _motivo_equipar(e: Dictionary, g: Dictionary, item: Dictionary) -> String:
+	if g.is_empty():
+		return "Sem gladiador com estilo."
+	if not (g["classe"] in item["classes"]):
+		return "Este item não serve ao estilo de %s." % g["nome"]
+	var extra := Game.extra_da_casa(e)
+	var fs: int = int(Model.stats_sem_itens(g, _esp(e), extra)["forca"])
+	if fs < int(item.get("forcaMin", 0)):
+		return "Exige Força %d (%s tem %d)." % [int(item["forcaMin"]), g["nome"], fs]
+	var atual: int = Model.carga_atual(g)
+	var antigo = g["equipamento"].get(item["slot"])
+	if antigo != null:
+		atual -= int(Model.item_por_id(antigo).get("peso", 0))
+	var maxima: int = Model.carga_maxima(g, _esp(e), extra)
+	if atual + int(item.get("peso", 0)) > maxima:
+		return "Peso demais (carga máxima %d)." % maxima
+	return ""
 
 func _nome_item(item: Dictionary) -> String:
-	var peso: String = (" (%s)" % item["peso"]) if item.get("peso", "") != "" else ""
 	var q: String = (" [%s]" % Model.QUALIDADES[item["qualidade"]]) if int(item["qualidade"]) > 0 else ""
-	return "%s%s%s" % [item["nome"], q, peso]
+	return "%s%s" % [item["nome"], q]
 
 func _pagina_mestre(e: Dictionary) -> void:
 	var rt := RichTextLabel.new()
@@ -280,12 +393,42 @@ func _carta(e: Dictionary, item: Dictionary, mestre: bool) -> Control:
 	v.add_child(Tema.rotulo("%s · Serve: %s" % [Model.NOME_SLOT[item["slot"]], ", ".join(serve)], 14, Tema.CINZA))
 	var bn := Tema.rotulo(IconeItem.fmt_bonus(item["bonus"]), 17, Tema.OCRE)
 	v.add_child(bn)
+	# peso / Força mínima
+	var rp := Tema.hbox(4)
+	rp.add_child(Glifo.novo("peso", 16, Tema.CINZA))
+	var forca_min := int(item.get("forcaMin", 0))
+	var tp := "Peso %d" % int(item.get("peso", 0)) + ((" · Força mín. %d" % forca_min) if forca_min > 0 else " · sem exigência de Força")
+	var g := _glad_sel(e)
+	var motivo := _motivo_equipar(e, g, item) if not g.is_empty() else ""
+	var outro_estilo: bool = motivo.begins_with("Este item não serve")
+	var nao_serve: bool = motivo != "" and not g.is_empty()
+	var lp := Tema.rotulo(tp, 15, Color("e06a5a") if (nao_serve and not outro_estilo) else Tema.AREIA)
+	lp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rp.add_child(lp)
+	v.add_child(rp)
+	if nao_serve:
+		var ln := Tema.rotulo(motivo if outro_estilo else "%s não consegue equipar: %s" % [g["nome"], motivo], 13, Tema.CINZA if outro_estilo else Color("e06a5a"))
+		v.add_child(ln)
+	# fama mínima
+	var fama_min := int(item.get("famaMin", 0))
+	var fama_atual := int(e.get("fama", 0))
+	var trancado: bool = fama_atual < fama_min
+	var rf := Tema.hbox(4)
+	rf.add_child(Glifo.novo("cadeado" if trancado else "coroa_fama", 16, Color("e0483a") if trancado else Tema.OURO_ESCURO))
+	var lf := Tema.rotulo(("Trancado: exige %d de fama (você tem %d)" % [fama_min, fama_atual]) if trancado else ("Fama mín. %d" % fama_min if fama_min > 0 else "Sem exigência de fama"), 15, Color("e0483a") if trancado else Tema.CINZA)
+	lf.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rf.add_child(lf)
+	v.add_child(rf)
 	var sem_ouro: bool = int(e["ouro"]) < preco
 	var b := Tema.botao("Comprar · %d ouro" % preco, "primario", 17)
 	b.custom_minimum_size = Vector2(0, 36)
-	b.disabled = sem_ouro
-	if sem_ouro:
+	b.disabled = sem_ouro or trancado
+	if trancado:
+		b.tooltip_text = "Exige %d de fama (você tem %d)." % [fama_min, fama_atual]
+	elif sem_ouro:
 		b.tooltip_text = "Faltam %d de ouro." % (preco - int(e["ouro"]))
+	if trancado:
+		sb.border_color = Color("8a2a22")
 	var iid: String = str(item["id"])
 	b.pressed.connect(func():
 		var err: String = Game.comprar_mestre(Jogo.e, iid) if mestre else Game.comprar_item(Jogo.e, iid)
@@ -296,3 +439,43 @@ func _carta(e: Dictionary, item: Dictionary, mestre: bool) -> Control:
 	v.add_child(fim)
 	v.add_child(b)
 	return p
+
+## Barra de carga: marcas em 30% e 70%, cor pela faixa, texto da faixa e "atual / máxima".
+class CargaBarra extends Control:
+	const FAIXAS := {"leve": ["Leve", Color("6fae5a")], "normal": ["Normal", Color("c9a24a")], "pesado": ["Pesado", Color("d9772c")], "sobrecarga": ["Sobrecarga", Color("c9332a")]}
+	var atual := 0
+	var maxima := 0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(0, 28)
+		mouse_filter = Control.MOUSE_FILTER_PASS
+
+	func definir(a: int, m: int) -> void:
+		atual = a
+		maxima = m
+		var f := Model.faixa_carga(a, m) if m > 0 else "leve"
+		tooltip_text = "Carga: peso do equipamento vestido. Leve até 30%%, Normal até 70%%, Pesado até 100%%. %s." % FAIXAS[f][0]
+		queue_redraw()
+
+	func _draw() -> void:
+		var fonte := ThemeDB.fallback_font
+		var larg := size.x
+		var altura := size.y
+		var tr := Rect2(0, 0, larg, altura)
+		draw_rect(tr, Color(0, 0, 0, 0.55))
+		var f := Model.faixa_carga(atual, maxima) if maxima > 0 else "leve"
+		var cor: Color = FAIXAS[f][1]
+		var frac := clampf(float(atual) / float(maxi(1, maxima)), 0.0, 1.0)
+		draw_rect(Rect2(1, 1, (larg - 2) * frac, altura - 2), cor.darkened(0.15))
+		for m in [0.3, 0.7]:
+			draw_line(Vector2(larg * m, 1), Vector2(larg * m, altura - 1), Color(1, 1, 1, 0.55), 2.0)
+		draw_rect(tr, Tema.BORDA, false, 1.5)
+		var fs := 15
+		var t1 := "Carga: %s" % FAIXAS[f][0]
+		var t2 := "%d / %d" % [atual, maxima]
+		var sombra := Color(0, 0, 0, 0.9)
+		var y := altura / 2.0 + fs * 0.35
+		var tam2 := fonte.get_string_size(t2, HORIZONTAL_ALIGNMENT_LEFT, -1, fs)
+		for pos_txt in [[t1, 8.0], [t2, larg - tam2.x - 8.0]]:
+			draw_string(fonte, Vector2(pos_txt[1] + 1, y + 1), pos_txt[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, sombra)
+			draw_string(fonte, Vector2(pos_txt[1], y), pos_txt[0], HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("f5ecd8"))

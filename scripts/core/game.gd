@@ -453,6 +453,27 @@ static func comprar_item(e: Dictionary, item_id: String) -> String:
 	registrar(e, "Comprado: %s." % item["nome"])
 	return ""
 
+const REEMBOLSO_ITEM := 0.4
+
+## Quanto o armeiro paga por um item do inventário: 40% do valor pago na compra.
+static func valor_venda_item(e: Dictionary, item: Dictionary) -> int:
+	return jsround(float(preco_item(e, item)) * REEMBOLSO_ITEM)
+
+static func vender_item(e: Dictionary, item_id: String) -> String:
+	var err := _exigir_melhoria(e, "armaria")
+	if err != "": return err
+	var idx: int = e["inventario"].find(item_id)
+	if idx < 0:
+		return "Item não está no armeiro."
+	var item := Model.item_por_id(item_id)
+	if item.is_empty() or item.get("basico", false):
+		return "O kit básico não pode ser vendido."
+	var valor := valor_venda_item(e, item)
+	e["inventario"].remove_at(idx)
+	e["ouro"] = int(e["ouro"]) + valor
+	registrar(e, "Vendido: %s por %d de ouro." % [item["nome"], valor])
+	return ""
+
 ## Coloca um item no slot, ou tira o que estiver nele (item_id vazio).
 static func equipar(e: Dictionary, glad_id: String, slot: String, item_id: String) -> String:
 	var err := _exigir_melhoria(e, "armaria")

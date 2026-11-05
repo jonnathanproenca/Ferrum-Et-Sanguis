@@ -4,6 +4,7 @@ config_version=5
 [application]
 config/name="Ferrum et Sanguis"
 run/main_scene="res://scenes/main.tscn"
+config/icon="res://icon.png"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 
 [autoload]

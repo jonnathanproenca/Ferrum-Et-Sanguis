@@ -698,6 +698,27 @@ func _mostrar_resultado(d: Dictionary, perda: int) -> void:
 		var lm := Tema.rotulo("A plateia lançou %d moedas na areia." % int(d["moedas"]), 18, Tema.OURO_ESCURO)
 		lm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(lm)
+	var fama_d := int(d.get("fama", 0))
+	var glo_d := int(d.get("gloria", 0))
+	if fama_d != 0 or glo_d > 0:
+		var rr := Tema.hbox(18)
+		rr.alignment = BoxContainer.ALIGNMENT_CENTER
+		if fama_d != 0:
+			var hf := Tema.hbox(5)
+			hf.add_child(Glifo.novo("coroa_fama", 22, Color("9be05a") if fama_d > 0 else Color("e06a5a")))
+			var lfa := Tema.rotulo("Fama %s%d" % ["+" if fama_d > 0 else "-", absi(fama_d)], 22, Color("9be05a") if fama_d > 0 else Color("e06a5a"), true)
+			lfa.autowrap_mode = TextServer.AUTOWRAP_OFF
+			hf.add_child(lfa)
+			rr.add_child(hf)
+		if glo_d > 0:
+			var lgl := Tema.rotulo("Glória +%d" % glo_d, 22, Color("9be05a"), true)
+			lgl.autowrap_mode = TextServer.AUTOWRAP_OFF
+			rr.add_child(lgl)
+		v.add_child(rr)
+	if int(d.get("auraBonus", 0)) > 0:
+		var lau := Tema.rotulo("Sorte de Aura: +%d moedas" % int(d["auraBonus"]), 18, Color("c79cff"))
+		lau.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(lau)
 	var efs: Array = d.get("efeitosNovos", [])
 	var le := Tema.rotulo(("Efeitos: " + " · ".join(efs)) if efs.size() > 0 else "Sem efeitos persistentes.", 18, Color("c79cff") if efs.size() > 0 else Tema.CINZA)
 	le.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -48,7 +48,7 @@ func _ajustar_larguras() -> void:
 
 func atualizar() -> void:
 	var e: Dictionary = Jogo.e
-	_info.text = "Energia %d   ·   Batalhas disputadas %d" % [int(e["energia"]), Game.batalhas_do_ludus(e)]
+	_info.text = "Energia %d   ·   Fama %d (máx. %d)" % [int(e["energia"]), int(e.get("fama", 0)), int(e.get("famaMax", 0))]
 	_painel.atualizar()
 	Tema.limpar(_grade)
 	_cartoes.clear()
@@ -75,7 +75,7 @@ func _cartao(e: Dictionary, a: Dictionary, sel: Array) -> Control:
 			break
 	var motivo := ""
 	if not liberada:
-		motivo = "Fechada: só abre com %d batalhas disputadas (faltam %d)." % [int(a["batalhasMin"]), int(fama["faltam"])]
+		motivo = "Fechada: abre com %d de fama (faltam %d)." % [int(a["famaMin"]), int(fama["faltam"])]
 	elif n == 0:
 		motivo = "Escale 1 ou 2 gladiadores acima."
 	elif erro != "":
@@ -135,20 +135,28 @@ func _cartao(e: Dictionary, a: Dictionary, sel: Array) -> Control:
 	var plateia := ("Plateia %s" % a["plateia"]) if a["honra"] else "Plateia sorteada a cada luta"
 	c.add_child(Tema.rotulo(plateia + (" · Arena de honra" if a["honra"] else " · golpes causam efeitos persistentes"), 16, Tema.CINZA))
 	# fama
-	var fama_txt := "Aberta" if liberada else "Fama: %d/%d batalhas" % [Game.batalhas_do_ludus(e), int(a["batalhasMin"])]
-	if liberada and int(a["batalhasMin"]) > 0:
-		fama_txt = "Aberta (exige %d batalhas)" % int(a["batalhasMin"])
-	var lf := Tema.rotulo(fama_txt, 16, Tema.VERDE if liberada else Tema.OURO_ESCURO)
-	c.add_child(lf)
+	var fama_max := int(e.get("famaMax", 0))
+	var fama_min := int(a["famaMin"])
+	var fr := Tema.hbox(5)
+	fr.add_child(Glifo.novo("coroa_fama" if liberada else "cadeado", 16, Tema.VERDE if liberada else Color("e0483a")))
+	var fama_txt := "Fama: %d/%d" % [mini(fama_max, fama_min), fama_min] if fama_min > 0 else "Fama: sem exigência"
+	var lf := Tema.rotulo(fama_txt + (" · aberta" if liberada else " · fechada"), 16, Tema.VERDE if liberada else Tema.OURO_ESCURO)
+	lf.autowrap_mode = TextServer.AUTOWRAP_OFF
+	fr.add_child(lf)
+	c.add_child(fr)
 	if not liberada:
 		var pb := ProgressBar.new()
-		pb.max_value = float(a["batalhasMin"])
-		pb.value = float(Game.batalhas_do_ludus(e))
+		pb.max_value = float(maxi(1, fama_min))
+		pb.value = float(fama_max)
 		pb.show_percentage = false
 		pb.custom_minimum_size = Vector2(0, 8)
 		pb.add_theme_stylebox_override("background", Tema.caixa(Color(0, 0, 0, 0.5), Tema.BORDA, 4, 1, 0))
 		pb.add_theme_stylebox_override("fill", Tema.caixa(Tema.OURO_ESCURO, Tema.OURO_ESCURO, 4, 0, 0))
 		c.add_child(pb)
+	var ganho := "Vitória: +%d fama · +%d glória" % [int(a.get("famaVitoria", 0)), int(a.get("gloria", 0))]
+	c.add_child(Tema.rotulo(ganho, 16, Color("e0b0f0")))
+	if int(a.get("famaDerrota", 0)) > 0:
+		c.add_child(Tema.rotulo("Perde %d de fama na derrota." % int(a["famaDerrota"]), 16, Color("e06a5a")))
 	var mult := maxi(1, n)
 	var r0 := int(a["recompensaOuro"][0])
 	var r1 := int(a["recompensaOuro"][1])

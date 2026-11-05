@@ -37,16 +37,26 @@ static func criar_lutador(id: String, nome: String, stats: Dictionary, passiva: 
 	var hp_max: int = HP_BASE + int(stats["vitalidade"]) * HP_POR_VIT
 	var est_max: int = EST_BASE + int(stats["resistencia"]) * EST_POR_RES
 	return {"id": id, "nome": nome, "stats": stats.duplicate(), "hpMax": hp_max, "hp": hp_max, "passiva": passiva,
-		"estMax": est_max, "est": est_max, "faixa": "normal"}
+		"estMax": est_max, "est": est_max, "faixa": "normal", "cargaPct": 0.5}
 
 static func chance_acerto(atq: Dictionary, exausto: bool = false) -> float:
 	var c: float = ACERTO_BASE + ACERTO_POR_DES * float(atq["stats"]["destreza"]) - (EXAUSTO_ACERTO if exausto else 0.0)
 	return clampf(c, ACERTO_MIN, ACERTO_MAX)
 
+## Multiplicador da esquiva/defesa pelo peso: leve ajuda; passando de 70% da carga cai forte (até ×0.4 com a carga cheia),
+## mesmo com Inteligência alta (com peso demais não dá para rolar direito).
+static func fator_peso(pct: float) -> float:
+	if pct <= 0.3:
+		return 1.1
+	if pct <= 0.7:
+		return 1.0
+	return lerpf(1.0, 0.4, clampf((pct - 0.7) / 0.3, 0.0, 1.0))
+
 static func chance_defesa(def: Dictionary, preso: bool = false) -> float:
-	var c: float = DEFESA_POR_INT * float(def["stats"]["inteligencia"]) + float(FAIXA_DEFESA.get(def.get("faixa", "normal"), 0.0))
+	var c: float = DEFESA_POR_INT * float(def["stats"]["inteligencia"])
 	if def["passiva"] == "guarda":
 		c += 8.0
+	c *= fator_peso(float(def.get("cargaPct", 0.5)))
 	if preso:
 		c -= 10.0
 	return clampf(c, 0.0, DEFESA_MAX)

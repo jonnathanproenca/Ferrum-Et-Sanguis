@@ -290,7 +290,10 @@ static func progresso_gloria(gloria: int) -> Dictionary:
 
 static func para_lutador(g: Dictionary, especialidade: String = "", extra: Dictionary = {}) -> Dictionary:
 	var f := Combat.criar_lutador(g["id"], g["nome"], stats_do_gladiador(g, especialidade, extra), classes()[g["classe"]]["passiva"])
-	f["faixa"] = faixa_carga(carga_atual(g), carga_maxima(g, especialidade, extra))
+	var atual := carga_atual(g)
+	var maxima := carga_maxima(g, especialidade, extra)
+	f["faixa"] = faixa_carga(atual, maxima)
+	f["cargaPct"] = float(atual) / float(maxi(1, maxima))
 	return f
 
 static func preco_gladiador(g: Dictionary) -> int:

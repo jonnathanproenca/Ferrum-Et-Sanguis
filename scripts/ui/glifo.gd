@@ -1,6 +1,7 @@
 class_name Glifo
 extends Control
-## Ícones desenhados em código (a fonte não tem estes símbolos): "ok", "falha", "caveira", "espadas".
+## Ícones desenhados em código (a fonte não tem estes símbolos): "ok", "falha", "caveira", "espadas", "mais", "seta_esq", "coroa" e um por atributo
+## ("forca" espada, "destreza" alvo, "vitalidade" coração, "resistencia" raio, "inteligencia" olho, "aura" estrela).
 
 var tipo := "ok"
 var cor := Color("7fbf5a")
@@ -55,3 +56,77 @@ func _draw() -> void:
 				var cg := (p1 + p2) / 2.0 + (p2 - p1).normalized() * s * 0.22
 				var perp := (p2 - p1).normalized().orthogonal() * s * 0.16
 				draw_line(cg - perp, cg + perp, cor.darkened(0.2), lw * 0.7, true)
+
+		"mais":
+			var h1 := o + Vector2(s * 0.2, s * 0.5)
+			var h2 := o + Vector2(s * 0.8, s * 0.5)
+			var w1 := o + Vector2(s * 0.5, s * 0.2)
+			var w2 := o + Vector2(s * 0.5, s * 0.8)
+			draw_line(h1, h2, sombra, lw + 2.0, true)
+			draw_line(w1, w2, sombra, lw + 2.0, true)
+			draw_line(h1, h2, cor, lw, true)
+			draw_line(w1, w2, cor, lw, true)
+		"seta_esq":
+			_poli([o + Vector2(s * 0.7, s * 0.2), o + Vector2(s * 0.7, s * 0.8), o + Vector2(s * 0.25, s * 0.5)], cor, sombra)
+		"coroa":
+			_poli([o + Vector2(s * 0.1, s * 0.8), o + Vector2(s * 0.1, s * 0.32), o + Vector2(s * 0.32, s * 0.52), o + Vector2(s * 0.5, s * 0.18),
+				o + Vector2(s * 0.68, s * 0.52), o + Vector2(s * 0.9, s * 0.32), o + Vector2(s * 0.9, s * 0.8)], cor, sombra)
+			draw_rect(Rect2(o + Vector2(s * 0.1, s * 0.84), Vector2(s * 0.8, s * 0.08)), cor.darkened(0.25))
+		"forca":
+			var p1 := o + Vector2(s * 0.78, s * 0.12)
+			var p2 := o + Vector2(s * 0.3, s * 0.7)
+			draw_line(p1, p2, sombra, lw + 2.0, true)
+			draw_line(p1, p2, cor, lw * 0.8, true)
+			var dir := (p2 - p1).normalized()
+			var cg := p2 - dir * s * 0.02
+			var perp := dir.orthogonal() * s * 0.22
+			draw_line(cg - perp, cg + perp, cor.darkened(0.2), lw * 0.8, true)
+			draw_line(cg, cg + dir * s * 0.2, cor.darkened(0.35), lw * 0.9, true)
+		"destreza":
+			var c2 := o + Vector2(s * 0.5, s * 0.5)
+			draw_arc(c2, s * 0.4, 0, TAU, 28, sombra, lw * 0.6 + 2.0, true)
+			draw_arc(c2, s * 0.4, 0, TAU, 28, cor, lw * 0.6, true)
+			draw_arc(c2, s * 0.22, 0, TAU, 24, cor, lw * 0.5, true)
+			draw_circle(c2, s * 0.08, cor)
+		"vitalidade":
+			var pts_c: Array = []
+			for k in range(33):
+				var a := TAU * float(k) / 32.0
+				var cx := 16.0 * pow(sin(a), 3)
+				var cy := -(13.0 * cos(a) - 5.0 * cos(2.0 * a) - 2.0 * cos(3.0 * a) - cos(4.0 * a))
+				pts_c.append(o + Vector2(s * (0.5 + cx / 36.0), s * (0.46 + cy / 36.0)))
+			_poli(pts_c, cor, sombra)
+		"resistencia":
+			_poli([o + Vector2(s * 0.62, s * 0.05), o + Vector2(s * 0.24, s * 0.56), o + Vector2(s * 0.46, s * 0.56), o + Vector2(s * 0.36, s * 0.95),
+				o + Vector2(s * 0.78, s * 0.4), o + Vector2(s * 0.55, s * 0.4)], cor, sombra)
+		"inteligencia":
+			var topo: Array = []
+			var baixo: Array = []
+			for k in range(13):
+				var t := float(k) / 12.0
+				var x := 0.06 + 0.88 * t
+				var dy := 0.3 * sin(PI * t)
+				topo.append(o + Vector2(s * x, s * (0.5 - dy)))
+				baixo.append(o + Vector2(s * x, s * (0.5 + dy)))
+			baixo.reverse()
+			var contorno := PackedVector2Array(topo + baixo)
+			contorno.append(contorno[0])
+			draw_polyline(contorno, sombra, lw * 0.7 + 2.0, true)
+			draw_polyline(contorno, cor, lw * 0.7, true)
+			draw_circle(o + Vector2(s * 0.5, s * 0.5), s * 0.17, cor)
+			draw_circle(o + Vector2(s * 0.5, s * 0.5), s * 0.07, Color(0.1, 0.05, 0.04))
+		"aura":
+			var est: Array = []
+			for k in range(10):
+				var a := -PI / 2.0 + PI * float(k) / 5.0
+				var r := s * (0.46 if k % 2 == 0 else 0.2)
+				est.append(o + Vector2(s * 0.5, s * 0.54) + Vector2(cos(a), sin(a)) * r)
+			_poli(est, cor, sombra)
+
+func _poli(pts: Array, cor_: Color, sombra: Color) -> void:
+	var a := PackedVector2Array(pts)
+	var b := PackedVector2Array()
+	for p in a:
+		b.append(p + Vector2(0, 1.2))
+	draw_colored_polygon(b, sombra)
+	draw_colored_polygon(a, cor_)

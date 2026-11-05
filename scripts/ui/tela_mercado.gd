@@ -6,7 +6,6 @@ const CENA := {"w": 1376.0, "h": 768.0, "fundo": "assets/mercado/fundo.jpg", "me
 const NOME_CONDICAO := {"jovem": "Jovem", "maduro": "Maduro", "cicatrizado": "Cicatrizado"}
 const DESC_CONDICAO := {"jovem": "+1 treino em atributo aleatório, mais caro", "maduro": "equilibrado", "cicatrizado": "+1 vitalidade, mais barato"}
 const COR_CONDICAO := {"jovem": Color("8fbf7a"), "maduro": Color("e8d5b0"), "cicatrizado": Color("d88a6a")}
-const SIGLA := {"forca": "FOR", "agilidade": "AGI", "vitalidade": "VIT", "sorte": "SOR"}
 
 var _cena: CenaFracao
 var _info: Label
@@ -171,10 +170,11 @@ func _carta(e: Dictionary, g: Dictionary) -> Control:
 	v.add_child(h)
 	var nome := Tema.rotulo(str(g["nome"]), 22, Tema.OURO, true)
 	nome.autowrap_mode = TextServer.AUTOWRAP_OFF
+	nome.clip_text = true
+	nome.custom_minimum_size = Vector2(60, 0)
+	nome.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	nome.add_theme_font_size_override("font_size", 19)
 	h.add_child(nome)
-	var esp := Control.new()
-	esp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	h.add_child(esp)
 	var tag := Tema.rotulo("Escravo", 14, Tema.OCRE)
 	tag.autowrap_mode = TextServer.AUTOWRAP_OFF
 	h.add_child(tag)
@@ -203,9 +203,9 @@ func _carta(e: Dictionary, g: Dictionary) -> Control:
 		v.add_child(cp)
 
 	# Atributos
-	var st: Dictionary = Model.stats_do_gladiador(g, str(casa["especialidade"]))
+	var st: Dictionary = Model.stats_do_gladiador(g, str(casa["especialidade"]), Game.extra_da_casa(e))
 	var grade := GridContainer.new()
-	grade.columns = 4
+	grade.columns = 3
 	grade.add_theme_constant_override("h_separation", 4)
 	for a in Model.ATRIBUTOS:
 		var ch := PanelContainer.new()
@@ -214,15 +214,22 @@ func _carta(e: Dictionary, g: Dictionary) -> Control:
 		ch.add_theme_stylebox_override("panel", Tema.caixa(Color(0.2, 0.14, 0.06) if destaque else Color(0.1, 0.065, 0.05), Tema.OURO_ESCURO if destaque else Color("3a2418"), 5, 1, 2))
 		var cv := Tema.vbox(0)
 		ch.add_child(cv)
-		var l1 := Tema.rotulo(SIGLA[a], 12, Tema.OURO if destaque else Tema.CINZA)
+		var l1 := Tema.rotulo(Model.SIGLA_ATRIBUTO[a], 12, Tema.OURO if destaque else Tema.CINZA)
 		l1.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cv.add_child(l1)
-		var l2 := Tema.rotulo(str(st[a]), 20, Tema.OURO if destaque else Tema.AREIA)
+		var l2 := Tema.rotulo(str(st[a]), 20, Tema.OURO if destaque else Tema.COR_ATRIBUTO[a])
 		l2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cv.add_child(l2)
 		ch.tooltip_text = Model.NOME_ATRIBUTO[a]
 		grade.add_child(ch)
 	v.add_child(grade)
+
+	# Glória
+	var gl := int(g.get("gloria", 0))
+	if gl > 0:
+		var lg := Tema.rotulo("%s · Glória %d" % [Model.titulo_gloria(gl), gl], 15, Tema.OURO)
+		lg.autowrap_mode = TextServer.AUTOWRAP_OFF
+		v.add_child(lg)
 
 	# Compra
 	var b := Tema.botao("Comprar · %d ouro" % preco, "primario", 18)
