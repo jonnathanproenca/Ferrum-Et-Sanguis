@@ -18,8 +18,8 @@ const TIPOS: Array = [
 	{"id": "edil", "nome": "Edil", "titulo": "Edil dos jogos", "ouro": 18, "meta": 2, "prazo": 4, "campMin": 2, "peso": 38.0},
 	{"id": "legado", "nome": "Legado", "titulo": "Legado de legião", "ouro": 25, "meta": 2, "prazo": 4, "campMin": 2, "peso": 28.0},
 	{"id": "pretor", "nome": "Pretor", "titulo": "Pretor da cidade", "ouro": 45, "meta": 2, "prazo": 3, "campMin": 4, "peso": 14.0},
-	{"id": "senador", "nome": "Senador", "titulo": "Senador de Roma", "ouro": 80, "meta": 3, "prazo": 4, "campMin": 6, "peso": 6.0},
-	{"id": "consul", "nome": "Cônsul", "titulo": "Cônsul de Roma", "ouro": 140, "meta": 4, "prazo": 4, "campMin": 8, "peso": 2.0},
+	{"id": "senador", "nome": "Senador", "titulo": "Senador de Roma", "ouro": 70, "meta": 3, "prazo": 4, "campMin": 6, "peso": 6.0},
+	{"id": "consul", "nome": "Cônsul", "titulo": "Cônsul de Roma", "ouro": 110, "meta": 4, "prazo": 4, "campMin": 8, "peso": 2.0},
 ]
 const PRENOMES: Array = ["Marcus", "Lucius", "Gaius", "Publius", "Quintus", "Titus", "Aulus", "Gnaeus", "Decimus", "Servius", "Manius", "Sextus"]
 const GENTES: Array = ["Cornelius", "Fabius", "Valerius", "Claudius", "Aemilius", "Licinius", "Servilius", "Junius", "Porcius", "Sempronius", "Calpurnius", "Octavius", "Pompeius", "Hortensius"]
