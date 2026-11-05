@@ -135,7 +135,7 @@ func _cartao(e: Dictionary, a: Dictionary, sel: Array) -> Control:
 	var plateia := ("Plateia %s" % a["plateia"]) if a["honra"] else "Plateia sorteada a cada luta"
 	c.add_child(Tema.rotulo(plateia + (" · Arena de honra" if a["honra"] else " · golpes causam efeitos persistentes"), 16, Tema.CINZA))
 	# fama
-	var fama_max := int(e.get("famaMax", 0))
+	var fama_max := Game.fama_max_efetiva(e)
 	var fama_min := int(a["famaMin"])
 	var fr := Tema.hbox(5)
 	fr.add_child(Glifo.novo("coroa_fama" if liberada else "cadeado", 16, Tema.VERDE if liberada else Color("e0483a")))

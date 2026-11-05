@@ -86,7 +86,7 @@ func tipo_do_golpe(arma) -> String:
 	return "corte"
 
 func _acao(atraso_ms: float, passos: Array) -> void:
-	if parado:
+	if parado or not is_inside_tree():
 		return
 	_ficha += 1
 	var minha := _ficha
@@ -110,6 +110,8 @@ func _acao(atraso_ms: float, passos: Array) -> void:
 
 ## Valores absolutos a partir do repouso (nunca relativos), para golpes sobrepostos não acumularem deslocamento.
 func _deslocar(dx: float, dy: float, dur_ms: float, volta: bool = true) -> void:
+	if not is_inside_tree():
+		return
 	if _tw_pos:
 		_tw_pos.kill()
 	position = base
@@ -122,12 +124,12 @@ func _deslocar(dx: float, dy: float, dur_ms: float, volta: bool = true) -> void:
 ## Devolve o instante (ms) do contato com o alvo.
 func golpear(tipo: String) -> float:
 	var imp: float = float(IMPACTO[tipo])
-	if parado:
+	if parado or not is_inside_tree():
 		return imp
 	var alt: bool = AncorasPoses.DADOS[classe]["ancoras"].has("alt") and randf() < 0.35
 	_acao(0, [[imp - 90.0, "prepara"], [170.0, "alt" if alt else "impacto"], [240.0, "recupera"]])
 	get_tree().create_timer(maxf(0.0, imp - 190.0) / 1000.0 / vel).timeout.connect(func() -> void:
-		if is_instance_valid(self) and not parado:
+		if is_instance_valid(self) and is_inside_tree() and not parado:
 			_deslocar(54.0, 0.0, 190.0))
 	return imp
 

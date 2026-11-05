@@ -178,6 +178,7 @@ var _chicote_ini := -10.0
 var _menu: PanelContainer
 var _rotulo: Label
 var _pontos: Dictionary = {}      ## "portao", "armaria", "enfermaria" -> Ponto
+var grande := false               ## true: sem os gladiadores/doutor pequenos (a subclasse põe os sprites grandes)
 
 func _ready() -> void:
 	theme = Tema.tema()
@@ -300,7 +301,7 @@ func _montar() -> void:
 				it["fade"] = {"d": 0.3}
 				_aplicar_fade(it)
 	var i := 0
-	for g in Jogo.e["gladiadores"]:
+	for g in ([] if grande else Jogo.e["gladiadores"]):
 		if not g["vivo"]:
 			continue
 		var h: int = hash_f.call(str(g["id"]))
@@ -309,7 +310,8 @@ func _montar() -> void:
 		var it2 := _sprite(sp[0], sp[1], sp[2], p[0], p[1], h % 2 == 1)
 		it2["treina"] = {"dur": 2.6 + float(h % 17) / 10.0, "atraso": -float(h % 40) / 10.0}
 		i += 1
-	_montar_doutor()
+	if not grande:
+		_montar_doutor()
 	# tábuas
 	for id in COM_TABUAS:
 		if not _tem(id) or anim == id:

@@ -379,7 +379,7 @@ func _pagina_amuletos(e: Dictionary) -> void:
 		lq.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		lq.custom_minimum_size = Vector2(50, 0)
 		grade.add_child(lq)
-	var fama := int(e.get("fama", 0))
+	var fama := Game.fama_efetiva(e)
 	for a in Model.ATRIBUTOS:
 		var base := Model.item_por_id(cat[a][0])
 		var hc := Tema.hbox(4)
@@ -550,7 +550,7 @@ func _carta(e: Dictionary, item: Dictionary, mestre: bool) -> Control:
 		v.add_child(ln)
 	# fama mínima
 	var fama_min := int(item.get("famaMin", 0))
-	var fama_atual := int(e.get("fama", 0))
+	var fama_atual := Game.fama_efetiva(e)
 	var trancado: bool = fama_atual < fama_min
 	var rf := Tema.hbox(4)
 	rf.add_child(Glifo.novo("cadeado" if trancado else "coroa_fama", 16, Color("e0483a") if trancado else Tema.OURO_ESCURO))

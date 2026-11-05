@@ -62,7 +62,7 @@ const REGRAS := {
 const CHEATS_NOMES := {
 	"ouro": "Dinheiro infinito", "vida": "Vida infinita (ninguém morre nem fica ferido)", "vencer": "Ganhar toda luta automaticamente",
 	"pular": "Pular luta sem perder recompensa", "lendario": "100% itens lendários no armeiro", "energia": "Energia infinita",
-	"round": "Pular rodada sem gastar energia", "campanha": "Ignorar as condições da campanha (pular todos os passos)",
+	"round": "Pular rodada sem gastar energia", "fama": "Ignorar exigência de fama (itens e arenas)", "campanha": "Ignorar as condições da campanha (pular todos os passos)",
 }
 
 static var _lanistas: Array = []
@@ -229,8 +229,15 @@ static func batalhas_do_ludus(e: Dictionary) -> int:
 static func fama_do_ludus(e: Dictionary) -> int:
 	return int(e.get("fama", 0))
 
+## Fama usada nas exigências (itens, arenas): com o cheat "fama" vale como infinita.
+static func fama_efetiva(e: Dictionary) -> int:
+	return 999999 if _cheat(e, "fama") else int(e.get("fama", 0))
+
+static func fama_max_efetiva(e: Dictionary) -> int:
+	return 999999 if _cheat(e, "fama") else int(e.get("famaMax", 0))
+
 static func arena_liberada(e: Dictionary, arena: Dictionary) -> Dictionary:
-	var faltam: int = maxi(0, int(arena["famaMin"]) - int(e.get("famaMax", 0)))
+	var faltam: int = maxi(0, int(arena["famaMin"]) - fama_max_efetiva(e))
 	return {"liberada": faltam == 0, "faltam": faltam}
 
 static func hash_texto(t: String) -> int:
@@ -446,7 +453,7 @@ static func comprar_item(e: Dictionary, item_id: String) -> String:
 	var item := Model.item_por_id(item_id)
 	if item.is_empty():
 		return "Item inexistente."
-	if int(e.get("fama", 0)) < int(item["famaMin"]):
+	if fama_efetiva(e) < int(item["famaMin"]):
 		return "Exige %d de fama (você tem %d)." % [int(item["famaMin"]), int(e.get("fama", 0))]
 	err = pagar(e, 0, preco_item(e, item))
 	if err != "": return err
