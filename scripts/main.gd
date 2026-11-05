@@ -15,7 +15,10 @@ func _ready() -> void:
 
 func _ir(destino: String) -> void:
 	if _atual:
-		remove_child(_atual)
+		# Não remove da árvore: tweens ligados a ela (ex.: zoom do menu) acusam erro se o nó sai antes de ser liberado.
+		_atual.hide()
+		_atual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_atual.process_mode = Node.PROCESS_MODE_DISABLED
 		_atual.queue_free()
 	match destino:
 		"menu":

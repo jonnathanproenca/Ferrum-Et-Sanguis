@@ -40,6 +40,9 @@ class Doctore extends Node2D:
 	var _proximo := 3.0
 	var _pose := "guarda"
 	var _quadro := 1
+	var _recolhendo := false
+	var _rec_t := 0.0
+	var _coil := 1.0   ## 0..1: quanto do chicote já está enrolado na mão
 
 	func _init() -> void:
 		_meta = Util.ler_json("res://" + DIR + "doctore.json")
@@ -51,6 +54,7 @@ class Doctore extends Node2D:
 		add_child(_chicote)
 		scale = Vector2(0.6, 0.6)
 		_aplicar("guarda", 1)
+		_chicote.visible = false
 
 	func _draw() -> void:
 		var pts := PackedVector2Array()
@@ -58,6 +62,23 @@ class Doctore extends Node2D:
 			var a := TAU * i / 24.0
 			pts.append(Vector2(cos(a) * 62.0, sin(a) * 9.0))
 		draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
+		if _pose == "guarda" and _coil > 0.01:
+			_desenhar_rolo()
+
+	## Chicote enrolado na mão (desenhado em código): cabo curto e três voltas de couro.
+	func _desenhar_rolo() -> void:
+		var m: Dictionary = _meta["corpo_guarda"]
+		var mao := Vector2(m["mao"][0], m["mao"][1]) - Vector2(m["ancora"][0], m["ancora"][1])
+		var k := _coil
+		draw_line(mao + Vector2(-6, 2), mao + Vector2(14 * k, -2 * k), Color(0.08, 0.05, 0.03), 6.0, true)
+		draw_line(mao + Vector2(-6, 2), mao + Vector2(14 * k, -2 * k), Color(0.50, 0.33, 0.16), 3.5, true)
+		var c := mao + Vector2(4, 11)
+		for i in range(3):
+			var r := (9.0 - i * 2.2) * k
+			draw_set_transform(c + Vector2(0, i * 1.5), 0.0, Vector2(1.0, 0.78))
+			draw_arc(Vector2.ZERO, r, 0.0, TAU, 20, Color(0.08, 0.05, 0.03), 5.0, true)
+			draw_arc(Vector2.ZERO, r, 0.0, TAU, 20, Color(0.42 + i * 0.05, 0.27 + i * 0.03, 0.13), 2.6, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	func _aplicar(pose: String, quadro: int) -> void:
 		_pose = pose
@@ -74,6 +95,11 @@ class Doctore extends Node2D:
 
 	func chicotear() -> void:
 		ocupado = true
+		_recolhendo = false
+		_chicote.visible = true
+		_chicote.scale = Vector2.ONE
+		_coil = 0.0
+		queue_redraw()
 		_seq = [[0.30, "prepara", 2], [0.10, "golpe", 3], [0.16, "golpe", 4], [0.20, "golpe", 3]]
 		_seq_t = 0.0
 		_aplicar("prepara", 2)
@@ -92,15 +118,27 @@ class Doctore extends Node2D:
 					fim = false
 					break
 			if fim:
-				ocupado = false
-				_proximo = randf_range(3.0, 7.0)
-				_aplicar("guarda", 1)
+				if not _recolhendo:
+					_recolhendo = true
+					_rec_t = 0.0
+					_aplicar("guarda", 1)
+				_rec_t += delta
+				var q := clampf(_rec_t / 0.45, 0.0, 1.0)
+				_chicote.scale = Vector2.ONE * (1.0 - q)
+				_chicote.modulate.a = 1.0 - q * 0.6
+				_coil = q
+				queue_redraw()
+				if q >= 1.0:
+					ocupado = false
+					_recolhendo = false
+					_chicote.visible = false
+					_chicote.modulate.a = 1.0
+					_proximo = randf_range(3.0, 7.0)
 			return
 		_proximo -= delta
 		if _proximo <= 0.0:
 			chicotear()
 			return
-		_chicote.rotation = deg_to_rad(float(_meta["corpo_" + _pose]["angulo"]) + sin(_t * 2.2) * 2.5)
 
 
 var _palco2: Node2D
