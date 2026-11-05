@@ -34,6 +34,7 @@ var frente := 1.0
 var ocupado := false
 var _o := {}
 var _t := 0.0
+var _chic_ang := -1.57
 var _acao := -1.0
 var _proximo := 3.0
 var _rel: Array = []
@@ -122,37 +123,47 @@ func _process(delta: float) -> void:
 	var ante := 0.0
 	var tronco := 0.0
 	var rijo := 0.0
+	var reta := 0.0
 	if _acao >= 0.0:
 		_acao += delta
 		var u := _acao
 		if u < 0.55:
-			# levanta o braço acima da cabeça (pela frente)
+			# levanta o braço acima da cabeça; o chicote vai para trás, em arco
 			var k := _suave(u / 0.55)
 			braco = lerpf(0.0, -3.0, k)
 			ante = lerpf(0.0, 0.5, k)
 			tronco = lerpf(0.0, -0.08, k)
-		elif u < 0.72:
-			# chicoteia para a frente
-			var k := (u - 0.55) / 0.17
-			var e := 1.0 - (1.0 - k) * (1.0 - k)
+			rijo = k
+			reta = 0.5 * k
+			_chic_ang = -2.7
+		elif u < 0.74:
+			# chicoteia: o chicote varre o arco por cima da cabeça até a frente
+			var k := (u - 0.55) / 0.19
+			var e := k * k * (3.0 - 2.0 * k)
 			braco = lerpf(-3.0, -1.75, e)
 			ante = lerpf(0.5, -0.4, e)
 			tronco = lerpf(-0.08, 0.12, e)
-			rijo = e
-		elif u < 0.92:
-			# recua a mão para estalar
-			var k := _suave((u - 0.72) / 0.2)
-			braco = lerpf(-1.75, -1.35, k)
-			ante = lerpf(-0.4, 0.2, k)
-			tronco = 0.12
-			rijo = 1.0 - k * 0.6
-		elif u < 1.6:
+			rijo = 1.0
+			reta = lerpf(0.5, 1.0, e)
+			_chic_ang = lerpf(-2.7, -0.12, e)
+		elif u < 1.0:
+			# volta pelo mesmo arco
+			var k := _suave((u - 0.74) / 0.26)
+			braco = lerpf(-1.75, -1.5, k)
+			ante = lerpf(-0.4, 0.0, k)
+			tronco = lerpf(0.12, 0.05, k)
+			rijo = 1.0
+			reta = lerpf(1.0, 0.5, k)
+			_chic_ang = lerpf(-0.12, -2.7, k)
+		elif u < 1.7:
 			# abaixa para a posição natural
-			var k := _suave((u - 0.92) / 0.68)
-			braco = lerpf(-1.35, 0.0, k)
-			ante = lerpf(0.2, 0.0, k)
-			tronco = lerpf(0.12, 0.0, k)
-			rijo = 0.4 * (1.0 - k)
+			var k := _suave((u - 1.0) / 0.7)
+			braco = lerpf(-1.5, 0.0, k)
+			ante = lerpf(0.0, 0.0, k)
+			tronco = lerpf(0.05, 0.0, k)
+			rijo = 1.0 - k
+			reta = 0.5 * (1.0 - k)
+			_chic_ang = -2.7
 		else:
 			_acao = -1.0
 			ocupado = false
@@ -179,10 +190,10 @@ func _process(delta: float) -> void:
 	(_o["braco_f_ant"] as Node2D).rotation = ante - 0.35
 	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.4 - 0.1
 	(_o["braco_t_ant"] as Node2D).rotation = -0.5
-	_chicote(delta, rijo)
+	_chicote(delta, rijo, reta)
 
 
-func _chicote(delta: float, rijo: float) -> void:
+func _chicote(delta: float, rijo: float, reta: float) -> void:
 	var cabo: Node2D = _o["w_cabo"]
 	var xf := global_transform.affine_inverse() * cabo.global_transform
 	var mundo := xf.x.angle()
@@ -191,11 +202,11 @@ func _chicote(delta: float, rijo: float) -> void:
 	for i in range(CADEIA.size()):
 		var dA := wrapf(mundo - float(_entrada[i]), -PI, PI)
 		_entrada[i] = mundo
-		var alvo: float = REPOUSO[i] * (1.0 - rijo)
+		var alvo: float = REPOUSO[i] * (1.0 - reta)
 		var lim := 1.5
 		if i == 0:
 			# no golpe, o chicote aponta para a frente (no espaço do doctore)
-			var frente := wrapf(-0.12 - mundo, -PI, PI)
+			var frente := wrapf(_chic_ang - mundo, -PI, PI)
 			alvo = lerpf(REPOUSO[0], frente, rijo)
 			lim = 3.1
 		_rel[i] = float(_rel[i]) - dA * 0.75 * (1.0 - rijo)
