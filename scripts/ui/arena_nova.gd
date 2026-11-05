@@ -10,6 +10,24 @@ var vel := 1.0
 var posicoes: Array = []   ## {x, y} no palco 1280x720, para a origem das moedas
 var _fig: Array = []
 var _t := 0.0
+var _excit := 0.0
+var _mat: ShaderMaterial
+
+const SHADER := """
+shader_type canvas_item;
+uniform float amp = 1.5;
+uniform float freq = 2.2;
+uniform float sway = 0.0;
+uniform vec2 tam = vec2(1376.0, 768.0);
+uniform float fase = 0.0;
+void fragment() {
+	vec2 px = UV * tam;
+	float w = 0.045 * px.x + 0.025 * px.y + fase;
+	float oy = sin(TIME * freq + w) * amp + sin(TIME * freq * 2.3 + w * 1.7) * amp * 0.4 * sway;
+	float ox = sin(TIME * freq * 1.4 + w * 1.3) * sway * 3.0;
+	COLOR = texture(TEXTURE, UV + vec2(ox, oy) / tam);
+}
+"""
 
 
 static func existe(id: String) -> bool:
@@ -31,6 +49,10 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 	bg.z_index = -10
 	add_child(bg)
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://" + DIR + id + "_publico.json"))
+	var sh := Shader.new()
+	sh.code = SHADER
+	_mat = ShaderMaterial.new()
+	_mat.shader = sh
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	var ocup: float = float(OCUP.get(lotacao, 0.8))
@@ -45,8 +67,9 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 		s.scale = k
 		s.position = Vector2(float(b["esq"]), float(b["topo"])) * k
 		s.z_index = -9
+		if not b.has("fixo"):
+			s.material = _mat
 		add_child(s)
-		_fig.append({"n": s, "y0": s.position.y, "fase": rng.randf() * TAU, "amp": 0.0 if b.has("fixo") else 1.2 + rng.randf() * 1.2})
 		posicoes.append({"x": (float(b["esq"]) + float(b["w"]) * 0.5) * k.x, "y": (float(b["topo"]) + float(b["h"]) * 0.3) * k.y})
 	var fr: Texture2D = Tema.textura(DIR + id + "_frente.png")
 	if fr != null:
@@ -61,7 +84,15 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 	return true
 
 
+## Público reage ao que acontece na luta (1.0 = comoção forte).
+func reagir(forca: float) -> void:
+	_excit = clampf(_excit + forca, 0.0, 1.5)
+
+
 func _process(delta: float) -> void:
-	_t += delta * vel
-	for f: Dictionary in _fig:
-		(f["n"] as Sprite2D).position.y = float(f["y0"]) + sin(_t * 2.2 + float(f["fase"])) * float(f["amp"])
+	if _mat == null:
+		return
+	_excit = maxf(0.0, _excit - delta * 0.7)
+	_mat.set_shader_parameter("amp", 1.6 + _excit * 5.0)
+	_mat.set_shader_parameter("freq", (2.2 + _excit * 4.0) * vel)
+	_mat.set_shader_parameter("sway", _excit)

@@ -35,6 +35,7 @@ var _b_vel: Button
 var _b_pular: Button
 var _b_desistir: Button
 var _flash: ColorRect
+var _nova: ArenaNova
 var _sobreposicao: Control
 var _palco_pos := Vector2.ZERO
 var _pilha := {}                ## x -> números flutuantes ativos (empilham para não se sobrepor)
@@ -115,6 +116,7 @@ func _montar_cena() -> void:
 		var nova := ArenaNova.new()
 		nova.vel = vel
 		_palco.add_child(nova)
+		_nova = nova
 		var okn := nova.montar(_arena_id, str(_payload.get("plateia", "meia")), PALCO)
 		if okn:
 			bg.visible = false
@@ -404,11 +406,13 @@ func _mostrar(ev: Dictionary) -> void:
 	var tipo: String = ev["tipo"]
 	match tipo:
 		"esquiva":
+			if _nova: _nova.reagir(0.25)
 			_golpe(ev["ator"], ev["alvo"], "esquiva", false, "Esquiva", Color("e8d5b0"), 24, -1)
 		"defesa":
 			_golpe(ev["ator"], ev["alvo"], "defesa", false, "Bloqueado", Color("9bb7e0"), 24, -1)
 		"acerto":
 			var pes: bool = bool(ev.get("pesado", false))
+			if _nova: _nova.reagir(0.9 if (pes or bool(ev.get("critico", false))) else 0.45)
 			var crit: bool = bool(ev.get("critico", false))
 			var txt := "−%d" % int(ev["dano"])
 			if pes:
@@ -436,6 +440,7 @@ func _mostrar(ev: Dictionary) -> void:
 			_flutuar(_alvo_x(ev["alvo"]), "Atordoado", Tema.OURO, 26)
 			_remover_chip(ev["alvo"], "contusao")
 		"rendicao":
+			if _nova: _nova.reagir(1.2)
 			_flutuar(_alvo_x(ev["alvo"]), "Rende-se!", Tema.OURO, 30)
 			if _lutadores.has(ev["alvo"]):
 				_lutadores[ev["alvo"]].recolher()
