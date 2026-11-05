@@ -139,7 +139,7 @@ func _trilha(indice: int, passos: Array) -> Control:
 			sb.shadow_color = Color(VERMELHO_VIVO, 0.7)
 			sb.shadow_size = 8
 		pc.add_theme_stylebox_override("panel", sb)
-		var l := Tema.rotulo("✓" if feito else str(i + 1), 15, Color("1a0f08") if feito else (Color.WHITE if atual else Color("7a6650")))
+		var l := Tema.rotulo("v" if feito else str(i + 1), 15, Color("1a0f08") if feito else (Color.WHITE if atual else Color("7a6650")))
 		l.autowrap_mode = TextServer.AUTOWRAP_OFF
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -225,12 +225,12 @@ func _palco(d: Dictionary, final: bool, misterio: bool) -> Control:
 		var tr := _tex_rect(Tema.textura(SpriteLanista.caminho(l["id"])), false, cor)
 		tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		fig.add_child(tr)
-		if estado == "ativo":
+		if estado == "ativo" and l["id"] != "batiatus":
 			var tw := fig.create_tween().set_loops()
 			tw.tween_property(tr, "position:y", -3.0, 1.1).set_trans(Tween.TRANS_SINE)
 			tw.tween_property(tr, "position:y", 2.0, 1.1).set_trans(Tween.TRANS_SINE)
 		if estado == "vencido":
-			var x := Tema.rotulo("✕", 30, VERMELHO_VIVO)
+			var x := Tema.rotulo("X", 30, VERMELHO_VIVO)
 			x.autowrap_mode = TextServer.AUTOWRAP_OFF
 			x.add_theme_color_override("font_outline_color", Color.BLACK)
 			x.add_theme_constant_override("outline_size", 6)
@@ -325,7 +325,7 @@ func _duelo(d: Dictionary, final: bool, misterio: bool, formato: int) -> Control
 		sil.tooltip_text = "Gladiador desconhecido"
 		figs_r.add_child(sil)
 	else:
-		figs_r.add_child(_lutador(rival, str(rival["nome"]) if final else str(lanista["nome"]), true))
+		figs_r.add_child(_lutador(rival, str(rival["nome"]) if final else str(lanista["nome"]), false))
 	if final and not misterio:
 		lr.add_child(_pequeno("campeão de %s" % lanista["nome"]))
 	if formato > 1:
@@ -349,7 +349,7 @@ func _duelo(d: Dictionary, final: bool, misterio: bool, formato: int) -> Control
 		pq.autowrap_mode = TextServer.AUTOWRAP_OFF
 		lt.add_child(pq)
 	for g in sel:
-		lt.add_child(_lutador(g, str(g["nome"]), false))
+		lt.add_child(_lutador(g, str(g["nome"]), true))
 	lados.add_child(lt)
 
 	v.add_child(HSeparator.new())
@@ -379,7 +379,7 @@ func _duelo(d: Dictionary, final: bool, misterio: bool, formato: int) -> Control
 	var rq := Tema.vbox(2)
 	for r in d["requisitos"]:
 		var ok: bool = r["ok"]
-		rq.add_child(Tema.rotulo("%s %s" % ["✓" if ok else "✗", r["texto"]], 18, Tema.VERDE if ok else Color("d98a6a")))
+		rq.add_child(Tema.rotulo("%s %s" % ["+" if ok else "-", r["texto"]], 18, Tema.VERDE if ok else Color("d98a6a")))
 	v.add_child(rq)
 
 	var pronto: bool = d["pronto"] and sel.size() == formato and int(e["energia"]) >= formato
@@ -456,7 +456,7 @@ func _tocar_video(depois: Callable) -> void:
 	_camada_video = CanvasLayer.new()
 	_camada_video.layer = 100
 	var fundo := ColorRect.new()
-	fundo.color = Color.BLACK
+	fundo.color = Color(0, 0, 0, 0)
 	fundo.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_camada_video.add_child(fundo)
 	var vp := VideoStreamPlayer.new()
@@ -464,6 +464,7 @@ func _tocar_video(depois: Callable) -> void:
 	vp.expand = true
 	vp.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	vp.volume_db = linear_to_db(maxf(0.001, float(Jogo.prefs["audio"]["efeitos"]) + 0.3)) if som_ativo else -80.0
+	vp.modulate.a = 0.0
 	fundo.add_child(vp)
 	var pular := Tema.botao("Pular", "normal", 20)
 	pular.theme = Tema.tema()
@@ -488,7 +489,13 @@ func _tocar_video(depois: Callable) -> void:
 	vp.finished.connect(encerrar)
 	pular.pressed.connect(encerrar)
 	get_tree().root.add_child(_camada_video)
-	vp.play()
+	# transição suave: escurece a tela, depois o vídeo surge
+	var tw_in := _camada_video.create_tween()
+	tw_in.tween_property(fundo, "color:a", 1.0, 0.7)
+	tw_in.tween_callback(func():
+		if is_instance_valid(vp) and not terminou[0]:
+			vp.play())
+	tw_in.tween_property(vp, "modulate:a", 1.0, 0.8)
 
 # ---------- Tela final ----------
 

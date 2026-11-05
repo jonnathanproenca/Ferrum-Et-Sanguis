@@ -79,6 +79,7 @@ func montar(arena_id: String, lotacao: String, semente: int = 0) -> void:
 					"h": alt * (0.92 + rng.randf() * 0.16) * K,
 					"pele": Color(PELES[rng.randi() % PELES.size()]), "cabelo": Color(CABELOS[rng.randi() % CABELOS.size()]),
 					"tunica": Color(TUNICAS[rng.randi() % TUNICAS.size()]), "anima": rng.randf() < 0.3,
+					"estilo": rng.randi() % 4, "brilho": 0.62 + rng.randf() * 0.3, "listra": rng.randf() < 0.35,
 				})
 			x += passo
 	espectadores.sort_custom(func(a, b): return a["y"] < b["y"])
@@ -94,26 +95,71 @@ func _process(delta: float) -> void:
 		_fase = f
 		queue_redraw()
 
+func _escurecer(c: Color, b: float) -> Color:
+	return Color(c.r * b, c.g * b, c.b * b, 1.0)
+
 func _draw() -> void:
+	var contorno := Color(0.05, 0.03, 0.02, 0.6)
 	for s in espectadores:
 		var h: float = s["h"]
-		var u: float = maxf(1.0, roundf(h / 10.0))
+		var u: float = h / 16.0
 		var x: float = roundf(float(s["x"]))
 		var y: float = roundf(float(s["y"]))
+		var b: float = s["brilho"]
 		var erg: bool = s["anima"] and _fase == 1 and animar
-		var dy := -u if erg else 0.0
-		var tun: Color = s["tunica"]
-		# pernas e corpo
-		draw_rect(Rect2(x - 2 * u, y - 2 * u, 4 * u, 2 * u), tun.darkened(0.45))
-		draw_rect(Rect2(x - 3 * u, y - 7 * u + dy * 0.0, 6 * u, 5 * u), tun)
-		draw_rect(Rect2(x - 3 * u, y - 7 * u, 6 * u, u), tun.lightened(0.18))
+		var dy := -u * 0.8 if erg else 0.0
+		var tun: Color = _escurecer(s["tunica"], b)
+		var pele: Color = _escurecer(s["pele"], b)
+		var cab: Color = _escurecer(s["cabelo"], b)
+		var estilo: int = s["estilo"]
+		# contorno (corpo e cabeça)
+		draw_rect(Rect2(x - 3.6 * u, y - 10.6 * u, 7.2 * u, 7.6 * u), contorno)
+		draw_rect(Rect2(x - 3.0 * u, y - 16.5 * u + dy, 6.0 * u, 6.0 * u), contorno)
+		# torso com dobras
+		draw_rect(Rect2(x - 3.0 * u, y - 10.0 * u, 6.0 * u, 7.0 * u), tun)
+		draw_rect(Rect2(x - 3.0 * u, y - 10.0 * u, 1.0 * u, 7.0 * u), tun.lightened(0.18))
+		draw_rect(Rect2(x + 2.0 * u, y - 10.0 * u, 1.0 * u, 7.0 * u), tun.darkened(0.3))
+		draw_rect(Rect2(x - 3.0 * u, y - 5.0 * u, 6.0 * u, 2.0 * u), tun.darkened(0.2))
+		draw_rect(Rect2(x - 3.0 * u, y - 10.0 * u, 6.0 * u, 0.8 * u), tun.lightened(0.28))
+		if s["listra"]:
+			draw_rect(Rect2(x - 0.5 * u, y - 10.0 * u, 1.0 * u, 7.0 * u), _escurecer(Color("8a1f1a"), b))
+		# pescoço
+		draw_rect(Rect2(x - 1.0 * u, y - 11.0 * u + dy * 0.5, 2.0 * u, 1.2 * u), pele.darkened(0.25))
 		# braços
 		if erg:
-			draw_rect(Rect2(x - 4 * u, y - 10 * u, u, 4 * u), s["pele"])
-			draw_rect(Rect2(x + 3 * u, y - 10 * u, u, 4 * u), s["pele"])
+			draw_rect(Rect2(x - 4.4 * u, y - 15.0 * u, 1.3 * u, 6.0 * u), tun)
+			draw_rect(Rect2(x + 3.1 * u, y - 15.0 * u, 1.3 * u, 6.0 * u), tun.darkened(0.25))
+			draw_rect(Rect2(x - 4.6 * u, y - 16.0 * u, 1.7 * u, 1.7 * u), pele)
+			draw_rect(Rect2(x + 2.9 * u, y - 16.0 * u, 1.7 * u, 1.7 * u), pele)
 		else:
-			draw_rect(Rect2(x - 4 * u, y - 6 * u, u, 3 * u), s["pele"])
-			draw_rect(Rect2(x + 3 * u, y - 6 * u, u, 3 * u), s["pele"])
-		# cabeça e cabelo
-		draw_rect(Rect2(x - 2 * u, y - 11 * u + dy, 4 * u, 4 * u), s["pele"])
-		draw_rect(Rect2(x - 2 * u, y - 11 * u + dy, 4 * u, 1.5 * u), s["cabelo"])
+			draw_rect(Rect2(x - 4.2 * u, y - 9.5 * u, 1.2 * u, 4.0 * u), tun)
+			draw_rect(Rect2(x + 3.0 * u, y - 9.5 * u, 1.2 * u, 4.0 * u), tun.darkened(0.25))
+			draw_rect(Rect2(x - 4.2 * u, y - 5.5 * u, 1.2 * u, 1.2 * u), pele)
+			draw_rect(Rect2(x + 3.0 * u, y - 5.5 * u, 1.2 * u, 1.2 * u), pele)
+		# cabeça
+		var hy := y - 16.0 * u + dy
+		if estilo == 3:
+			# cabelo longo atrás da cabeça
+			draw_rect(Rect2(x - 3.0 * u, hy, 6.0 * u, 7.0 * u), cab)
+		draw_rect(Rect2(x - 2.4 * u, hy + 0.6 * u, 4.8 * u, 5.0 * u), pele)
+		draw_rect(Rect2(x + 1.4 * u, hy + 0.6 * u, 1.0 * u, 5.0 * u), pele.darkened(0.18))
+		# cabelo
+		match estilo:
+			0:
+				draw_rect(Rect2(x - 2.6 * u, hy, 5.2 * u, 1.8 * u), cab)
+			1:
+				draw_rect(Rect2(x - 2.6 * u, hy, 5.2 * u, 1.6 * u), cab)
+				draw_rect(Rect2(x - 2.6 * u, hy, 0.9 * u, 3.2 * u), cab)
+				draw_rect(Rect2(x + 1.7 * u, hy, 0.9 * u, 3.2 * u), cab)
+			2:
+				draw_rect(Rect2(x - 2.0 * u, hy + 0.2 * u, 4.0 * u, 1.0 * u), cab.lightened(0.1))
+			3:
+				draw_rect(Rect2(x - 2.8 * u, hy, 5.6 * u, 1.8 * u), cab)
+		# rosto
+		var olho := Color(0.1, 0.06, 0.05)
+		draw_rect(Rect2(x - 1.4 * u, hy + 2.5 * u, 0.9 * u, 0.9 * u), olho)
+		draw_rect(Rect2(x + 0.5 * u, hy + 2.5 * u, 0.9 * u, 0.9 * u), olho)
+		if erg:
+			draw_rect(Rect2(x - 0.9 * u, hy + 4.0 * u, 1.8 * u, 1.1 * u), Color(0.45, 0.1, 0.1))
+		else:
+			draw_rect(Rect2(x - 0.8 * u, hy + 4.2 * u, 1.6 * u, 0.5 * u), pele.darkened(0.4))

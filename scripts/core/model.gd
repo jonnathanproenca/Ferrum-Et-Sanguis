@@ -37,6 +37,40 @@ const NOMES: Array = [
 	"Ixíon", "Jugurta", "Lisandro", "Mário", "Nicandro", "Orgétorix", "Perseu", "Rufo", "Sertório", "Tárcio",
 ]
 
+## Nomes únicos: tabela grande (assets/dados/nomes.txt) sem repetição por partida. `nomes_legado` mantém a lista curta (testes de paridade).
+static var nomes_legado := false
+static var nomes_usados := {}
+static var _tabela_nomes: PackedStringArray = PackedStringArray()
+static var _rng_nomes := RandomNumberGenerator.new()
+
+static func sortear_nome(base: String) -> String:
+	if nomes_legado:
+		return base
+	if _tabela_nomes.is_empty():
+		var f := FileAccess.open("res://assets/dados/nomes.txt", FileAccess.READ)
+		if f:
+			_tabela_nomes = f.get_as_text().split("\n", false)
+		_rng_nomes.randomize()
+	if _tabela_nomes.is_empty():
+		return base
+	if nomes_usados.size() >= _tabela_nomes.size() - 50:
+		nomes_usados.clear()
+	var n: String = _tabela_nomes[_rng_nomes.randi() % _tabela_nomes.size()]
+	while nomes_usados.has(n):
+		n = _tabela_nomes[_rng_nomes.randi() % _tabela_nomes.size()]
+	nomes_usados[n] = true
+	return n
+
+static func registrar_nomes(v) -> void:
+	if v is Dictionary:
+		if v.has("nome") and v.has("classe"):
+			nomes_usados[str(v["nome"])] = true
+		for k in v:
+			registrar_nomes(v[k])
+	elif v is Array:
+		for x in v:
+			registrar_nomes(x)
+
 static var _classes: Dictionary = {}
 static var _itens: Array = []
 static var _terras: Array = []
@@ -134,7 +168,7 @@ static func gerar_gladiador(rng: Rng, id: String, classe: String, nivel: int, or
 	for i in range(pontos):
 		treino[ATRIBUTOS[rng.inteiro(0, ATRIBUTOS.size() - 1)]] += 1
 	var terra: Dictionary = terras()[rng.inteiro(0, terras().size() - 1)]
-	var nome: String = NOMES[rng.inteiro(0, NOMES.size() - 1)]
+	var nome: String = sortear_nome(NOMES[rng.inteiro(0, NOMES.size() - 1)])
 	var look: int = rng.inteiro(0, 3)
 	var equipamento := sortear_equipamento(rng, classe, qual_max)
 	return {

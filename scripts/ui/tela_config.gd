@@ -125,6 +125,9 @@ static func painel_cheats(so_prefs: bool = false) -> Control:
 	return v
 
 static func definir_cheat(chave: String, ligado: bool, so_prefs: bool = false) -> void:
+	if chave == "ouro" and ligado and not so_prefs and not Jogo.e.is_empty():
+		Jogo.e["ouro"] = maxi(int(Jogo.e["ouro"]), 9999999)
+		Jogo.mudou.emit()
 	var c: Dictionary = Jogo.prefs.get("cheats", {})
 	c[chave] = ligado
 	Jogo.prefs["cheats"] = c

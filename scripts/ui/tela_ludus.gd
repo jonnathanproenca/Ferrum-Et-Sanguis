@@ -29,6 +29,7 @@ func construir() -> void:
 	# Cena do morro (altura proporcional à largura 1024:572, limitada a ~45% da altura da tela)
 	_caixa_cena = Control.new()
 	_caixa_cena.clip_contents = true
+	_caixa_cena.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_caixa_cena.custom_minimum_size = Vector2(0, 300)
 	_raiz.add_child(_caixa_cena)
 	_cena = CenaLudus.new()
@@ -99,8 +100,8 @@ func _ao_redimensionar() -> void:
 	var w: float = _raiz.size.x
 	if w <= 0.0:
 		return
-	var altura: float = minf(w * 572.0 / 1024.0, size.y * 0.88)
-	_caixa_cena.custom_minimum_size.y = maxf(120.0, altura)
+	var cw: float = minf(w, 1180.0)
+	_caixa_cena.custom_minimum_size = Vector2(cw, maxf(120.0, cw * 572.0 / 1024.0))
 	_grade.columns = clampi(int(w / LARGURA_CARTA), 1, 3)
 
 

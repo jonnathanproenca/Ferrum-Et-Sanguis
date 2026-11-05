@@ -38,9 +38,12 @@ func tem_save() -> bool:
 	return FileAccess.file_exists(ARQ_SAVE)
 
 func novo(casa_id: String, dificuldade: String) -> void:
+	Model.nomes_usados.clear()
 	e = Game.novo_jogo(int(Time.get_unix_time_from_system() * 1000.0) % 2147483646, casa_id, dificuldade)
 	if prefs["cheatLiberado"] and not prefs["cheats"].is_empty():
 		e["cheats"] = prefs["cheats"].duplicate()
+		if bool(e["cheats"].get("ouro", false)):
+			e["ouro"] = 9999999
 	salvar()
 	mudou.emit()
 
@@ -62,6 +65,10 @@ func continuar() -> bool:
 	Game.estatisticas(e)
 	if prefs["cheatLiberado"] and not e.has("cheats") and not prefs["cheats"].is_empty():
 		e["cheats"] = prefs["cheats"].duplicate()
+	if bool(e.get("cheats", {}).get("ouro", false)):
+		e["ouro"] = maxi(int(e["ouro"]), 9999999)
+	Model.nomes_usados.clear()
+	Model.registrar_nomes(e)
 	mudou.emit()
 	return true
 

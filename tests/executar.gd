@@ -4,6 +4,7 @@ extends SceneTree
 var falhas := 0
 
 func _init() -> void:
+	Model.nomes_legado = true
 	teste_combate()
 	teste_jogo()
 	print("FALHAS: ", falhas)

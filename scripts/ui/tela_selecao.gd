@@ -88,6 +88,8 @@ func _ready() -> void:
 	_montar_info()
 	_montar_barra(raiz)
 	_aviso = Tema.rotulo("", 18, Tema.VERDE)
+	_aviso.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_aviso.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_aviso.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_aviso.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_aviso.grow_vertical = Control.GROW_DIRECTION_BEGIN
