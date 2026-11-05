@@ -5,9 +5,9 @@ func preparar(arvore: SceneTree) -> void:
 	fundo.size = Vector2(1280, 720)
 	arvore.root.add_child(fundo)
 	var d := DoctoreOssos.new()
-	d.escala_base = 0.9
-	d.scale = Vector2(0.9, 0.9)
-	d.position = Vector2(200, 330)
+	d.escala_base = 0.5
+	d.scale = Vector2(1.3, 1.3)
+	d.position = Vector2(260, 700)
 	d.congelar = true
 	d._proximo = 999.0
 	arvore.root.add_child(d)

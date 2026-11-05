@@ -6,9 +6,9 @@ func preparar(arvore: SceneTree) -> void:
 	fundo.size = Vector2(1280, 720)
 	arvore.root.add_child(fundo)
 	var d := DoctoreOssos.new()
-	d.escala_base = 1.2
-	d.scale = Vector2(1.2, 1.2)
-	d.position = Vector2(560, 640)
+	d.escala_base = 0.7
+	d.scale = Vector2(0.7, 0.7)
+	d.position = Vector2(300, 400)
 	arvore.root.add_child(d)
 	var saida := OS.get_environment("SAIDA")
 	for i in 40:

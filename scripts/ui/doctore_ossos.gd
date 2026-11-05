@@ -4,26 +4,28 @@ extends Node2D
 ## segmentos com mola, então "estala" sozinho quando o braço varre. Mesma interface do Doctore por quadros.
 
 const DIR := "assets/ludus/doctore_rig/"
-const ESC := 0.52   ## fonte -> PNG do corpo
+const ESC := 0.33   ## unidade-base -> PNG do corpo
 const SW := 0.10    ## fonte -> PNG do chicote
-## [nome, pai, posição (px da fonte, no espaço do pai), pivô (px da fonte, na peça), rotação inicial, z, esticar em y]
+## [nome, pai, posição (unidades-base, no espaço do pai), pivô (px da peça original), rotação inicial, z, escala da peça]
 const OSSOS := [
 	["quadril", "", Vector2(0, 0), Vector2.ZERO, 0.0, 0, Vector2(1.0, 1.0)],
-	["saia", "quadril", Vector2(0, 0), Vector2(116, 30), 0.0, 6, Vector2(1.0, 0.62)],
-	["torso", "quadril", Vector2(0, 8), Vector2(96, 190), 0.0, 2, Vector2(1.0, 1.0)],
-	["cabeca", "torso", Vector2(34, -158), Vector2(62, 172), 0.0, 3, Vector2(1.0, 1.0)],
-	["braco_f_sup", "torso", Vector2(-8, -118), Vector2(58, 32), 0.0, 5, Vector2(1.0, 1.0)],
-	["braco_f_ant", "braco_f_sup", Vector2(10, 143), Vector2(22, 78), 0.0, 5, Vector2(1.0, 1.0)],
-	["braco_t_sup", "torso", Vector2(-2, -120), Vector2(62, 32), 0.0, 0, Vector2(1.0, 1.0)],
-	["braco_t_ant", "braco_t_sup", Vector2(43, 118), Vector2(18, 42), 0.0, 0, Vector2(1.0, 1.0)],
-	["coxa_f", "quadril", Vector2(6, 0), Vector2(48, 28), -0.2, 3, Vector2(0.7, 1.55)],
-	["canela_f", "coxa_f", Vector2(42, 212), Vector2(58, 22), 0.2, 4, Vector2(0.85, 1.25)],
-	["coxa_t", "quadril", Vector2(-4, 0), Vector2(48, 28), -0.2, 1, Vector2(0.7, 1.55)],
-	["canela_t", "coxa_t", Vector2(42, 212), Vector2(58, 22), 0.2, 1, Vector2(0.85, 1.25)],
+	["saia", "quadril", Vector2(0, -105), Vector2(116, 35), 0.0, 6, Vector2(1.1, 0.94)],
+	["torso", "quadril", Vector2(0, -90), Vector2(98, 218), 0.0, 2, Vector2(1.4, 1.4)],
+	["cabeca", "torso", Vector2(37, -264), Vector2(58, 185), 0.0, 3, Vector2(1.0, 1.0)],
+	["braco_f_sup", "torso", Vector2(-60, -235), Vector2(58, 35), 0.0, 5, Vector2(1.0, 1.0)],
+	["braco_f_ant", "braco_f_sup", Vector2(7, 165), Vector2(50, 50), 0.0, 5, Vector2(1.2, 1.2)],
+	["braco_t_sup", "torso", Vector2(-50, -238), Vector2(58, 35), 0.0, 0, Vector2(1.0, 1.0)],
+	["braco_t_ant", "braco_t_sup", Vector2(7, 155), Vector2(50, 55), 0.0, 0, Vector2(1.05, 1.05)],
+	["coxa_f", "quadril", Vector2(12, 0), Vector2(60, 25), 0.0, 3, Vector2(1.12, 1.35)],
+	["canela_f", "coxa_f", Vector2(3, 230), Vector2(55, 25), 0.0, 4, Vector2(1.22, 1.15)],
+	["pe_f", "canela_f", Vector2(-5, 207), Vector2(45, 35), 0.0, 3, Vector2(1.1, 1.1)],
+	["coxa_t", "quadril", Vector2(-12, 0), Vector2(52, 25), 0.0, 1, Vector2(1.12, 1.35)],
+	["canela_t", "coxa_t", Vector2(0, 225), Vector2(55, 25), 0.0, 1, Vector2(1.22, 1.15)],
+	["pe_t", "canela_t", Vector2(-5, 207), Vector2(47, 81), 0.0, 0, Vector2(1.1, 1.1)],
 ]
 const CADEIA := ["w_s1", "w_s2", "w_s3", "w_s4", "w_s5", "w_s6", "w_ponta"]
 const REPOUSO := [0.0, 0.05, 0.3, 0.4, 0.4, 0.3, 0.15]
-const PES := 440.0
+const PES := 546.0
 const LF := 0.34  ## encurta os segmentos do chicote  ## distância (fonte) do quadril ao chão
 
 var escala_base := 0.3
@@ -62,8 +64,8 @@ func _init() -> void:
 	# chicote: cabo na mão (ponta da mão) e corrente de segmentos
 	var cabo := _peca("w_cabo", Vector2(0, 4.4))
 	(_o["braco_f_ant"] as Node2D).add_child(cabo)
-	cabo.position = Vector2(150, -26) * ESC
-	cabo.rotation = PI / 2.0
+	cabo.position = Vector2(162, 174) * ESC
+	cabo.rotation = 1.92
 	_o["w_cabo"] = cabo
 	var pai: Node2D = cabo
 	var comp_pai: float = 19.35
@@ -149,18 +151,24 @@ func _process(delta: float) -> void:
 		_proximo -= delta
 		if _proximo <= 0.0:
 			chicotear()
-	# pernas
+	# pernas (positivo = pé para trás); o joelho dobra quando a perna vai à frente
 	var a := sin(ph)
-	(_o["coxa_f"] as Node2D).rotation = -0.2 + a * 0.3
-	(_o["canela_f"] as Node2D).rotation = 0.2 + 0.6 * maxf(0.0, -cos(ph)) + 0.08
-	(_o["coxa_t"] as Node2D).rotation = -0.2 - a * 0.3
-	(_o["canela_t"] as Node2D).rotation = 0.2 + 0.6 * maxf(0.0, cos(ph)) + 0.08
+	var cf := a * 0.32
+	var ct := -a * 0.32
+	var kf := 0.75 * maxf(0.0, -cos(ph))
+	var kt := 0.75 * maxf(0.0, cos(ph))
+	(_o["coxa_f"] as Node2D).rotation = cf
+	(_o["canela_f"] as Node2D).rotation = kf
+	(_o["pe_f"] as Node2D).rotation = -(cf + kf) * 0.8
+	(_o["coxa_t"] as Node2D).rotation = ct
+	(_o["canela_t"] as Node2D).rotation = kt
+	(_o["pe_t"] as Node2D).rotation = -(ct + kt) * 0.8
 	(_o["quadril"] as Node2D).position.y = -PES * ESC + absf(sin(ph)) * 3.0
 	(_o["torso"] as Node2D).rotation = tronco + sin(ph * 2.0) * 0.015
-	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.05 + 0.1
-	(_o["braco_f_ant"] as Node2D).rotation = ante
-	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.18 + 0.1
-	(_o["braco_t_ant"] as Node2D).rotation = 0.3 + sin(ph) * 0.1
+	(_o["braco_f_sup"] as Node2D).rotation = braco + sin(ph + PI) * 0.06
+	(_o["braco_f_ant"] as Node2D).rotation = ante - 0.35
+	(_o["braco_t_sup"] as Node2D).rotation = sin(ph) * 0.2
+	(_o["braco_t_ant"] as Node2D).rotation = -0.25
 	_chicote(delta, rijo)
 
 
