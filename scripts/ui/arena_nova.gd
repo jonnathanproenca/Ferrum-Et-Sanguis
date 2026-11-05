@@ -4,7 +4,7 @@ extends Node2D
 ## Só vale se existirem os arquivos assets/arenas/novo/<id>_vazia.jpg e <id>_publico.png/.json; senão montar() devolve false.
 
 const DIR := "assets/arenas/novo/"
-const OCUP := {"vazia": 0.55, "meia": 0.8, "cheia": 1.0}
+const OCUP := {"vazia": 0.5, "meia": 0.8, "cheia": 1.0}
 
 var vel := 1.0
 var posicoes: Array = []   ## {x, y} no palco 1280x720, para a origem das moedas
@@ -13,7 +13,7 @@ var _t := 0.0
 
 
 static func existe(id: String) -> bool:
-	return ResourceLoader.exists(DIR + id + "_vazia.jpg") and FileAccess.file_exists("res://" + DIR + id + "_publico.json")
+	return ResourceLoader.exists("res://" + DIR + id + "_vazia.jpg") and FileAccess.file_exists("res://" + DIR + id + "_publico.json")
 
 
 func montar(id: String, lotacao: String, palco: Vector2) -> bool:
@@ -35,7 +35,7 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 	rng.randomize()
 	var ocup: float = float(OCUP.get(lotacao, 0.8))
 	for b: Dictionary in d["blobs"]:
-		if rng.randf() > ocup:
+		if not b.has("fixo") and rng.randf() > ocup:
 			continue
 		var s := Sprite2D.new()
 		s.texture = pub
@@ -46,7 +46,7 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 		s.position = Vector2(float(b["esq"]), float(b["topo"])) * k
 		s.z_index = -9
 		add_child(s)
-		_fig.append({"n": s, "y0": s.position.y, "fase": rng.randf() * TAU, "amp": 1.0 + rng.randf() * 2.0})
+		_fig.append({"n": s, "y0": s.position.y, "fase": rng.randf() * TAU, "amp": 0.0 if b.has("fixo") else 1.2 + rng.randf() * 1.2})
 		posicoes.append({"x": (float(b["esq"]) + float(b["w"]) * 0.5) * k.x, "y": (float(b["topo"]) + float(b["h"]) * 0.3) * k.y})
 	var fr: Texture2D = Tema.textura(DIR + id + "_frente.png")
 	if fr != null:

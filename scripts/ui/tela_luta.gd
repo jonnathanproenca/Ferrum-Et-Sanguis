@@ -98,6 +98,7 @@ func _montar_cena() -> void:
 	_area.clip_contents = true
 	add_child(_area)
 	_palco = Node2D.new()
+	_palco.z_index = 20
 	_area.add_child(_palco)
 	var bg := Sprite2D.new()
 	bg.centered = false
@@ -114,7 +115,8 @@ func _montar_cena() -> void:
 		var nova := ArenaNova.new()
 		nova.vel = vel
 		_palco.add_child(nova)
-		if nova.montar(_arena_id, str(_payload.get("plateia", "meia")), PALCO):
+		var okn := nova.montar(_arena_id, str(_payload.get("plateia", "meia")), PALCO)
+		if okn:
 			bg.visible = false
 			_plateia.visible = false
 			_plateia.set_process(false)
