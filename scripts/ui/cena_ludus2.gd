@@ -34,6 +34,7 @@ class Doctore extends Node2D:
 	var _meta: Dictionary
 	var _corpo := Sprite2D.new()
 	var _chicote := Sprite2D.new()
+	var _rolo := Sprite2D.new()  ## chicote recolhido, pendurado na mão
 	var _tex := {}
 	var _seq: Array = []
 	var _seq_t := 0.0
@@ -51,8 +52,13 @@ class Doctore extends Node2D:
 			_tex[n] = Tema.textura(DIR + n + ".png")
 		_corpo.centered = false
 		_chicote.centered = false
+		_rolo.texture = Tema.textura(DIR + "rolo.png")
+		_rolo.centered = false
+		var rp: Array = _meta["rolo"]["pivo"]
+		_rolo.offset = -Vector2(rp[0], rp[1])
 		add_child(_corpo)
 		add_child(_chicote)
+		add_child(_rolo)
 		scale = Vector2(0.6, 0.6)
 		_aplicar("guarda", 1)
 		_chicote.visible = false
@@ -93,6 +99,9 @@ class Doctore extends Node2D:
 		_chicote.offset = -Vector2(c["pivo"][0], c["pivo"][1])
 		_chicote.position = Vector2(m["mao"][0], m["mao"][1]) - anc
 		_chicote.rotation = deg_to_rad(float(m["angulo"]))
+		_rolo.position = Vector2(m["mao"][0], m["mao"][1]) - anc
+		_rolo.rotation = 0.0
+		_rolo.visible = (pose == "guarda" and not ocupado) or (pose == "guarda" and _recolhendo and _coil > 0.5)
 
 	func chicotear() -> void:
 		ocupado = true
@@ -103,6 +112,7 @@ class Doctore extends Node2D:
 		queue_redraw()
 		_seq = [[0.30, "prepara", 2], [0.10, "golpe", 3], [0.16, "golpe", 4], [0.20, "golpe", 3]]
 		_seq_t = 0.0
+		_rolo.modulate.a = 1.0
 		_aplicar("prepara", 2)
 
 	func _process(delta: float) -> void:
