@@ -127,43 +127,44 @@ func _process(delta: float) -> void:
 	if _acao >= 0.0:
 		_acao += delta
 		var u := _acao
-		if u < 0.55:
-			# levanta o braço acima da cabeça; o chicote vai para trás, em arco
-			var k := _suave(u / 0.55)
-			braco = lerpf(0.0, -3.0, k)
-			ante = lerpf(0.0, 0.5, k)
-			tronco = lerpf(0.0, -0.08, k)
-			rijo = k
-			reta = 0.5 * k
-			_chic_ang = -2.7
-		elif u < 0.74:
-			# chicoteia: o chicote varre o arco por cima da cabeça até a frente
-			var k := (u - 0.55) / 0.19
-			var e := k * k * (3.0 - 2.0 * k)
-			braco = lerpf(-3.0, -1.75, e)
-			ante = lerpf(0.5, -0.4, e)
-			tronco = lerpf(-0.08, 0.12, e)
+		if u < 0.4:
+			# arma o golpe: braço recuado, mão junto à cabeça, chicote pendurado atrás
+			var k := _suave(u / 0.4)
+			braco = lerpf(0.0, 1.9, k)
+			ante = lerpf(0.0, 1.5, k)
+			tronco = lerpf(0.0, -0.1, k)
+			rijo = k * 0.5
+			reta = 0.3 * k
+			_chic_ang = 2.0
+		elif u < 0.65:
+			# o chicote faz o laço por cima da cabeça enquanto o braço vai à frente
+			var k := (u - 0.4) / 0.25
+			var e := _suave(k)
+			var b := _suave((k - 0.55) / 0.45)
+			braco = lerpf(1.9, -1.15, b)
+			ante = lerpf(1.5, 0.2, b)
+			tronco = lerpf(-0.1, 0.12, b)
+			rijo = lerpf(0.5, 0.85, k)
+			reta = lerpf(0.3, 0.85, k)
+			_chic_ang = lerpf(2.0, 6.18, e)
+		elif u < 0.8:
+			# estalo: braço e chicote esticados à frente
+			var k := (u - 0.65) / 0.15
+			braco = -1.15
+			ante = lerpf(0.2, 0.1, k)
+			tronco = 0.12
 			rijo = 1.0
-			reta = lerpf(0.5, 1.0, e)
-			_chic_ang = lerpf(-2.7, -0.12, e)
-		elif u < 1.0:
-			# volta pelo mesmo arco
-			var k := _suave((u - 0.74) / 0.26)
-			braco = lerpf(-1.75, -1.5, k)
-			ante = lerpf(-0.4, 0.0, k)
-			tronco = lerpf(0.12, 0.05, k)
-			rijo = 1.0
-			reta = lerpf(1.0, 0.5, k)
-			_chic_ang = lerpf(-0.12, -2.7, k)
-		elif u < 1.7:
-			# abaixa para a posição natural
-			var k := _suave((u - 1.0) / 0.7)
-			braco = lerpf(-1.5, 0.0, k)
-			ante = lerpf(0.0, 0.0, k)
-			tronco = lerpf(0.05, 0.0, k)
+			reta = 1.0
+			_chic_ang = 6.18
+		elif u < 1.35:
+			# recolhe e volta à posição natural
+			var k := _suave((u - 0.8) / 0.55)
+			braco = lerpf(-1.15, 0.0, k)
+			ante = lerpf(0.1, 0.0, k)
+			tronco = lerpf(0.12, 0.0, k)
 			rijo = 1.0 - k
-			reta = 0.5 * (1.0 - k)
-			_chic_ang = -2.7
+			reta = 1.0 - k
+			_chic_ang = 6.18
 		else:
 			_acao = -1.0
 			ocupado = false
