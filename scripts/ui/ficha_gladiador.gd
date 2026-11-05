@@ -160,7 +160,7 @@ func _linha_atributo(a: String, valor: int, tem_palus: bool, e: Dictionary, prim
 	destaque.border_color = Tema.OURO
 	destaque.border_width_bottom = 1
 	linha.add_theme_stylebox_override("panel", normal)
-	linha.tooltip_text = "%s: %d\nTreino %d/%d. %s" % [Model.NOME_ATRIBUTO[a], valor, treino, Game.TREINO_MAXIMO, _dica_atributo(a)]
+	linha.tooltip_text = "%s: %d (máx. %d)\nTreinado: +%d. %s" % [Model.NOME_ATRIBUTO[a], valor, Game.ATRIBUTO_MAXIMO, treino, _dica_atributo(a)]
 	linha.mouse_entered.connect(func() -> void: linha.add_theme_stylebox_override("panel", destaque))
 	linha.mouse_exited.connect(func() -> void: linha.add_theme_stylebox_override("panel", normal))
 	var h := Tema.hbox(8)
@@ -205,15 +205,15 @@ func _botao_mais(a: String, treino: int, tem_palus: bool, e: Dictionary) -> Cont
 		motivo = "Construa o palus para treinar."
 	elif not g["vivo"]:
 		motivo = "Gladiador morto."
-	elif treino >= Game.TREINO_MAXIMO:
-		motivo = "Treino máximo atingido neste atributo."
+	elif Game.atributo_no_maximo(g, a):
+		motivo = "Atributo no máximo (%d)." % Game.ATRIBUTO_MAXIMO
 	elif int(e["ouro"]) < custo:
 		motivo = "Faltam %d de ouro." % (custo - int(e["ouro"]))
 	elif int(e["energia"]) < 1:
 		motivo = "Sem energia neste turno."
 	if not tem_palus:
 		b.text = "sem palus"
-	elif treino >= Game.TREINO_MAXIMO:
+	elif Game.atributo_no_maximo(g, a):
 		b.text = "máximo"
 	else:
 		b.text = "%d ouro · 1 energia" % custo

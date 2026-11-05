@@ -162,78 +162,96 @@ func _faixas(cor: Color) -> void:
 	for l in [[Vector2(122, 168), Vector2(146, 180)], [Vector2(112, 190), Vector2(134, 202)], [Vector2(318, 180), Vector2(294, 168)], [Vector2(328, 202), Vector2(306, 190)]]:
 		draw_line(l[0], l[1], cor, 5.0, true)
 
+func _cone(a: Vector2, b: Vector2, wa: float, wb: float, col: Color) -> void:
+	var n := (b - a).orthogonal().normalized()
+	draw_colored_polygon(PackedVector2Array([a + n * wa / 2.0, b + n * wb / 2.0, b - n * wb / 2.0, a - n * wa / 2.0]), col)
+	draw_circle(a, wa / 2.0, col)
+	draw_circle(b, wb / 2.0, col)
+
+func _torso_pts() -> PackedVector2Array:
+	var meio: Array = [[88, 50], [100, 54], [128, 45], [160, 36], [190, 26], [214, 29], [230, 32]]
+	var pts := PackedVector2Array()
+	for m in meio:
+		pts.append(Vector2(220 - m[1], m[0]))
+	for k in range(meio.size() - 1, -1, -1):
+		pts.append(Vector2(220 + meio[k][1], meio[k][0]))
+	return pts
+
+## Silhueta humana com membros afilados; `ex` engorda tudo (usado para contorno/brilho).
+func _silhueta(col: Color, ex: float) -> void:
+	var t := _torso_pts()
+	draw_colored_polygon(t, col)
+	if ex > 0.0:
+		var f: PackedVector2Array = t.duplicate()
+		f.append(t[0])
+		draw_polyline(f, col, ex * 2.0, true)
+	draw_circle(Vector2(220, 38), 21.0 + ex, col)
+	draw_colored_polygon(PackedVector2Array([Vector2(207, 44), Vector2(233, 44), Vector2(236 + ex, 78), Vector2(204 - ex, 78)]), col)
+	for lado: float in [-1.0, 1.0]:
+		var x: float = 220.0 + lado * 50.0
+		draw_circle(Vector2(x, 100), 17.0 + ex, col)
+		_cone(Vector2(x, 100), Vector2(220.0 + lado * 84.0, 154), 25.0 + ex * 2, 18.0 + ex * 2, col)
+		_cone(Vector2(220.0 + lado * 84.0, 154), Vector2(220.0 + lado * 104.0, 210), 18.0 + ex * 2, 12.0 + ex * 2, col)
+		draw_circle(Vector2(220.0 + lado * 106.0, 216), 8.0 + ex, col)
+		_cone(Vector2(220.0 + lado * 17.0, 226), Vector2(220.0 + lado * 30.0, 304), 38.0 + ex * 2, 26.0 + ex * 2, col)
+		_cone(Vector2(220.0 + lado * 30.0, 304), Vector2(220.0 + lado * 36.0, 376), 26.0 + ex * 2, 15.0 + ex * 2, col)
+		draw_colored_polygon(PackedVector2Array([Vector2(220.0 + lado * 36.0 - 12 - ex, 372), Vector2(220.0 + lado * 36.0 + 12 + ex, 372), Vector2(220.0 + lado * 36.0 + lado * 20 + ex * lado, 386 + ex), Vector2(220.0 + lado * 36.0 - lado * 8, 386 + ex)]), col)
+
+func _luz_lateral(cor: Color, w: float) -> void:
+	# faixa de luz na borda esquerda de tronco e pernas, sombra na direita
+	draw_line(Vector2(178, 104), Vector2(190, 212), cor, w, true)
+	draw_line(Vector2(200, 250), Vector2(194, 360), cor, w * 0.8, true)
+	draw_line(Vector2(130, 112), Vector2(120, 196), cor, w * 0.7, true)
+
+func _fundo_romano(escuro: bool) -> void:
+	_colunas(0.95, true)
+	_tijolos(0.22 if not escuro else 0.3)
+	_arco(Color(0.26, 0.20, 0.15, 1.0) if not escuro else Color(0.18, 0.14, 0.11, 1.0))
+	_piso(1.0)
+	_tocha(Vector2(38, 130), 1.0 if not escuro else 1.8)
+	_tocha(Vector2(402, 130), 1.0 if not escuro else 1.8)
+
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	var n := estilo + 1
-	draw_rect(r, Color("0e0a08") if n < 4 else Color("120d0a"))
+	draw_rect(r, Color("120d0a"))
 	var c := Vector2(LARGURA / 2.0, ALTURA * 0.46)
 	for i in range(14):
 		var k := float(i) / 13.0
 		draw_circle(c, 210.0 * (1.0 - k), Color(0.80, 0.55, 0.25, 0.012 + 0.012 * k))
-	if n >= 3:
-		_colunas(0.9 if n >= 4 else 0.45, n >= 4)
-	if n >= 4:
-		_tijolos(0.18 if n == 4 else 0.28)
-		_arco(Color(0.26, 0.20, 0.15, 1.0))
-		_piso(1.0)
-		_tocha(Vector2(38, 130), 1.0)
-		_tocha(Vector2(402, 130), 1.0)
-	if n >= 5:
-		for bx in [78.0, 330.0]:
-			draw_rect(Rect2(bx, 14, 32, 74), Color(0.50, 0.08, 0.06))
-			draw_rect(Rect2(bx, 14, 32, 74), Color(Tema.OURO, 0.8), false, 2.0)
-			draw_colored_polygon(PackedVector2Array([Vector2(bx, 88), Vector2(bx + 32, 88), Vector2(bx + 16, 104)]), Color(0.50, 0.08, 0.06))
-			draw_circle(Vector2(bx + 16, 42), 8.0, Color(Tema.OURO, 0.85))
+	match estilo:
+		0: # bronze: pele, volume e anatomia, cenário de arena
+			_fundo_romano(false)
+			_silhueta(Color(0.05, 0.03, 0.02), 2.5)
+			_silhueta(Color(0.47, 0.32, 0.22), 0.0)
+			_luz_lateral(Color(0.64, 0.45, 0.30, 0.75), 9.0)
+			draw_line(Vector2(256, 110), Vector2(250, 210), Color(0.27, 0.16, 0.10, 0.7), 8.0, true)
+			_anatomia(Color(0.20, 0.11, 0.07, 0.75), true)
+			_subligaculo(Color(0.52, 0.09, 0.07))
+			draw_arc(Vector2(220, 30), 21.0, PI + 0.2, TAU - 0.2, 14, Color(0.10, 0.06, 0.04), 7.0, true)
+		1: # cinema: silhueta escura com luz alaranjada das tochas nos contornos
+			_fundo_romano(true)
+			draw_circle(Vector2(220, 384), 70.0, Color(1.0, 0.55, 0.2, 0.06))
+			_silhueta(Color(1.0, 0.62, 0.28, 0.55), 2.2)
+			_silhueta(Color(0.065, 0.045, 0.04), 0.0)
+			_anatomia(Color(1.0, 0.65, 0.3, 0.16), false)
+			_subligaculo(Color(0.26, 0.05, 0.04))
+		2: # afresco: pintura pompeiana, figura terracota com contorno preto
+			draw_rect(Rect2(6, 6, LARGURA - 12, ALTURA - 12), Color(0.46, 0.14, 0.09))
+			draw_rect(Rect2(14, 14, LARGURA - 28, ALTURA - 28), Color(0.54, 0.18, 0.11))
+			for x in range(14, int(LARGURA) - 28, 26):
+				draw_rect(Rect2(x, 14, 13, 10), Color(0.08, 0.05, 0.04))
+				draw_rect(Rect2(x + 13, ALTURA - 24, 13, 10), Color(0.08, 0.05, 0.04))
+			draw_rect(Rect2(14, 14, LARGURA - 28, ALTURA - 28), Color(0.93, 0.78, 0.40, 0.85), false, 2.0)
+			draw_circle(Vector2(220, 212), 170.0, Color(0.88, 0.62, 0.30, 0.12))
+			_silhueta(Color(0.06, 0.04, 0.03), 3.5)
+			_silhueta(Color(0.80, 0.46, 0.26), 0.0)
+			draw_line(Vector2(180, 108), Vector2(188, 210), Color(0.90, 0.58, 0.34), 8.0, true)
+			draw_line(Vector2(256, 110), Vector2(250, 210), Color(0.62, 0.32, 0.18), 8.0, true)
+			_anatomia(Color(0.06, 0.04, 0.03, 0.8), true)
+			_subligaculo(Color(0.93, 0.88, 0.76))
+			draw_arc(Vector2(220, 28), 21.0, PI + 0.2, TAU - 0.2, 14, Color(0.06, 0.04, 0.03), 8.0, true)
 	draw_rect(r, Color(Tema.OURO_ESCURO, 0.9), false, 2.0)
 	draw_rect(Rect2(Vector2(5, 5), size - Vector2(10, 10)), Color(Tema.OURO_ESCURO, 0.3), false, 1.0)
-	if n >= 3:
-		draw_set_transform(Vector2.ZERO)
-		draw_circle(Vector2(220, 384), 2.0, Color(0, 0, 0, 0))
-		for i in range(6):
-			draw_rect(Rect2(Vector2(220 - 90 + i * 6, 380 + i * 0.6), Vector2(180 - i * 12, 6)), Color(0, 0, 0, 0.10))
-	match n:
-		1:
-			_corpo(Color(Tema.OURO_ESCURO, 0.55), 2.5, false)
-			_corpo(Color(0.06, 0.045, 0.04), 0.0, false)
-		2:
-			_corpo(Color(Tema.OURO_ESCURO, 0.7), 2.5, false)
-			_corpo(Color(0.11, 0.08, 0.065), 0.0, false)
-			draw_line(Vector2(184, 104), Vector2(190, 214), Color(0.20, 0.14, 0.10, 0.6), 8.0, true)
-			draw_line(Vector2(176, 250), Vector2(182, 360), Color(0.20, 0.14, 0.10, 0.6), 8.0, true)
-			_anatomia(Color(Tema.OURO_ESCURO, 0.45), false)
-		3:
-			_corpo(Color(Tema.OURO_ESCURO, 0.8), 2.5, false)
-			_corpo(Color(0.16, 0.11, 0.085), 0.0, false)
-			draw_line(Vector2(184, 104), Vector2(190, 214), Color(0.26, 0.18, 0.13, 0.7), 9.0, true)
-			draw_line(Vector2(176, 250), Vector2(182, 360), Color(0.26, 0.18, 0.13, 0.7), 9.0, true)
-			_anatomia(Color(0.05, 0.03, 0.02, 0.7), true)
-			_subligaculo(Color(0.42, 0.10, 0.08))
-			_faixas(Color(0.55, 0.42, 0.25))
-			draw_arc(Vector2(220, 30), 24.0, PI + 0.3, TAU - 0.3, 14, Color(0.05, 0.03, 0.02), 6.0, true)
-		4, 5:
-			_corpo(Color(0.04, 0.02, 0.01), 2.5, false)
-			_corpo(Color(0.46, 0.31, 0.21), 0.0, false)
-			_corpo(Color(0.20, 0.12, 0.08, 0.5), 0.0, false)
-			draw_line(Vector2(182, 104), Vector2(188, 214), Color(0.62, 0.43, 0.29, 0.8), 9.0, true)
-			draw_line(Vector2(174, 250), Vector2(180, 360), Color(0.62, 0.43, 0.29, 0.8), 9.0, true)
-			draw_line(Vector2(260, 104), Vector2(254, 214), Color(0.28, 0.17, 0.11, 0.7), 8.0, true)
-			draw_line(Vector2(268, 250), Vector2(262, 360), Color(0.28, 0.17, 0.11, 0.7), 8.0, true)
-			_anatomia(Color(0.20, 0.11, 0.07, 0.8), true)
-			_subligaculo(Color(0.55, 0.09, 0.07))
-			_faixas(Color(0.78, 0.64, 0.38))
-			draw_arc(Vector2(220, 30), 24.0, PI + 0.2, TAU - 0.2, 14, Color(0.10, 0.06, 0.04), 7.0, true)
-			draw_line(Vector2(206, 38), Vector2(234, 38), Color(0.16, 0.09, 0.06), 1.5, true)
-			draw_line(Vector2(220, 36), Vector2(222, 46), Color(0.25, 0.15, 0.10), 1.5, true)
-			# luz de tocha nas bordas
-			draw_line(Vector2(122, 128), Vector2(104, 206), Color(1.0, 0.6, 0.25, 0.35), 2.0, true)
-			draw_line(Vector2(318, 128), Vector2(336, 206), Color(1.0, 0.6, 0.25, 0.35), 2.0, true)
-			if n == 5:
-				draw_line(Vector2(170, 100), Vector2(262, 214), Color(0.30, 0.18, 0.10), 5.0, true)
-				draw_line(Vector2(270, 100), Vector2(178, 214), Color(0.30, 0.18, 0.10), 5.0, true)
-				draw_circle(Vector2(220, 157), 7.0, Color(Tema.OURO, 0.9))
-				draw_line(Vector2(192, 222), Vector2(248, 222), Color(Tema.OURO, 0.9), 4.0, true)
-				draw_line(Vector2(174, 120), Vector2(176, 200), Color(1.0, 0.7, 0.35, 0.3), 2.0, true)
-				draw_line(Vector2(266, 120), Vector2(264, 200), Color(1.0, 0.7, 0.35, 0.3), 2.0, true)
 
 
 ## Caixa de um slot: ícone do item (moldura da qualidade) ou rótulo discreto do tipo quando vazio.

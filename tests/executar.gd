@@ -116,6 +116,10 @@ func teste_regras() -> void:
 	ok(int(e["ouro"]) == ouro0 - c1, "treino cobra o custo")
 	g["nivel"] = 10
 	ok(Game.custo_treino(e, g, "aura") > c1, "treino mais caro em nível alto")
+	ok(Game.custo_treino(e, g, "aura") == Game.custo_treino(e, g, "forca"), "custo de treino único para todos os atributos")
+	g["treino"]["aura"] = 99
+	ok(Game.atributo_no_maximo(g, "aura") and Game.treinar(e, g["id"], "aura") != "", "teto 99 bloqueia treino")
+	g["treino"]["aura"] = 0
 	for a in Model.ATRIBUTOS:
 		ok(Game.treinar(e, g["id"], a) == "", "treinar %s" % a)
 	# fama para comprar

@@ -68,7 +68,7 @@ static func paginas_de(id: String, e: Dictionary) -> Array:
 				{"titulo": "Até a morte", "texto": "Nas lutas da campanha ninguém se rende: vai até a morte. Alguns passos são 2×2. Prepare seu time antes de entrar na arena."},
 			]
 		"treino":
-			return _com_aba("ludus", [{"titulo": "Treinar gladiadores", "texto": "O treino exige o palus construído. Cada card de gladiador ganha botões para os 6 atributos (Força, Destreza, Vitalidade, Resistência, Inteligência e Aura). Treinar custa 1 de energia e ouro: o preço sobe com o nível do gladiador e com os pontos já treinados no atributo. Soma +1 (máximo 10 por atributo) e dá experiência. Escravos recém-comprados treinam mesmo sem estilo. Força alta também aumenta a carga que ele aguenta."}])
+			return _com_aba("ludus", [{"titulo": "Treinar gladiadores", "texto": "O treino exige o palus construído. Cada card de gladiador ganha botões para os 6 atributos (Força, Destreza, Vitalidade, Resistência, Inteligência e Aura). Treinar custa 1 de energia e ouro: o preço é o mesmo para qualquer atributo e sobe com o nível do gladiador e com o total de pontos já treinados. Soma +1 (teto de 99 por atributo) e dá experiência. Escravos recém-comprados treinam mesmo sem estilo. Força alta também aumenta a carga que ele aguenta."}])
 		"armeiro":
 			return _com_aba("armeiro", [
 				{"titulo": "Peças especiais", "texto": "O armeiro mestre oferece 5 peças por rodada, todas melhores que as básicas. As chances de qualidade: Superior 60%, Rara 25%, Épica 11% e Lendária 4%. Cada rodada tem no máximo 3 verdes, 2 azuis, 2 roxas e 1 laranja."},

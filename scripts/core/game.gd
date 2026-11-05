@@ -12,12 +12,13 @@ const CUSTO_POR_GLADIADOR_REFEITORIO := 3
 const CAPACIDADE_BASE := 4
 const PRECO_TREINO := 20
 const TREINO_POR_NIVEL := 12
-const TREINO_POR_PONTO := 4
+const TREINO_POR_PONTO := 4  # por ponto já treinado, somando TODOS os atributos
 const FAMA_CAMPANHA := 5
 const GLORIA_DERROTA := 0.25
 const AURA_CHANCE := 0.02
 const AURA_CHANCE_MAX := 0.6
-const TREINO_MAXIMO := 10
+## Teto de cada atributo (sem itens), como nos soulslike.
+const ATRIBUTO_MAXIMO := 99
 const MAX_LOG := 40
 const CHANCE_LIBERTO := 0.03
 const PENALIDADE_PULO := 0.1
@@ -569,10 +570,13 @@ static func trocar_classe(e: Dictionary, glad_id: String, classe: String) -> Str
 	registrar(e, "%s passou a lutar como %s." % [g["nome"], Model.classes()[classe]["nome"]])
 	return ""
 
-## Custo de treinar 1 ponto: sobe com o nível do gladiador e com os pontos já treinados no atributo.
-static func custo_treino(e: Dictionary, g: Dictionary, atributo: String) -> int:
-	var base: int = PRECO_TREINO + TREINO_POR_NIVEL * (int(g["nivel"]) - 1) + TREINO_POR_PONTO * int(g["treino"].get(atributo, 0))
+## Custo único de treinar 1 ponto (igual para qualquer atributo): sobe com o nível e com o total já treinado.
+static func custo_treino(e: Dictionary, g: Dictionary, _atributo: String = "") -> int:
+	var base: int = PRECO_TREINO + TREINO_POR_NIVEL * (int(g["nivel"]) - 1) + TREINO_POR_PONTO * Model.soma_treino(g)
 	return jsround(float(base) * float(regras_de(e)["precos"]))
+
+static func atributo_no_maximo(g: Dictionary, atributo: String) -> bool:
+	return int(Model.stats_sem_itens(g)[atributo]) >= ATRIBUTO_MAXIMO
 
 static func treinar(e: Dictionary, glad_id: String, atributo: String) -> String:
 	var err := _exigir_melhoria(e, "palus")
@@ -582,10 +586,10 @@ static func treinar(e: Dictionary, glad_id: String, atributo: String) -> String:
 		return "Gladiador inexistente."
 	err = _exigir_vivo(g)
 	if err != "": return err
-	if int(g["treino"][atributo]) >= TREINO_MAXIMO:
-		return "Treino máximo atingido neste atributo."
 	if not (atributo in Model.ATRIBUTOS):
 		return "Atributo inexistente."
+	if atributo_no_maximo(g, atributo):
+		return "Atributo no máximo (%d)." % ATRIBUTO_MAXIMO
 	err = pagar(e, 1, custo_treino(e, g, atributo))
 	if err != "": return err
 	g["treino"][atributo] = int(g["treino"][atributo]) + 1
