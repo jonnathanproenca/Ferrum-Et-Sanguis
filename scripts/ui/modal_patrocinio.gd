@@ -20,7 +20,7 @@ static func abrir(pai: Node, oferta_id: String = "") -> Modal:
 		if oferta.is_empty():
 			return null
 		titulo = "Oferta de patrocínio"
-	var m := Modal.abrir(pai, titulo, c, 760.0)
+	var m := Modal.abrir(pai, titulo, c, 840.0)
 	c._modal = m
 	c._montar(oferta)
 	return m
@@ -55,7 +55,7 @@ func _montar(oferta: Dictionary) -> void:
 
 func _retrato(tipo: String) -> Control:
 	var caixa := PanelContainer.new()
-	caixa.custom_minimum_size = Vector2(240, 320)
+	caixa.custom_minimum_size = Vector2(300, 400)
 	caixa.add_theme_stylebox_override("panel", Tema.caixa(Color("120c0a"), Tema.OURO_ESCURO, 8, 2, 4))
 	var tex := Tema.textura("assets/patronos/%s.png" % tipo)
 	if tex != null:
@@ -67,7 +67,7 @@ func _retrato(tipo: String) -> Control:
 	else:
 		var s := Silhueta.new()
 		s.cor = Color(COR_TIPO.get(tipo, "8a6a3a"))
-		s.custom_minimum_size = Vector2(230, 310)
+		s.custom_minimum_size = Vector2(290, 390)
 		caixa.add_child(s)
 	return caixa
 

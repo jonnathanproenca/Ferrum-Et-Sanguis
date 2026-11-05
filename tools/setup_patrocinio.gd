@@ -5,7 +5,7 @@ func preparar(arvore: SceneTree) -> void:
 	Jogo.novo(Game.lanistas()[3]["id"], "medio")
 	var e: Dictionary = Jogo.e
 	e["tutorial"] = {"vistos": ["tour", "campanha", "treino", "armeiro", "enfermaria", "alojamentos", "refeitorio"]}
-	e["campanha"] = 3
+	e["campanha"] = 8
 	var g: Dictionary = e["gladiadores"][0]
 	var rng := Rng.new(5)
 	for i in 400:
