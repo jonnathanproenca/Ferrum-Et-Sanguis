@@ -157,6 +157,16 @@ static func recusar(e: Dictionary, oferta_id: String) -> String:
 	return "Oferta inexistente."
 
 
+## O ludus rompe o contrato por conta própria (sem multa; o patrono some e a vaga fica livre).
+static func romper(e: Dictionary, glad_id: String) -> String:
+	var c := contrato_do(e, glad_id)
+	if c.is_empty():
+		return "Sem patrocinador."
+	e["contratos"] = _contratos(e).filter(func(x): return x["gladId"] != glad_id)
+	Game.registrar(e, "Você rompeu o patrocínio de %s com %s." % [c["patrono"], c["gladNome"]])
+	return ""
+
+
 ## Vitória do gladiador (arena de honra) conta para a meta.
 static func registrar_vitoria(e: Dictionary, glad_id: String) -> void:
 	var c := contrato_do(e, glad_id)

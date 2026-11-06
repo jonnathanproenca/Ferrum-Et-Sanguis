@@ -1103,3 +1103,6 @@ static func aceitar_patrocinio(e: Dictionary, oferta_id: String) -> String:
 
 static func recusar_patrocinio(e: Dictionary, oferta_id: String) -> String:
 	return Patrocinio.recusar(e, oferta_id)
+
+static func romper_patrocinio(e: Dictionary, glad_id: String) -> String:
+	return Patrocinio.romper(e, glad_id)

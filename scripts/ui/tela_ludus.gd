@@ -165,11 +165,10 @@ func atualizar() -> void:
 			_regras.add_child(_chip("Treino de combate: construa os palus.", Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
 	var n_of := Patrocinio.ofertas(e).size()
 	var n_ct := Patrocinio.contratos(e).size()
-	if n_of > 0 or n_ct > 0:
-		var bp := Tema.botao("Patrocínios (%d)" % (n_of + n_ct), "ouro", 15)
-		bp.custom_minimum_size = Vector2(0, 30)
-		bp.pressed.connect(func(): ModalPatrocinio.abrir(self))
-		_regras.add_child(bp)
+	var bp := Tema.botao("Patrocínios (%d)" % (n_of + n_ct) if n_of + n_ct > 0 else "Patrocínios", "ouro" if n_of > 0 else "normal", 15)
+	bp.custom_minimum_size = Vector2(0, 30)
+	bp.pressed.connect(func(): ModalPatrocinio.abrir(self))
+	_regras.add_child(bp)
 
 	# Cartões: campeões primeiro (ordem estável)
 	var ordenados: Array = e["gladiadores"].filter(func(g): return g["campeao"])

@@ -79,6 +79,9 @@ func _montar() -> void:
 
 	# Glória
 	v.add_child(_faixa_gloria(e))
+	var fp := _faixa_patrono(e)
+	if fp != null:
+		v.add_child(fp)
 
 	# Corpo: atributos | derivados
 	_corpo = BoxContainer.new()
@@ -127,6 +130,41 @@ func _custo_unico(e: Dictionary, tem_palus: bool) -> Control:
 	col.add_child(p)
 	col.add_child(sp)
 	return col
+
+
+## Patrono do gladiador (contrato ativo, com opção de romper) ou oferta pendente para ele.
+func _faixa_patrono(e: Dictionary) -> Control:
+	var ct := Patrocinio.contrato_do(e, str(g["id"]))
+	var oferta := {}
+	if ct.is_empty():
+		for o in Patrocinio.ofertas(e):
+			if o["gladId"] == g["id"]:
+				oferta = o
+		if oferta.is_empty():
+			return null
+	var p := PanelContainer.new()
+	p.add_theme_stylebox_override("panel", Tema.caixa(Color("100b08"), COR_LINHA, 2, 1, 6))
+	var h := Tema.hbox(10)
+	p.add_child(h)
+	h.add_child(Glifo.novo("coroa_fama", 22, Color("9be05a")))
+	var txt := ""
+	if not ct.is_empty():
+		var t := Patrocinio.tipo_por_id(str(ct["tipo"]))
+		var restante: int = int(ct["prazo"]) - (int(e["turno"]) - int(ct["desde"]))
+		txt = "%s %s · +%d de ouro por rodada · meta: %s (feitas %d; %d rodada%s)" % [t["nome"], ct["patrono"], int(ct["ouro"]), Patrocinio.texto_meta(ct), int(ct["vitorias"]), restante, "" if restante == 1 else "s"]
+	else:
+		var t2 := Patrocinio.tipo_por_id(str(oferta["tipo"]))
+		txt = "Oferta de %s %s: %d de ouro por rodada" % [t2["nome"], oferta["patrono"], int(oferta["ouro"])]
+	var r := Tema.rotulo(txt, 15, Tema.AREIA)
+	r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(r)
+	if not ct.is_empty():
+		h.add_child(ModalPatrocinio.botao_romper(str(g["id"]), func(): pass))
+	else:
+		var bv := Tema.botao("Ver oferta", "ouro", 15)
+		bv.pressed.connect(func(): ModalPatrocinio.abrir(self, str(oferta["id"])))
+		h.add_child(bv)
+	return p
 
 
 func _faixa_gloria(e: Dictionary) -> Control:

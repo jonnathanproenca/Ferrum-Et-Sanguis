@@ -47,10 +47,39 @@ func _montar(oferta: Dictionary) -> void:
 	if cts.size() > 0:
 		add_child(Tema.rotulo("Contratos ativos", 20, Tema.OURO, true))
 		for c in cts:
-			var t := Patrocinio.tipo_por_id(c["tipo"])
-			var restante: int = int(c["prazo"]) - (int(e["turno"]) - int(c["desde"]))
-			add_child(Tema.rotulo("%s %s paga %d de ouro por rodada a %s. Meta: %s (feitas %d; %d rodada%s para o prazo)." % [
-				t["nome"], c["patrono"], int(c["ouro"]), c["gladNome"], Patrocinio.texto_meta(c), int(c["vitorias"]), restante, "" if restante == 1 else "s"], 17, Tema.AREIA))
+			add_child(_linha_contrato(c))
+
+
+func _linha_contrato(c: Dictionary) -> Control:
+	var e: Dictionary = Jogo.e
+	var t := Patrocinio.tipo_por_id(c["tipo"])
+	var restante: int = int(c["prazo"]) - (int(e["turno"]) - int(c["desde"]))
+	var h := Tema.hbox(12)
+	var tx := Tema.rotulo("%s %s paga %d de ouro por rodada a %s. Meta: %s (feitas %d; %d rodada%s para o prazo)." % [
+		t["nome"], c["patrono"], int(c["ouro"]), c["gladNome"], Patrocinio.texto_meta(c), int(c["vitorias"]), restante, "" if restante == 1 else "s"], 17, Tema.AREIA)
+	tx.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(tx)
+	h.add_child(botao_romper(str(c["gladId"]), func(): _responder_sem_fechar()))
+	return h
+
+
+func _responder_sem_fechar() -> void:
+	if is_instance_valid(_modal):
+		_modal.fechar()
+
+
+## Botão de duas etapas: o primeiro clique pede confirmação, o segundo rompe o contrato.
+static func botao_romper(glad_id: String, depois: Callable) -> Button:
+	var b := Tema.botao("Romper", "normal", 15)
+	b.custom_minimum_size = Vector2(0, 32)
+	b.tooltip_text = "Rompe o patrocínio, sem multa. O patrono vai embora."
+	b.pressed.connect(func():
+		if b.text == "Romper":
+			b.text = "Confirmar ruptura"
+			return
+		Jogo.resultado(Game.romper_patrocinio(Jogo.e, glad_id))
+		depois.call())
+	return b
 
 
 func _retrato(tipo: String) -> Control:

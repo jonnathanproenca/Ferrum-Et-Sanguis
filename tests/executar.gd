@@ -255,6 +255,10 @@ func teste_patrocinio() -> void:
 	ok(["eques", "edil"].has(of["tipo"]), "com 2 lanistas só Eques ou Edil")
 	ok(Game.aceitar_patrocinio(e, of["id"]) == "", "aceitar oferta")
 	ok(not Patrocinio.contrato_do(e, g["id"]).is_empty(), "contrato criado")
+	var e_rom := e.duplicate(true)
+	ok(Game.romper_patrocinio(e_rom, g["id"]) == "", "romper contrato")
+	ok(Patrocinio.contrato_do(e_rom, g["id"]).is_empty(), "contrato some ao romper")
+	ok(Game.romper_patrocinio(e_rom, g["id"]) != "", "romper sem contrato dá erro")
 	ok(Patrocinio.ofertas(e).is_empty(), "oferta consumida")
 	# rodada: paga e, sem vitórias dentro do prazo, rompe sem multa
 	var ouro0: int = int(e["ouro"])
