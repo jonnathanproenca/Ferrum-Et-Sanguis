@@ -71,6 +71,16 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 			s.material = _mat
 		add_child(s)
 		posicoes.append({"x": (float(b["esq"]) + float(b["w"]) * 0.5) * k.x, "y": (float(b["topo"]) + float(b["h"]) * 0.3) * k.y})
+	var cam: Texture2D = Tema.textura(DIR + id + "_camarote.png")
+	if cam != null and d.has("camarote"):
+		var cd: Dictionary = d["camarote"]
+		var cs := Sprite2D.new()
+		cs.centered = false
+		cs.texture = cam
+		cs.scale = k * float(cd["s"])
+		cs.position = Vector2(float(cd["x"]), float(cd["y"])) * k
+		cs.z_index = -9
+		add_child(cs)
 	var fr: Texture2D = Tema.textura(DIR + id + "_frente.png")
 	if fr != null:
 		var f := Sprite2D.new()
