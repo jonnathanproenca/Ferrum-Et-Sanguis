@@ -57,7 +57,7 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 	rng.randomize()
 	var ocup: float = float(OCUP.get(lotacao, 0.8))
 	for b: Dictionary in d["blobs"]:
-		if not b.has("fixo") and rng.randf() > ocup:
+		if not b.has("fixo") and ocup < 0.6 and rng.randf() > ocup:
 			continue
 		var s := Sprite2D.new()
 		s.texture = pub
@@ -77,8 +77,9 @@ func montar(id: String, lotacao: String, palco: Vector2) -> bool:
 		f.centered = false
 		f.texture = fr
 		var esc := palco.x / fr.get_width()
-		f.scale = Vector2(esc, esc)
-		f.position = Vector2(0, palco.y - fr.get_height() * esc)
+		var fy: float = float(d.get("frente_y", 1.0))
+		f.scale = Vector2(esc, esc * fy)
+		f.position = Vector2(0, palco.y - fr.get_height() * esc * fy)
 		f.z_index = -8
 		add_child(f)
 	return true
