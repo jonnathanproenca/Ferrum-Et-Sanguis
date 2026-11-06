@@ -19,6 +19,7 @@ var prefs: Dictionary = {"audio": {"ativo": true, "musica": 0.5, "efeitos": 0.7}
 var _tempo_acc := 0.0
 
 func _ready() -> void:
+	get_tree().node_added.connect(_ao_entrar_no)
 	_ler_prefs()
 	aplicar_escala()
 
@@ -128,3 +129,24 @@ func salvar_prefs() -> void:
 	var f := FileAccess.open(ARQ_PREFS, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(prefs))
+
+
+## Toque no celular: arrastar em qualquer ponto de uma lista rola. Painéis e cartões não podem engolir o toque
+## (ficam em PASS), e rolagens aceitam começar o arrasto em cima de botões (zona morta).
+func _ao_entrar_no(n: Node) -> void:
+	if n is ScrollContainer:
+		n.set("scroll_deadzone", 12)
+		return
+	if not (n is Control):
+		return
+	var c := n as Control
+	if c.mouse_filter != Control.MOUSE_FILTER_STOP:
+		return
+	if c is BaseButton or c is Range or c is LineEdit or c is TextEdit or c is ItemList or c is Tree or c is TabBar:
+		return
+	var p := c.get_parent()
+	while p != null:
+		if p is ScrollContainer:
+			c.mouse_filter = Control.MOUSE_FILTER_PASS
+			return
+		p = p.get_parent()
