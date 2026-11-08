@@ -22,6 +22,10 @@ var _atual_j := ""
 var _defendendo := false
 
 
+var _cam: Camera3D
+var _fundo: Sprite3D
+
+
 func _init() -> void:
 	stretch = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -37,8 +41,9 @@ func _ready() -> void:
 	var animas := _carregar_animacoes()
 	_jog = _criar_personagem(animas, Color(0.93, 0.85, 0.72), true)
 	_bon = _criar_personagem(animas, Color(0.85, 0.65, 0.45), false)
-	_jog.rotation_degrees.y = -90.0
-	_bon.rotation_degrees.y = 90.0
+	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else -90.0
+	_jog.rotation_degrees.y = giro
+	_bon.rotation_degrees.y = -giro
 	_ap_j = _achar_ap(_jog)
 	_ap_b = _achar_ap(_bon)
 	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
@@ -51,7 +56,8 @@ func _montar_mundo() -> void:
 	cam.fov = 34.0
 	cam.position = Vector3(0.95, 1.35, 7.0)
 	_vp.add_child(cam)
-	cam.look_at(Vector3(0.0, 0.95, 0.0), Vector3.UP)
+	_cam = cam
+	cam.look_at(Vector3(0.95, 0.95, 0.0), Vector3.UP)
 	var chao := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(60, 24)
@@ -69,6 +75,7 @@ func _montar_mundo() -> void:
 		s.shaded = false
 		s.pixel_size = 0.0138
 		s.position = Vector3(0, 4.2, -9.0)
+		_fundo = s
 		_vp.add_child(s)
 	var sol := DirectionalLight3D.new()
 	sol.rotation_degrees = Vector3(-48, 35, 0)
@@ -121,7 +128,7 @@ func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3
 			_bon_mats.append(m)
 	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 	_anexar(sk, "hand_r", GLADIO, Vector3.ZERO, _rot_env("GROT"), 1.0)
-	_anexar(sk, "hand_l", ESCUDO, Vector3.ZERO, _rot_env("SROT"), 0.26)
+	_anexar(sk, "hand_l", ESCUDO, _rot_env("SPOS") if OS.get_environment("SPOS") != "" else Vector3.ZERO, _rot_env("SROT"), 0.26)
 	return inst
 
 
@@ -173,6 +180,10 @@ func atualizar(nucleo: TreinoCombate) -> void:
 	_defendendo = nucleo.defendendo
 	_jog.position = Vector3((nucleo.x - _x0) * MUNDO_POR_PX, 0, 0)
 	_bon.position = Vector3((TreinoCombate.X_BONECO - _x0) * MUNDO_POR_PX, 0, 0)
+	if _cam != null:
+		_cam.position.x = (_jog.position.x + _bon.position.x) * 0.5
+		if _fundo != null:
+			_fundo.position.x = _cam.position.x
 	if nucleo.estado == "livre" and not nucleo.defendendo:
 		if nucleo.direcao != 0:
 			var rumo := nucleo.direcao
