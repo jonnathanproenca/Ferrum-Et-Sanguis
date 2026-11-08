@@ -27,6 +27,10 @@ var _toque_dir := false
 var _botoes: Array = []        ## {"id", "no": Control, "tipo": "tap"|"hold"}
 var _toques: Dictionary = {}   ## índice do dedo -> id do botão
 var _fechado := false
+var _c3d: Cena3DTreino
+var _arte2d: Control
+var _veu2d: Control
+var _btn3d: Button
 
 
 ## Abre o treino sobre `pai`, com o estilo do gladiador `g` (vazio = murmilo).
@@ -64,11 +68,13 @@ func _ready() -> void:
 	arte.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	arte.stretch_mode = TextureRect.STRETCH_SCALE
 	arte.size = PALCO
+	_arte2d = arte
 	arte.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_palco.add_child(arte)
 	var vel := ColorRect.new()
 	vel.color = Color(0, 0, 0, 0.25)
 	vel.size = PALCO
+	_veu2d = vel
 	vel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_palco.add_child(vel)
 
@@ -98,6 +104,10 @@ func _ready() -> void:
 	titulo.position = Vector2(20, 12)
 	titulo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(titulo)
+	_btn3d = Tema.botao("Modo 3D (teste)", "normal", 16)
+	_btn3d.position = Vector2(110, 52)
+	_btn3d.pressed.connect(_alternar_3d)
+	add_child(_btn3d)
 	var sair := Tema.botao("Sair", "normal", 18)
 	sair.position = Vector2(20, 52)
 	sair.pressed.connect(sair_treino)
@@ -134,6 +144,23 @@ func _ready() -> void:
 	_ajustar()
 	_atualizar_placar()
 	_fb_texto("Treine: o boneco ataca de tempos em tempos", "cinza")
+
+
+## Troca o visual 2D (sprites) pelo 3D de teste (manequim com animações de espada) e volta.
+func _alternar_3d() -> void:
+	if _c3d == null:
+		_c3d = Cena3DTreino.new()
+		_c3d.size = PALCO
+		_c3d.visible = false
+		_palco.add_child(_c3d)
+		_palco.move_child(_c3d, 0)
+	var ligar := not _c3d.visible
+	_c3d.visible = ligar
+	_arte2d.visible = not ligar
+	_veu2d.visible = not ligar
+	_jogador.visible = not ligar
+	_boneco.visible = not ligar
+	_btn3d.text = "Modo 2D" if ligar else "Modo 3D (teste)"
 
 
 func _ajustar() -> void:
@@ -313,12 +340,18 @@ func _process(delta: float) -> void:
 	_nucleo.atualizar(minf(delta, 0.05))
 	_jogador.base.x = _nucleo.x
 	_jogador.position.x = _nucleo.x
+	if _c3d != null and _c3d.visible:
+		_c3d.atualizar(_nucleo)
 	for e in _nucleo.pegar_eventos():
 		match e["tipo"]:
 			"p_pose":
 				_jogador.pose(str(e["pose"]))
+				if _c3d != null and _c3d.visible:
+					_c3d.pose_jogador(str(e["pose"]), _nucleo)
 			"b_pose":
 				_boneco.pose(str(e["pose"]))
+				if _c3d != null and _c3d.visible:
+					_c3d.pose_boneco(str(e["pose"]), str(e.get("tinta", "")))
 				match str(e.get("tinta", "")):
 					"alerta":
 						_boneco.modulate = Color(1.0, 0.55, 0.45)
