@@ -41,7 +41,7 @@ func _ready() -> void:
 	var animas := _carregar_animacoes()
 	_jog = _criar_personagem(animas, Color(0.93, 0.85, 0.72), true)
 	_bon = _criar_personagem(animas, Color(0.85, 0.65, 0.45), false)
-	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else -90.0
+	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else 90.0
 	_jog.rotation_degrees.y = giro
 	_bon.rotation_degrees.y = -giro
 	_ap_j = _achar_ap(_jog)
@@ -181,9 +181,7 @@ func atualizar(nucleo: TreinoCombate) -> void:
 	_jog.position = Vector3((nucleo.x - _x0) * MUNDO_POR_PX, 0, 0)
 	_bon.position = Vector3((TreinoCombate.X_BONECO - _x0) * MUNDO_POR_PX, 0, 0)
 	if _cam != null:
-		_cam.position.x = (_jog.position.x + _bon.position.x) * 0.5
-		if _fundo != null:
-			_fundo.position.x = _cam.position.x
+		pass
 	if nucleo.estado == "livre" and not nucleo.defendendo:
 		if nucleo.direcao != 0:
 			var rumo := nucleo.direcao
@@ -204,11 +202,11 @@ func pose_jogador(pose: String, nucleo: TreinoCombate) -> void:
 		"guarda":
 			_tocar(_ap_j, "Sword_Idle", 0.0)
 		"defende":
-			_tocar(_ap_j, "Sword_Block", 0.25)
+			_tocar(_ap_j, "Sword_Block", 0.6)
 		"prepara":
 			if nucleo.estado == "pesado":
 				var t: float = float(TreinoCombate.PESADO["prep"]) + float(TreinoCombate.PESADO["golpe"]) + float(TreinoCombate.PESADO["rec"])
-				_tocar(_ap_j, "Sword_Heavy_Combo", t, false, 0.55)
+				_tocar(_ap_j, "Sword_Attack", t)
 			else:
 				var t2: float = float(TreinoCombate.LEVE["prep"]) + float(TreinoCombate.LEVE["golpe"]) + float(TreinoCombate.LEVE["rec"])
 				_tocar(_ap_j, "Sword_Regular_A", t2)
