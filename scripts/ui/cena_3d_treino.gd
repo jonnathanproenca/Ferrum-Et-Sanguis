@@ -127,7 +127,7 @@ func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3
 		if not com_equip:
 			_bon_mats.append(m)
 	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
-	_anexar(sk, "hand_r", GLADIO, Vector3.ZERO, _rot_env("GROT"), 1.0)
+	_anexar(sk, "hand_r", GLADIO, _rot_env("GPOS"), _rot_env("GROT"), 1.0)
 	_anexar(sk, "hand_l", ESCUDO, _rot_env("SPOS") if OS.get_environment("SPOS") != "" else Vector3.ZERO, _rot_env("SROT"), 0.26)
 	return inst
 
@@ -135,7 +135,12 @@ func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3
 func _rot_env(nome: String) -> Vector3:
 	var t := OS.get_environment(nome)
 	if t == "":
-		return Vector3(0, 0, -90) if nome == "GROT" else Vector3(0, -90, 0)
+		match nome:
+			"GROT":
+				return Vector3(90, 0, 0)
+			"GPOS":
+				return Vector3(0, 0.12, 0.04)
+		return Vector3(0, -90, 0)
 	var p := t.split(",")
 	return Vector3(float(p[0]), float(p[1]), float(p[2]))
 
@@ -202,7 +207,7 @@ func pose_jogador(pose: String, nucleo: TreinoCombate) -> void:
 		"guarda":
 			_tocar(_ap_j, "Sword_Idle", 0.0)
 		"defende":
-			_tocar(_ap_j, "Sword_Block", 0.6)
+			_tocar(_ap_j, "Idle_Shield", 0.0)
 		"prepara":
 			if nucleo.estado == "pesado":
 				var t: float = float(TreinoCombate.PESADO["prep"]) + float(TreinoCombate.PESADO["golpe"]) + float(TreinoCombate.PESADO["rec"])
