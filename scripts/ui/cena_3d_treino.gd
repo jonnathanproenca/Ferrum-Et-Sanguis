@@ -128,7 +128,12 @@ func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3
 			_bon_mats.append(m)
 	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
 	_anexar(sk, "hand_r", GLADIO, _rot_env("GPOS"), _rot_env("GROT"), 1.0)
-	_anexar(sk, "hand_l", ESCUDO, _rot_env("SPOS") if OS.get_environment("SPOS") != "" else Vector3.ZERO, _rot_env("SROT"), 0.26)
+	var sp := _rot_env("SPOS")
+	var sr := _rot_env("SROT")
+	if not com_equip:
+		sp.z = -sp.z
+		sr.y = -sr.y
+	_anexar(sk, "hand_l", ESCUDO, sp, sr, 0.26)
 	return inst
 
 
@@ -139,8 +144,10 @@ func _rot_env(nome: String) -> Vector3:
 			"GROT":
 				return Vector3(90, 0, 0)
 			"GPOS":
-				return Vector3(0, 0.12, 0.04)
-		return Vector3(0, -90, 0)
+				return Vector3(0, 0.12, -0.04)
+			"SPOS":
+				return Vector3(0, 0, -0.15)
+		return Vector3(0, 90, 0)
 	var p := t.split(",")
 	return Vector3(float(p[0]), float(p[1]), float(p[2]))
 
