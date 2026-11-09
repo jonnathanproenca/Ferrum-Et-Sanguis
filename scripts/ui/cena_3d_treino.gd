@@ -164,11 +164,11 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	var ps_esc := load(ESCUDO) as PackedScene
 	if ps_esc != null:
 		esc.add_child(ps_esc.instantiate())
-	var loc_mao := Transform3D(r_esq.inverse() * w_esc * Basis.from_scale(Vector3.ONE * 0.0026), r_esq.inverse() * o_esc * 0.01)
-	var est := {"peso": 0.0, "t": Time.get_ticks_msec(), "ap": ap}
-	var osso_mao := sk.find_bone("mixamorig_LeftHand")
-	var osso_peito := sk.find_bone("mixamorig_Spine2")
-	sk.skeleton_updated.connect(func(): _atualizar_escudo(sk, esc, est, loc_mao, osso_mao, osso_peito))
+	var mod := EscudoMod.new()
+	mod.escudo = esc
+	mod.ap = ap
+	mod.jogador = com_equip
+	sk.add_child(mod)
 	if OS.get_environment("DBG") != "":
 		_dbg_esq(sk)
 	return raiz
@@ -418,44 +418,3 @@ func _dbg_esq(sk: Skeleton3D) -> void:
 	print("SKT ", sk.global_transform.basis.get_scale(), " ", sk.get_parent().global_transform.basis.get_scale())
 
 
-## Escudo: segue a mão, mas em defesa/parry fica à frente do peito e no golpe pesado mantém a madeira para fora.
-## Unidades do esqueleto: 1 m ≈ 0,0106. +Z = frente do personagem, +X = lado esquerdo.
-func _atualizar_escudo(sk: Skeleton3D, esc: Node3D, est: Dictionary, loc_mao: Transform3D, osso_mao: int, osso_peito: int) -> void:
-	var ap := est["ap"] as AnimationPlayer
-	var nome := String(ap.current_animation)
-	var agora := Time.get_ticks_msec()
-	var dt: float = clampf((agora - int(est["t"])) / 1000.0, 0.0, 0.1)
-	est["t"] = agora
-	var alvo := 0.0
-	var modo := "mao"
-	var off := Vector3.ZERO
-	match nome:
-		"Idle_Shield", "Idle_Shield_Break", "Sword_Block":
-			modo = "frente"
-			alvo = 1.0
-		"Sword_Attack", "Sword_Heavy_Combo":
-			modo = "fixo"
-			alvo = 1.0
-			off = Vector3(0.0, 0.0, 0.0004)
-		"Sword_Regular_A", "Sword_Regular_B":
-			modo = "mao"
-			off = Vector3(0.0010, 0.0, 0.0016)
-			alvo = 0.0
-	est["peso"] = move_toward(float(est["peso"]), alvo, dt * 9.0) if ap.is_playing() else alvo
-	var w: float = est["peso"]
-	if OS.get_environment("DBG") != "" and Engine.get_process_frames() % 20 == 0:
-		print("ESC ", nome, " ", modo, " ", w, " playing ", ap.is_playing())
-	var t_mao := sk.get_bone_global_pose(osso_mao) * loc_mao
-	var t_alvo := t_mao
-	var esc_s := Basis.from_scale(Vector3.ONE * 0.0026)
-	if modo == "frente":
-		t_alvo = Transform3D(esc_s, Vector3(0.0014, 0.0121, 0.0026))
-	elif modo == "fixo":
-		t_alvo = Transform3D(esc_s, t_mao.origin)
-	else:
-		w = 0.0
-	t_alvo.origin += off
-	if modo == "mao":
-		est["off"] = off
-	var t_fim := t_mao.interpolate_with(t_alvo, w) if w > 0.0 else Transform3D(t_mao.basis, t_mao.origin + off)
-	esc.transform = t_fim

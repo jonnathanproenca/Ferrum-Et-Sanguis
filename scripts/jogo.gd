@@ -91,8 +91,9 @@ func continuar() -> bool:
 			erro_save = motivo
 			return false
 	r = Util.normalizar(r)
-	if int(r.get("versao", 0)) != 4:
-		erro_save = "versão do save %d (esperado 4)" % int(r.get("versao", 0))
+	var v := int(r.get("versao", 0))
+	if v < 4 or v > 5:
+		erro_save = "versão do save %d (esperado 4 ou 5)" % v
 		return false
 	if not r.has("melhorias"):
 		r["melhorias"] = {}
