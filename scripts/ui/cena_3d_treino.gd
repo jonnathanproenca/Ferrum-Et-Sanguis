@@ -59,11 +59,11 @@ func _ready() -> void:
 	if OS.get_environment("ANIM") != "":
 		_ap_j.play(OS.get_environment("ANIM"))
 		_ap_j.seek(float(OS.get_environment("ANIMT")), true)
-		_ap_j.pause()
+		_ap_j.speed_scale = 0.0
 	if OS.get_environment("ANIMB") != "":
 		_ap_b.play(OS.get_environment("ANIMB"))
 		_ap_b.seek(float(OS.get_environment("ANIMT")), true)
-		_ap_b.pause()
+		_ap_b.speed_scale = 0.0
 
 
 func _montar_mundo() -> void:
@@ -159,7 +159,18 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	_anexar_b(sk, "mixamorig_RightHand", GLADIO, r_dir.inverse() * w_esp, r_dir.inverse() * o_esp * 0.01, 0.01)
 	var w_esc := Basis.from_euler(Vector3(deg_to_rad(_rot_env("SEUL").x), deg_to_rad(_rot_env("SEUL").y), deg_to_rad(_rot_env("SEUL").z)))
 	var o_esc := Vector3(-0.10, 0, 0.05) + _rot_env("SPOS")
-	_anexar_b(sk, "mixamorig_LeftHand", ESCUDO, r_esq.inverse() * w_esc, r_esq.inverse() * o_esc * 0.01, 0.0026)
+	var esc := Node3D.new()
+	sk.add_child(esc)
+	var ps_esc := load(ESCUDO) as PackedScene
+	if ps_esc != null:
+		esc.add_child(ps_esc.instantiate())
+	var loc_mao := Transform3D(r_esq.inverse() * w_esc * Basis.from_scale(Vector3.ONE * 0.0026), r_esq.inverse() * o_esc * 0.01)
+	var est := {"peso": 0.0, "t": Time.get_ticks_msec(), "ap": ap}
+	var osso_mao := sk.find_bone("mixamorig_LeftHand")
+	var osso_peito := sk.find_bone("mixamorig_Spine2")
+	sk.skeleton_updated.connect(func(): _atualizar_escudo(sk, esc, est, loc_mao, osso_mao, osso_peito))
+	if OS.get_environment("DBG") != "":
+		_dbg_esq(sk)
 	return raiz
 
 
@@ -398,3 +409,53 @@ void fragment() {
 
 func _ENV_ALVO() -> float:
 	return float(OS.get_environment("CAMALVO")) if OS.get_environment("CAMALVO") != "" else 0.0
+
+func _dbg_esq(sk: Skeleton3D) -> void:
+	for b in ["mixamorig_Hips", "mixamorig_Head", "mixamorig_Spine2", "mixamorig_LeftHand", "mixamorig_LeftForeArm", "mixamorig_RightHand"]:
+		print("BONE ", b, " ", sk.get_bone_global_pose(sk.find_bone(b)).origin)
+	var bs := sk.global_transform.basis.orthonormalized()
+	print("SKBASIS x ", bs.x, " y ", bs.y, " z ", bs.z)
+	print("SKT ", sk.global_transform.basis.get_scale(), " ", sk.get_parent().global_transform.basis.get_scale())
+
+
+## Escudo: segue a mão, mas em defesa/parry fica à frente do peito e no golpe pesado mantém a madeira para fora.
+## Unidades do esqueleto: 1 m ≈ 0,0106. +Z = frente do personagem, +X = lado esquerdo.
+func _atualizar_escudo(sk: Skeleton3D, esc: Node3D, est: Dictionary, loc_mao: Transform3D, osso_mao: int, osso_peito: int) -> void:
+	var ap := est["ap"] as AnimationPlayer
+	var nome := String(ap.current_animation)
+	var agora := Time.get_ticks_msec()
+	var dt: float = clampf((agora - int(est["t"])) / 1000.0, 0.0, 0.1)
+	est["t"] = agora
+	var alvo := 0.0
+	var modo := "mao"
+	var off := Vector3.ZERO
+	match nome:
+		"Idle_Shield", "Idle_Shield_Break", "Sword_Block":
+			modo = "frente"
+			alvo = 1.0
+		"Sword_Attack", "Sword_Heavy_Combo":
+			modo = "fixo"
+			alvo = 1.0
+			off = Vector3(0.0, 0.0, 0.0004)
+		"Sword_Regular_A", "Sword_Regular_B":
+			modo = "mao"
+			off = Vector3(0.0010, 0.0, 0.0016)
+			alvo = 0.0
+	est["peso"] = move_toward(float(est["peso"]), alvo, dt * 9.0) if ap.is_playing() else alvo
+	var w: float = est["peso"]
+	if OS.get_environment("DBG") != "" and Engine.get_process_frames() % 20 == 0:
+		print("ESC ", nome, " ", modo, " ", w, " playing ", ap.is_playing())
+	var t_mao := sk.get_bone_global_pose(osso_mao) * loc_mao
+	var t_alvo := t_mao
+	var esc_s := Basis.from_scale(Vector3.ONE * 0.0026)
+	if modo == "frente":
+		t_alvo = Transform3D(esc_s, Vector3(0.0014, 0.0121, 0.0026))
+	elif modo == "fixo":
+		t_alvo = Transform3D(esc_s, t_mao.origin)
+	else:
+		w = 0.0
+	t_alvo.origin += off
+	if modo == "mao":
+		est["off"] = off
+	var t_fim := t_mao.interpolate_with(t_alvo, w) if w > 0.0 else Transform3D(t_mao.basis, t_mao.origin + off)
+	esc.transform = t_fim
