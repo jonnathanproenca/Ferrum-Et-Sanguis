@@ -47,7 +47,8 @@ func _ready() -> void:
 	_bon = _criar_personagem(animas, Color(0.85, 0.65, 0.45), false)
 	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else 90.0
 	_jog.rotation_degrees.y = giro
-	_bon.rotation_degrees.y = -giro
+	_bon.rotation_degrees.y = giro
+	_bon.scale.x = -1.0  # espelhado: mesma mão da espada voltada para a câmera, como o jogador
 	_ap_j = _achar_ap(_jog)
 	_ap_b = _achar_ap(_bon)
 	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
@@ -57,6 +58,10 @@ func _ready() -> void:
 		_ap_j.play(OS.get_environment("ANIM"))
 		_ap_j.seek(float(OS.get_environment("ANIMT")), true)
 		_ap_j.pause()
+	if OS.get_environment("ANIMB") != "":
+		_ap_b.play(OS.get_environment("ANIMB"))
+		_ap_b.seek(float(OS.get_environment("ANIMT")), true)
+		_ap_b.pause()
 
 
 func _montar_mundo() -> void:
@@ -149,9 +154,6 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	_anexar_b(sk, "mixamorig_RightHand", GLADIO, r_dir.inverse() * w_esp, r_dir.inverse() * o_esp * 0.01, 0.01)
 	var w_esc := Basis(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, -1, 0))
 	var o_esc := Vector3(0, 0, -0.15) + _rot_env("SPOS")
-	if not com_equip:
-		w_esc = Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
-		o_esc.z = -o_esc.z
 	_anexar_b(sk, "mixamorig_LeftHand", ESCUDO, r_esq.inverse() * w_esc, r_esq.inverse() * o_esc * 0.01, 0.0026)
 	return raiz
 
