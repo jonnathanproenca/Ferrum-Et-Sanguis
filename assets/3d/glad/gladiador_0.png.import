@@ -1,0 +1,37 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://bc8nd47q18pu6"
+path="res://.godot/imported/gladiador_0.png-82ef96cc10255be2f6ba45c9ddfa2c0b.ctex"
+metadata={
+"vram_texture": false
+}
+generator_parameters={
+"md5": "88911a0a2afad1f24c829cadf4b7b5a0"
+}
+
+[deps]
+
+source_file="res://assets/3d/glad/gladiador_0.png"
+dest_files=["res://.godot/imported/gladiador_0.png-82ef96cc10255be2f6ba45c9ddfa2c0b.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1

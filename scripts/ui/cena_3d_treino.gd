@@ -7,6 +7,10 @@ const BONECA_GLB := "res://assets/3d/UAL1_Standard.glb"
 const ANIMS_EXTRA := "res://assets/3d/UAL2_Standard.glb"
 const GLADIO := "res://assets/3d/gladio.glb"
 const ESCUDO := "res://assets/3d/escudo_redondo.fbx"
+const GLAD_FBX := "res://assets/3d/glad/gladiador.fbx"
+const GLAD_TEX := "res://assets/3d/glad/gladiador_0.png"
+const GLAD_MALHA := "res://assets/3d/glad/malha.res"
+const GLAD_ANIMS := "res://assets/3d/glad/anims.res"
 const FUNDO := "res://assets/arenas/novo/pompeia_vazia.jpg"
 const MUNDO_POR_PX := 1.0 / 150.0
 
@@ -49,6 +53,10 @@ func _ready() -> void:
 	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
 	_tocar(_ap_j, "Sword_Idle", 0.0)
 	_tocar(_ap_b, "Idle", 0.0)
+	if OS.get_environment("ANIM") != "":
+		_ap_j.play(OS.get_environment("ANIM"))
+		_ap_j.seek(float(OS.get_environment("ANIMT")), true)
+		_ap_j.pause()
 
 
 func _montar_mundo() -> void:
@@ -111,7 +119,46 @@ func _carregar_animacoes() -> Dictionary:
 	return out
 
 
+## Gladiador (modelo Meshy + rig Mixamo, animações Quaternius reaproveitadas por retarget).
+func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
+	var raiz := Node3D.new()
+	_vp.add_child(raiz)
+	var inst: Node3D = (load(GLAD_FBX) as PackedScene).instantiate()
+	inst.scale = Vector3.ONE * 94.7
+	raiz.add_child(inst)
+	var ap := _achar_ap(inst)
+	var lib := ap.get_animation_library("") as AnimationLibrary
+	var nossas := load(GLAD_ANIMS) as AnimationLibrary
+	for n in nossas.get_animation_list():
+		lib.add_animation(n, nossas.get_animation(n))
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(GLAD_TEX)
+	m.albedo_color = cor
+	m.roughness = 0.8
+	for mi in inst.find_children("*", "MeshInstance3D", true, false):
+		(mi as MeshInstance3D).material_override = m
+		(mi as MeshInstance3D).mesh = load(GLAD_MALHA)
+	if not com_equip:
+		_bon_mats.append(m)
+	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	# Armas: orientação desejada em pose T (mundo) convertida para o osso de descanso do Mixamo.
+	var r_dir := sk.get_bone_global_rest(sk.find_bone("mixamorig_RightHand")).basis.orthonormalized()
+	var r_esq := sk.get_bone_global_rest(sk.find_bone("mixamorig_LeftHand")).basis.orthonormalized()
+	var w_esp := Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0))
+	var o_esp := Vector3(-0.12, 0, -0.04) + _rot_env("GPOS")
+	_anexar_b(sk, "mixamorig_RightHand", GLADIO, r_dir.inverse() * w_esp, r_dir.inverse() * o_esp * 0.01, 0.01)
+	var w_esc := Basis(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, -1, 0))
+	var o_esc := Vector3(0, 0, -0.15) + _rot_env("SPOS")
+	if not com_equip:
+		w_esc = Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
+		o_esc.z = -o_esc.z
+	_anexar_b(sk, "mixamorig_LeftHand", ESCUDO, r_esq.inverse() * w_esc, r_esq.inverse() * o_esc * 0.01, 0.0026)
+	return raiz
+
+
 func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3D:
+	if OS.get_environment("MODELO") != "manequim":
+		return _criar_gladiador(Color(1, 1, 1) if com_equip else Color(1.0, 0.78, 0.62), com_equip)
 	var inst: Node3D = (load(BONECA_GLB) as PackedScene).instantiate()
 	_vp.add_child(inst)
 	var ap := _achar_ap(inst)
@@ -144,13 +191,23 @@ func _rot_env(nome: String) -> Vector3:
 		match nome:
 			"GROT":
 				return Vector3(90, 0, 0)
-			"GPOS":
-				return Vector3(0, 0.12, -0.04)
-			"SPOS":
-				return Vector3(0, 0, -0.15)
+			"GPOS", "SPOS":
+				return Vector3.ZERO
 		return Vector3(0, 90, 0)
 	var p := t.split(",")
 	return Vector3(float(p[0]), float(p[1]), float(p[2]))
+
+
+func _anexar_b(sk: Skeleton3D, osso: String, caminho: String, base: Basis, pos: Vector3, esc: float) -> void:
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = osso
+	sk.add_child(ba)
+	var ps := load(caminho) as PackedScene
+	if ps == null:
+		return
+	var n: Node3D = ps.instantiate()
+	n.transform = Transform3D(base * Basis.from_scale(Vector3.ONE * esc), pos)
+	ba.add_child(n)
 
 
 func _anexar(sk: Skeleton3D, osso: String, caminho: String, pos: Vector3, rot: Vector3, esc: float) -> void:
