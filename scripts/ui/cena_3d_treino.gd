@@ -7,7 +7,7 @@ const BONECA_GLB := "res://assets/3d/UAL1_Standard.glb"
 const ANIMS_EXTRA := "res://assets/3d/UAL2_Standard.glb"
 const GLADIO := "res://assets/3d/gladio.glb"
 const ESCUDO := "res://assets/3d/escudo_redondo.fbx"
-const GLAD_FBX := "res://assets/3d/glad/gladiador.fbx"
+const GLAD_FBX := "res://assets/3d/glad/gladiador.scn"
 const GLAD_TEX := "res://assets/3d/glad/gladiador_0.png"
 const GLAD_MALHA := "res://assets/3d/glad/malha.res"
 const GLAD_ANIMS := "res://assets/3d/glad/anims.res"
@@ -42,7 +42,7 @@ func _ready() -> void:
 	_vp.msaa_3d = Viewport.MSAA_2X
 	add_child(_vp)
 	_montar_mundo()
-	var animas := _carregar_animacoes()
+	var animas := {}
 	_jog = _criar_personagem(animas, Color(0.93, 0.85, 0.72), true)
 	_bon = _criar_personagem(animas, Color(0.85, 0.65, 0.45), false)
 	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else 90.0

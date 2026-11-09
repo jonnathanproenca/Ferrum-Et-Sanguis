@@ -1,4 +1,5 @@
 extends SceneTree
+## (Fontes em tools/fontes_3d/ — pasta ignorada pelo Godot; copie para res://assets/3d/ para rodar.)
 ## Retarget das animações Quaternius (UAL) para o esqueleto Mixamo do gladiador. Saída: assets/3d/glad/anims.res
 const LISTA := ["Sword_Idle", "Idle", "Walk", "Sword_Block", "Idle_Shield", "Sword_Attack", "Sword_Regular_A", "Sword_Regular_B", "Sword_Regular_C", "Sword_Regular_A_Rec", "Sword_Regular_B_Rec", "Hit_Chest", "Sword_Dash", "Shield_OneShot", "Idle_Shield_Break", "Roll", "Sword_Heavy_Combo", "Shield_Dash"]
 const FPS := 30.0
