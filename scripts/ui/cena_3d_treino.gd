@@ -127,6 +127,7 @@ func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3
 		if not com_equip:
 			_bon_mats.append(m)
 	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	_visual(inst, sk, cor)
 	_anexar(sk, "hand_r", GLADIO, _rot_env("GPOS"), _rot_env("GROT"), 1.0)
 	var sp := _rot_env("SPOS")
 	var sr := _rot_env("SROT")
@@ -253,3 +254,79 @@ func pose_boneco(pose: String, tinta: String) -> void:
 				_tocar(_ap_b, "Hit_Chest", TreinoCombate.BONECO_REACAO)
 		_:
 			pass
+
+
+func _mat(c: Color, metal := 0.0) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.albedo_color = c
+	m.roughness = 0.55 if metal > 0.0 else 0.9
+	m.metallic = metal
+	return m
+
+
+func _peca(sk: Skeleton3D, osso: String, mesh: Mesh, mat: Material, pos: Vector3, rot := Vector3.ZERO, esc := Vector3.ONE) -> void:
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = osso
+	sk.add_child(ba)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	mi.position = pos
+	mi.rotation_degrees = rot
+	mi.scale = esc
+	ba.add_child(mi)
+
+
+func _cil(r1: float, r2: float, h: float) -> CylinderMesh:
+	var c := CylinderMesh.new()
+	c.top_radius = r1
+	c.bottom_radius = r2
+	c.height = h
+	c.radial_segments = 16
+	return c
+
+
+## Variantes visuais de teste (env VISUAL): 1 = peças 3D por cima, 2 = faixas de cor/textura procedural.
+func _visual(inst: Node3D, sk: Skeleton3D, cor: Color) -> void:
+	var v := OS.get_environment("VISUAL")
+	if v == "1":
+		var bronze := _mat(Color("b08a3c"), 0.7)
+		var ferro := _mat(Color("6c6f75"), 0.8)
+		var couro := _mat(Color("5a3a22"))
+		var pano := _mat(Color("a32a1f"))
+		var s := SphereMesh.new()
+		s.radius = 0.125
+		s.height = 0.25
+		_peca(sk, "Head", s, ferro, Vector3(0, 0.07, 0), Vector3.ZERO, Vector3(1, 1.05, 1.15))
+		var crista := BoxMesh.new()
+		crista.size = Vector3(0.03, 0.12, 0.26)
+		_peca(sk, "Head", crista, pano, Vector3(0, 0.2, 0))
+		_peca(sk, "spine_02", _cil(0.2, 0.17, 0.34), bronze, Vector3(0, 0.08, 0))
+		_peca(sk, "pelvis", _cil(0.17, 0.25, 0.26), pano, Vector3(0, -0.12, 0))
+		_peca(sk, "pelvis", _cil(0.18, 0.18, 0.05), couro, Vector3(0, 0.03, 0))
+		_peca(sk, "upperarm_r", _cil(0.065, 0.06, 0.26), ferro, Vector3(0, 0.14, 0), Vector3(0, 0, 90))
+		_peca(sk, "lowerarm_r", _cil(0.058, 0.05, 0.26), ferro, Vector3(0, 0.14, 0), Vector3(0, 0, 90))
+		for lado in ["l", "r"]:
+			_peca(sk, "calf_" + lado, _cil(0.075, 0.06, 0.3), bronze, Vector3(0, 0.2, 0))
+	elif v == "2":
+		var sh := Shader.new()
+		sh.code = """
+shader_type spatial;
+varying float y;
+varying vec3 p;
+void vertex() { y = VERTEX.y; p = VERTEX; }
+void fragment() {
+	vec3 pele = vec3(0.80, 0.58, 0.42);
+	vec3 col = pele;
+	if (y > 0.86 && y < 1.12) { col = vec3(0.66, 0.15, 0.12); float f = 0.5 + 0.5 * sin(p.x * 60.0); col *= 0.85 + 0.15 * f; }
+	if (y >= 1.12 && y < 1.46 && abs(p.x) < 0.24) { col = vec3(0.62, 0.48, 0.2); col += 0.1 * sin(y * 90.0); }
+	if (y >= 1.12 && y < 1.2) { col = vec3(0.30, 0.19, 0.1); }
+	if (y > 1.58) { col = vec3(0.42, 0.44, 0.48); }
+	if (y < 0.5) { col = mix(col, vec3(0.50, 0.36, 0.22), step(y, 0.42)); }
+	ALBEDO = col; ROUGHNESS = 0.8;
+}
+"""
+		for mi in inst.find_children("*", "MeshInstance3D", true, false):
+			var m := ShaderMaterial.new()
+			m.shader = sh
+			(mi as MeshInstance3D).material_override = m
