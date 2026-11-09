@@ -7,6 +7,8 @@ extends SkeletonModifier3D
 
 const ESC := 0.0026
 const FRENTE := Vector3(0.0014, 0.0121, 0.0026)
+const GUARDA := Vector3(0.0016, 0.0112, 0.0020)
+const ROLL := Basis(Vector3(0, 0, 1), PI / 2.0)
 
 var escudo: Node3D
 var ap: AnimationPlayer
@@ -35,6 +37,9 @@ func _process_modification() -> void:
 		"Idle_Shield", "Sword_Block":
 			if jogador:
 				modo = "frente"
+		"Sword_Regular_A", "Sword_Regular_B":
+			if jogador:
+				modo = "guarda"
 		"Idle_Shield_Break":
 			if not jogador:
 				modo = "segue"
@@ -57,20 +62,23 @@ func _process_modification() -> void:
 	n = n.normalized()
 	var y := a
 	var x := y.cross(n).normalized()
-	var t_mao := Transform3D(Basis(x, y, n) * Basis.from_scale(Vector3.ONE * ESC), e + a * 0.0014 + n * 0.0009)
+	var t_mao := Transform3D(Basis(y, -x, n) * Basis.from_scale(Vector3.ONE * ESC), e + a * 0.0014 + n * 0.0009)
 	var t_fim := t_mao
-	var esc_s := Basis.from_scale(Vector3.ONE * ESC)
-	if modo == "frente" or (modo == "segue" and _peso > 0.0):
-		var centro := FRENTE
+	var esc_s := ROLL * Basis.from_scale(Vector3.ONE * ESC)
+	var b_peito := sk.find_bone("mixamorig_Spine2")
+	var mv := sk.get_bone_global_pose(b_peito) * sk.get_bone_global_rest(b_peito).affine_inverse()
+	var base_pos := GUARDA if modo == "guarda" else FRENTE
+	if modo == "frente" or modo == "guarda" or (modo == "segue" and _peso > 0.0):
+		var t_f := mv * Transform3D(esc_s, base_pos)
 		if modo == "segue":
-			centro = FRENTE + (gh.origin - _ref)
-		t_fim = t_mao.interpolate_with(Transform3D(esc_s, centro), _peso)
+			t_f = Transform3D(esc_s, base_pos + (gh.origin - _ref))
+		t_fim = t_mao.interpolate_with(t_f, _peso)
 	elif _peso > 0.0 and ap.is_playing():
 		pass
 	escudo.transform = t_fim
 	# --- IK do braço até o escudo na defesa do jogador
-	if modo == "frente" and _peso > 0.0:
-		var alvo_mao := FRENTE + Vector3(0, 0, -0.0003)
+	if (modo == "frente" or modo == "guarda") and _peso > 0.0:
+		var alvo_mao := mv * (base_pos + Vector3(0, 0, -0.0007))
 		var ga := sk.get_bone_global_pose(b_arm)
 		var gf := sk.get_bone_global_pose(b_fore)
 		var s := ga.origin
@@ -83,6 +91,7 @@ func _process_modification() -> void:
 		var perp := (ee - s) - dir * (ee - s).dot(dir)
 		if perp.length() < 0.00005:
 			perp = Vector3(0, -1, -1)
+		perp = (perp.normalized() + Vector3(0.2, -0.3, 0.7)).normalized()
 		perp = (perp - dir * perp.dot(dir)).normalized()
 		var aa := (l1 * l1 - l2 * l2 + dd * dd) / (2.0 * dd)
 		var hh := sqrt(maxf(l1 * l1 - aa * aa, 0.0))

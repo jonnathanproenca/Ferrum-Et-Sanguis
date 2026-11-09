@@ -155,7 +155,7 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	var r_dir := sk.get_bone_global_rest(sk.find_bone("mixamorig_RightHand")).basis.orthonormalized()
 	var r_esq := sk.get_bone_global_rest(sk.find_bone("mixamorig_LeftHand")).basis.orthonormalized()
 	var w_esp := Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0))
-	var o_esp := Vector3(-0.12, 0, -0.04) + _rot_env("GPOS")
+	var o_esp := Vector3(-0.12, 0, 0.09) + _rot_env("GPOS")
 	_anexar_b(sk, "mixamorig_RightHand", GLADIO, r_dir.inverse() * w_esp, r_dir.inverse() * o_esp * 0.01, 0.01)
 	var w_esc := Basis.from_euler(Vector3(deg_to_rad(_rot_env("SEUL").x), deg_to_rad(_rot_env("SEUL").y), deg_to_rad(_rot_env("SEUL").z)))
 	var o_esc := Vector3(-0.10, 0, 0.05) + _rot_env("SPOS")
