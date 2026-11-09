@@ -48,12 +48,14 @@ func _ready() -> void:
 	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else 90.0
 	_jog.rotation_degrees.y = giro
 	_bon.rotation_degrees.y = giro
-	_bon.scale.x = -1.0  # espelhado: mesma mão da espada voltada para a câmera, como o jogador
+	_bon.scale.z = -1.0  # espelhado em X do mundo (após o giro): olha p/ esquerda e mantém a espada do lado da câmera
 	_ap_j = _achar_ap(_jog)
 	_ap_b = _achar_ap(_bon)
 	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
 	_tocar(_ap_j, "Sword_Idle", 0.0)
 	_tocar(_ap_b, "Idle", 0.0)
+	if OS.get_environment("DBG") != "":
+		print("FACE_J ", _jog.global_transform.basis * Vector3(0, 0, 1), " pos ", _jog.position, " BON ", _bon.global_transform.basis * Vector3(0, 0, 1), _bon.position)
 	if OS.get_environment("ANIM") != "":
 		_ap_j.play(OS.get_environment("ANIM"))
 		_ap_j.seek(float(OS.get_environment("ANIMT")), true)
@@ -68,9 +70,12 @@ func _montar_mundo() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 34.0
 	cam.position = Vector3(0.95, 1.35, 7.0)
+	if OS.get_environment("CAMPOS") != "":
+		var cp := OS.get_environment("CAMPOS").split(",")
+		cam.position = Vector3(float(cp[0]), float(cp[1]), float(cp[2]))
 	_vp.add_child(cam)
 	_cam = cam
-	cam.look_at(Vector3(0.95, 0.95, 0.0), Vector3.UP)
+	cam.look_at(Vector3(0.95, 0.95, 0.0) if OS.get_environment("CAMPOS") == "" else Vector3(_ENV_ALVO(), 0.95, 0.0), Vector3.UP)
 	var chao := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(60, 24)
@@ -152,8 +157,8 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	var w_esp := Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0))
 	var o_esp := Vector3(-0.12, 0, -0.04) + _rot_env("GPOS")
 	_anexar_b(sk, "mixamorig_RightHand", GLADIO, r_dir.inverse() * w_esp, r_dir.inverse() * o_esp * 0.01, 0.01)
-	var w_esc := Basis(Vector3(0, 0, -1), Vector3(1, 0, 0), Vector3(0, -1, 0))
-	var o_esc := Vector3(0, 0, -0.15) + _rot_env("SPOS")
+	var w_esc := Basis.from_euler(Vector3(deg_to_rad(_rot_env("SEUL").x), deg_to_rad(_rot_env("SEUL").y), deg_to_rad(_rot_env("SEUL").z)))
+	var o_esc := Vector3(-0.10, 0, 0.05) + _rot_env("SPOS")
 	_anexar_b(sk, "mixamorig_LeftHand", ESCUDO, r_esq.inverse() * w_esc, r_esq.inverse() * o_esc * 0.01, 0.0026)
 	return raiz
 
@@ -193,7 +198,7 @@ func _rot_env(nome: String) -> Vector3:
 		match nome:
 			"GROT":
 				return Vector3(90, 0, 0)
-			"GPOS", "SPOS":
+			"GPOS", "SPOS", "SEUL":
 				return Vector3.ZERO
 		return Vector3(0, 90, 0)
 	var p := t.split(",")
@@ -389,3 +394,7 @@ void fragment() {
 			var m := ShaderMaterial.new()
 			m.shader = sh
 			(mi as MeshInstance3D).material_override = m
+
+
+func _ENV_ALVO() -> float:
+	return float(OS.get_environment("CAMALVO")) if OS.get_environment("CAMALVO") != "" else 0.0

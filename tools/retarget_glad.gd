@@ -1,10 +1,10 @@
 extends SceneTree
-## (Fontes em tools/fontes_3d/ — pasta ignorada pelo Godot; copie para res://assets/3d/ para rodar.)
+## (Fontes em tools/fontes_3d/ — pasta ignorada pelo Godot; copie para res://assets/3d/_fontes/ e rode --import antes.)
 ## Retarget das animações Quaternius (UAL) para o esqueleto Mixamo do gladiador. Saída: assets/3d/glad/anims.res
 const LISTA := ["Sword_Idle", "Idle", "Walk", "Sword_Block", "Idle_Shield", "Sword_Attack", "Sword_Regular_A", "Sword_Regular_B", "Sword_Regular_C", "Sword_Regular_A_Rec", "Sword_Regular_B_Rec", "Hit_Chest", "Sword_Dash", "Shield_OneShot", "Idle_Shield_Break", "Roll", "Sword_Heavy_Combo", "Shield_Dash"]
 const FPS := 30.0
 ## Abdução extra dos braços (graus): o corpo do gladiador é mais largo que o manequim e os braços entravam no tronco.
-var ABDUCAO := float(OS.get_environment("ABDUCAO")) if OS.get_environment("ABDUCAO") != "" else 14.0
+var ABDUCAO := float(OS.get_environment("ABDUCAO")) if OS.get_environment("ABDUCAO") != "" else 28.0
 
 func _mapa() -> Dictionary:
 	var m := {"pelvis": "Hips", "spine_01": "Spine", "spine_02": "Spine1", "spine_03": "Spine2", "neck_01": "Neck", "Head": "Head"}
@@ -26,14 +26,14 @@ func _mapa() -> Dictionary:
 
 
 func _init() -> void:
-	var tinst: Node = (load("res://assets/3d/glad/gladiador.fbx") as PackedScene).instantiate()
+	var tinst: Node = (load("res://assets/3d/_fontes/gladiador.fbx") as PackedScene).instantiate()
 	root.add_child(tinst)
 	var tsk: Skeleton3D = tinst.find_children("*", "Skeleton3D", true, false)[0]
-	var sinst: Node = (load("res://assets/3d/UAL1_Standard.glb") as PackedScene).instantiate()
+	var sinst: Node = (load("res://assets/3d/_fontes/UAL1_Standard.glb") as PackedScene).instantiate()
 	root.add_child(sinst)
 	var ssk: Skeleton3D = sinst.find_children("*", "Skeleton3D", true, false)[0]
 	var anims := {}
-	for caminho in ["res://assets/3d/UAL1_Standard.glb", "res://assets/3d/UAL2_Standard.glb"]:
+	for caminho in ["res://assets/3d/_fontes/UAL1_Standard.glb", "res://assets/3d/_fontes/UAL2_Standard.glb"]:
 		var inst: Node = (load(caminho) as PackedScene).instantiate()
 		var ap: AnimationPlayer = inst.find_children("*", "AnimationPlayer", true, false)[0]
 		for n in ap.get_animation_list():
@@ -108,10 +108,16 @@ func _init() -> void:
 					var rl: Quaternion = tsk.get_bone_rest(ti).basis.get_rotation_quaternion()
 					g = rl if p < 0 else (tg[p] as Quaternion) * rl
 				var nome_t := tsk.get_bone_name(ti)
+				var lado := 0.0
 				if nome_t.contains("LeftArm") or nome_t.contains("LeftForeArm") or nome_t.contains("LeftHand"):
-					g = Quaternion(Vector3(0, 0, 1), deg_to_rad(ABDUCAO)) * g
+					lado = 1.0
 				elif nome_t.contains("RightArm") or nome_t.contains("RightForeArm") or nome_t.contains("RightHand"):
-					g = Quaternion(Vector3(0, 0, 1), deg_to_rad(-ABDUCAO)) * g
+					lado = -1.0
+				if lado != 0.0:
+					# eixo "para frente" do tronco naquele instante (delta da coluna alta aplicado a +Z)
+					var esp := tsk.find_bone("mixamorig_Spine2")
+					var frente: Vector3 = ((tg[esp] as Quaternion) * (t_rest_g[esp] as Quaternion).inverse()) * Vector3(0, 0, 1)
+					g = Quaternion(frente, deg_to_rad(ABDUCAO) * lado) * g
 				tg[ti] = g
 				var loc: Quaternion = g if p < 0 else (tg[p] as Quaternion).inverse() * g
 				out.rotation_track_insert_key(faixa_rot[ti], t, loc.normalized())
@@ -126,7 +132,7 @@ func _init() -> void:
 		lib.add_animation(nome, out)
 	# animações Mixamo originais (já no esqueleto do gladiador)
 	for par in [["morte", "Morte"], ["vitoria", "Vitoria"]]:
-		var mi: Node = (load("res://assets/3d/glad/%s.fbx" % par[0]) as PackedScene).instantiate()
+		var mi: Node = (load("res://assets/3d/_fontes/%s.fbx" % par[0]) as PackedScene).instantiate()
 		var ap2: AnimationPlayer = mi.find_children("*", "AnimationPlayer", true, false)[0]
 		var an := ap2.get_animation(ap2.get_animation_list()[0]).duplicate() as Animation
 		lib.add_animation(par[1], an)
