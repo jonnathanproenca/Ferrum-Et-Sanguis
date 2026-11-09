@@ -233,7 +233,7 @@ func _continuar() -> void:
 		Jogo.navegar.emit("jogo")
 	else:
 		_aviso.add_theme_color_override("font_color", Tema.SANGUE_CLARO)
-		_aviso.text = "Não foi possível carregar o save."
+		_aviso.text = "Não foi possível carregar o save (%s)." % Jogo.erro_save
 
 func _abrir_opcoes() -> void:
 	Modal.abrir(self, "Opções", TelaConfig.conteudo_opcoes(), 560.0)

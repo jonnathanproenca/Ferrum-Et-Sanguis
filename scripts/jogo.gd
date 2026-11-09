@@ -58,15 +58,41 @@ func novo(casa_id: String, dificuldade: String) -> void:
 	salvar()
 	mudou.emit()
 
-func continuar() -> bool:
-	var f := FileAccess.open(ARQ_SAVE, FileAccess.READ)
+## Motivo da última falha ao carregar o save (aparece no menu).
+var erro_save := ""
+
+func _ler_json_save(caminho: String) -> Variant:
+	var f := FileAccess.open(caminho, FileAccess.READ)
 	if f == null:
-		return false
-	var r = JSON.parse_string(f.get_as_text())
+		erro_save = "arquivo ausente"
+		return null
+	var txt := f.get_as_text()
+	if txt.strip_edges() == "":
+		erro_save = "arquivo vazio"
+		return null
+	var r = JSON.parse_string(txt)
+	if r == null:
+		# tolera NaN/Infinity gravados como texto
+		var rx := RegEx.new()
+		rx.compile("(?<![A-Za-z0-9_\"])-?(nan|inf|infinity)(?![A-Za-z0-9_\"])")
+		r = JSON.parse_string(rx.sub(txt, "0", true))
 	if not (r is Dictionary):
-		return false
+		erro_save = "conteúdo inválido"
+		return null
+	return r
+
+func continuar() -> bool:
+	erro_save = ""
+	var r = _ler_json_save(ARQ_SAVE)
+	if r == null:
+		var motivo := erro_save
+		r = _ler_json_save(ARQ_SAVE + ".bak")
+		if r == null:
+			erro_save = motivo
+			return false
 	r = Util.normalizar(r)
 	if int(r.get("versao", 0)) != 4:
+		erro_save = "versão do save %d (esperado 4)" % int(r.get("versao", 0))
 		return false
 	if not r.has("melhorias"):
 		r["melhorias"] = {}
@@ -86,9 +112,22 @@ func continuar() -> bool:
 func salvar() -> void:
 	if e.is_empty():
 		return
+	var txt := JSON.stringify(e)
+	# só grava se o JSON volta a ser lido; o save anterior vira .bak
+	if not (JSON.parse_string(txt) is Dictionary):
+		return
+	if FileAccess.file_exists(ARQ_SAVE):
+		var ant := FileAccess.open(ARQ_SAVE, FileAccess.READ)
+		if ant != null:
+			var t0 := ant.get_as_text()
+			ant.close()
+			if JSON.parse_string(t0) is Dictionary:
+				var b := FileAccess.open(ARQ_SAVE + ".bak", FileAccess.WRITE)
+				if b:
+					b.store_string(t0)
 	var f := FileAccess.open(ARQ_SAVE, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(e))
+		f.store_string(txt)
 
 func apagar_save() -> void:
 	if FileAccess.file_exists(ARQ_SAVE):
