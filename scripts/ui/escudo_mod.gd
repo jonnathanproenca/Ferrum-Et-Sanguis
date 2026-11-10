@@ -13,6 +13,7 @@ const ROLL := Basis(Vector3(0, 0, 1), PI / 2.0)
 var escudo: Node3D
 var ap: AnimationPlayer
 var jogador := true
+var esc_k := 1.0                ## fator de escala do esqueleto (gladiador 2 usa outra escala de instância)
 var _peso := 0.0
 var _pref := Vector3.RIGHT
 var _ref := Vector3.ZERO
@@ -30,6 +31,7 @@ func _process_modification() -> void:
 	var agora := Time.get_ticks_msec()
 	var dt: float = clampf((agora - _t) / 1000.0, 0.0, 0.1)
 	_t = agora
+	var esc_ef := ESC * esc_k
 	var nome := String(ap.current_animation)
 	var modo := "mao"
 	var pref := Vector3.RIGHT
@@ -65,12 +67,12 @@ func _process_modification() -> void:
 	n = n.normalized()
 	var y := a
 	var x := y.cross(n).normalized()
-	var t_mao := Transform3D(Basis(y, -x, n) * Basis.from_scale(Vector3.ONE * ESC), e + a * 0.0014 + n * 0.0009)
+	var t_mao := Transform3D(Basis(y, -x, n) * Basis.from_scale(Vector3.ONE * esc_ef), e + a * 0.0014 * esc_k + n * 0.0009 * esc_k)
 	var t_fim := t_mao
-	var esc_s := ROLL * Basis.from_scale(Vector3.ONE * ESC)
+	var esc_s := ROLL * Basis.from_scale(Vector3.ONE * esc_ef)
 	var b_peito := sk.find_bone("mixamorig_Spine2")
 	var mv := sk.get_bone_global_pose(b_peito) * sk.get_bone_global_rest(b_peito).affine_inverse()
-	var base_pos := GUARDA if modo == "guarda" else FRENTE
+	var base_pos := (GUARDA if modo == "guarda" else FRENTE) * esc_k
 	if modo == "frente" or modo == "guarda" or (modo == "segue" and _peso > 0.0):
 		var t_f := mv * Transform3D(esc_s, base_pos)
 		if modo == "segue":
@@ -80,10 +82,10 @@ func _process_modification() -> void:
 		pass
 	escudo.transform = t_fim
 	for tr in _tiras:
-		tr.visible = modo == "mao" and _peso < 0.2
+		tr.visible = modo != "frente"
 	# --- IK do braço até o escudo na defesa do jogador
 	if (modo == "frente" or modo == "guarda") and _peso > 0.0:
-		var alvo_mao := mv * (base_pos + Vector3(0, 0, -0.0007))
+		var alvo_mao := mv * (base_pos + Vector3(0, 0, -0.0007) * esc_k)
 		var ga := sk.get_bone_global_pose(b_arm)
 		var gf := sk.get_bone_global_pose(b_fore)
 		var s := ga.origin

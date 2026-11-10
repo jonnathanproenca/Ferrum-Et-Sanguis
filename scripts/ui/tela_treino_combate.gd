@@ -22,6 +22,7 @@ var _botoes: Array = []        ## {"id", "no": Control, "tipo": "tap"|"hold"}
 var _toques: Dictionary = {}   ## índice do dedo -> id do botão
 var _fechado := false
 var _c3d: Cena3DTreino
+var _bot_estilo: Dictionary = {}   ## id do estilo -> Button
 
 
 ## Abre o treino sobre `pai`, com o estilo do gladiador `g` (vazio = murmilo).
@@ -77,6 +78,7 @@ func _ready() -> void:
 	sair.position = Vector2(20, 52)
 	sair.pressed.connect(sair_treino)
 	add_child(sair)
+	_montar_estilos()
 	_placar = Tema.rotulo("", 16, Tema.AREIA)
 	_placar.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_placar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -109,6 +111,36 @@ func _ready() -> void:
 	_ajustar()
 	_atualizar_placar()
 	_fb_texto("Treine: o boneco ataca de tempos em tempos", "cinza")
+
+
+## Lista de estilos no canto esquerdo: troca o gladiador na hora (gladiador 1 ou gladiador 2 com acessórios).
+func _montar_estilos() -> void:
+	var rot := Tema.rotulo("Gladiador / estilo", 14, Tema.CINZA)
+	rot.position = Vector2(20, 106)
+	rot.autowrap_mode = TextServer.AUTOWRAP_OFF
+	rot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(rot)
+	var y := 128.0
+	for id in Estilos3D.ORDEM:
+		var b := Tema.botao(Estilos3D.nome(id), "normal", 14)
+		b.custom_minimum_size = Vector2(170, 28)
+		b.position = Vector2(20, y)
+		b.pressed.connect(_escolher_estilo.bind(id))
+		add_child(b)
+		_bot_estilo[id] = b
+		y += 31.0
+	_marcar_estilo()
+
+
+func _escolher_estilo(id: String) -> void:
+	_c3d.trocar_jogador(id)
+	_marcar_estilo()
+
+
+func _marcar_estilo() -> void:
+	var atual := _c3d.estilo_atual()
+	for id in _bot_estilo:
+		(_bot_estilo[id] as Button).modulate = Color(1.0, 0.85, 0.4) if id == atual else Color(1, 1, 1)
 
 
 func _ajustar() -> void:

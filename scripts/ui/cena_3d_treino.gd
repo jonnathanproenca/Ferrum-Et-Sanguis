@@ -11,6 +11,7 @@ const GLAD_FBX := "res://assets/3d/glad/gladiador.scn"
 const GLAD_TEX := "res://assets/3d/glad/gladiador_0.png"
 const GLAD_MALHA := "res://assets/3d/glad/malha.res"
 const GLAD_ANIMS := "res://assets/3d/glad/anims.res"
+const GLAD2_FBX := "res://assets/3d/glad2/gladiador2_mixamo.fbx"
 const FUNDO := "res://assets/arenas/novo/pompeia_vazia.jpg"
 const MUNDO_POR_PX := 1.0 / 150.0
 
@@ -27,6 +28,7 @@ var _ini_j := -1              ## ms em que o gladiador entrou na guarda parada
 var _ini_b := -1              ## ms em que o boneco entrou na guarda parada
 const ESPERA_IDLE_MS := 10000
 var _defendendo := false
+var _estilo := "g1"           ## "g1" = gladiador 1 (murmilo); os demais usam o gladiador 2 com acessórios (Estilos3D)
 
 
 var _cam: Camera3D
@@ -46,6 +48,8 @@ func _ready() -> void:
 	add_child(_vp)
 	_montar_mundo()
 	var animas := {}
+	if OS.get_environment("ESTILO") != "":
+		_estilo = OS.get_environment("ESTILO")
 	_jog = _criar_personagem(animas, Color(0.93, 0.85, 0.72), true)
 	_bon = _criar_personagem(animas, Color(0.85, 0.65, 0.45), false)
 	var giro := float(OS.get_environment('GIRO')) if OS.get_environment('GIRO') != '' else 90.0
@@ -117,7 +121,11 @@ func _montar_mundo() -> void:
 
 
 func _achar_ap(n: Node) -> AnimationPlayer:
-	return n.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
+	var todos := n.find_children("*", "AnimationPlayer", true, false)
+	for a in todos:   # acessórios (espada etc.) podem trazer um AnimationPlayer próprio: usa o do corpo
+		if (a as AnimationPlayer).has_animation("Sword_Idle") or (a as AnimationPlayer).has_animation("mixamo_com"):
+			return a as AnimationPlayer
+	return todos[0] as AnimationPlayer
 
 
 ## Animações do pacote 2 (mesmo esqueleto) entram na biblioteca do pacote 1.
@@ -179,8 +187,68 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	return raiz
 
 
+## Gladiador 2 (rig Mixamo próprio, mesmas animações) com os acessórios do estilo escolhido.
+func _criar_gladiador2(estilo: String) -> Node3D:
+	var raiz := Node3D.new()
+	_vp.add_child(raiz)
+	var inst: Node3D = (load(GLAD2_FBX) as PackedScene).instantiate()
+	inst.scale = Vector3.ONE * Estilos3D.GLAD2_ESCALA
+	raiz.add_child(inst)
+	var ap := _achar_ap(inst)
+	var lib := ap.get_animation_library("") as AnimationLibrary
+	var nossas := load(GLAD_ANIMS) as AnimationLibrary
+	for n in nossas.get_animation_list():
+		lib.add_animation(n, nossas.get_animation(n))
+	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	var res := Estilos3D.montar(sk, estilo, Vector3.ZERO)
+	var esc := Node3D.new()
+	sk.add_child(esc)
+	var pivo: Node3D = res["escudo"]
+	var mod := EscudoMod.new()
+	mod.escudo = esc
+	mod.ap = ap
+	mod.jogador = true
+	if pivo != null:
+		esc.add_child(pivo)
+		sk.add_child(mod)
+		mod.montar_tiras()
+		mod.esc_k = Estilos3D.ESC_M / (1.0 / 94.7)
+	else:
+		esc.queue_free()
+		mod.queue_free()
+	return raiz
+
+
+## Troca o gladiador do jogador na hora (menu de estilos do treino).
+func trocar_jogador(id: String) -> void:
+	if id == _estilo:
+		return
+	_estilo = id
+	var giro := _jog.rotation_degrees.y
+	var pos := _jog.position
+	_jog.queue_free()
+	if id == "g1":
+		_jog = _criar_gladiador(Color(1, 1, 1), true)
+	else:
+		_jog = _criar_gladiador2(id)
+	_jog.rotation_degrees.y = giro
+	_jog.position = pos
+	_ap_j = _achar_ap(_jog)
+	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
+	_fixo_j = ""
+	_atual_j = ""
+	_defendendo = false
+	_entrar_guarda_j()
+
+
+func estilo_atual() -> String:
+	return _estilo
+
+
 func _criar_personagem(animas: Dictionary, cor: Color, com_equip: bool) -> Node3D:
 	if OS.get_environment("MODELO") != "manequim":
+		if com_equip and _estilo != "g1":
+			return _criar_gladiador2(_estilo)
 		return _criar_gladiador(Color(1, 1, 1) if com_equip else Color(1.0, 0.78, 0.62), com_equip)
 	var inst: Node3D = (load(BONECA_GLB) as PackedScene).instantiate()
 	_vp.add_child(inst)

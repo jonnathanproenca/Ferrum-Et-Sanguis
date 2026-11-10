@@ -19,6 +19,7 @@ func preparar(arvore: SceneTree) -> void:
 	var alvo := int(OS.get_environment("FRAMES")) if OS.get_environment("FRAMES") != "" else 40
 	for i in alvo:
 		await arvore.process_frame
+		if OS.get_environment("TROCAR") != "" and i == 5: t._escolher_estilo(OS.get_environment("TROCAR"))
 		if modo == "leve" and i == 10: n.ataque_leve()
 		if modo == "pesado" and i == 10: n.ataque_pesado()
 		if modo == "esquiva" and i == 10: n.esquiva()
