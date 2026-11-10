@@ -25,70 +25,6 @@ class Grade extends Control:
 		draw_polygon(PackedVector2Array([Vector2(0, 0), Vector2(w * 0.16, 0), Vector2(w * 0.16, h), Vector2(0, h)]), PackedColorArray([esc, branco, branco, esc]))
 		draw_polygon(PackedVector2Array([Vector2(w * 0.84, 0), Vector2(w, 0), Vector2(w, h), Vector2(w * 0.84, h)]), PackedColorArray([branco, esc, esc, branco]))
 
-## Doctore: animação em quadros (caminhada em loop + chicotada), recortada de vídeo, com a âncora nos pés de cada quadro.
-class Doctore extends Node2D:
-	const DIR := "assets/ludus/doctore/"
-	var frente := 1.0
-	var ocupado := false  ## true enquanto toca a chicotada
-	var escala_base := 0.6
-	var _meta: Dictionary
-	var _spr := Sprite2D.new()
-	var _tex := {}
-	var _clip := "andar"
-	var _t_clip := 0.0
-	var _proximo := 3.0
-
-	func _init() -> void:
-		_meta = Util.ler_json("res://" + DIR + "doctore.json")
-		for nome in ["andar", "chicote"]:
-			for q: Dictionary in _meta[nome]:
-				_tex[q["f"]] = Tema.textura(DIR + str(q["f"]))
-		_spr.centered = false
-		add_child(_spr)
-		scale = Vector2(0.6, 0.6)
-		_mostrar(0)
-
-	func _draw() -> void:
-		var pts := PackedVector2Array()
-		for i in range(24):
-			var a := TAU * i / 24.0
-			pts.append(Vector2(cos(a) * 62.0, sin(a) * 9.0))
-		draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
-
-	func _mostrar(i: int) -> void:
-		var q: Dictionary = (_meta[_clip] as Array)[i]
-		_spr.texture = _tex[q["f"]]
-		_spr.position = -Vector2(q["ancora"][0], q["ancora"][1])
-
-	func chicotear() -> void:
-		ocupado = true
-		_clip = "chicote"
-		_t_clip = 0.0
-
-	func _process(delta: float) -> void:
-		_t_clip += delta
-		var n: int = (_meta[_clip] as Array).size()
-		var fps: float = float(_meta["fps"])
-		var q := int(_t_clip * fps)
-		if _clip == "chicote":
-			if q >= n:
-				ocupado = false
-				_clip = "andar"
-				_t_clip = float(_meta["volta"]) / fps
-				_proximo = randf_range(3.0, 7.0)
-				q = int(_t_clip * fps)
-				n = (_meta[_clip] as Array).size()
-				_mostrar(q % n)
-				return
-			_mostrar(q)
-			return
-		_proximo -= delta
-		if _proximo <= 0.0:
-			chicotear()
-			return
-		_mostrar(q % n)
-
-
 var _palco2: Node2D
 var _treinadores: Array = []
 var _prox_golpe := 1.5
@@ -157,7 +93,7 @@ func _montar() -> void:
 		b.z_index = 1200
 		_novo_item(b, Rect2(pos.x - altura * 0.30, pos.y - altura, altura * 0.60, altura), 1200, "ponto")
 	# doctore: sprite grande, patrulhando o pátio
-	_doctore = (DoctoreOssos.new() if bool(Jogo.prefs.get("doctoreOssos", true)) else Doctore.new())
+	_doctore = DoctoreOssos.new()
 	_doctore.position = Vector2(300, 458)
 	_doctore.z_index = 458
 	_palco2.add_child(_doctore)

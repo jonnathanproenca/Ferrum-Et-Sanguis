@@ -9,8 +9,6 @@ const LARGURA_CARTA := 600
 var _raiz: VBoxContainer
 var _caixa_cena: Control
 var _cena: Control
-var _doctore_ossos := false
-var _cena_nova := false
 var _fim: PanelContainer
 var _l_fim_sub: Label
 var _l_fim_stats: Label
@@ -96,8 +94,7 @@ func _criar_cena() -> void:
 	if _cena != null:
 		_caixa_cena.remove_child(_cena)
 		_cena.queue_free()
-	_cena_nova = bool(Jogo.prefs.get("ludusNovo", false))
-	_cena = CenaLudus2.new() if _cena_nova else CenaLudus.new()
+	_cena = CenaLudus2.new()
 	_cena.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_caixa_cena.add_child(_cena)
 
@@ -119,9 +116,6 @@ func _ao_redimensionar() -> void:
 
 func ao_mostrar() -> void:
 	super.ao_mostrar()
-	if bool(Jogo.prefs.get("ludusNovo", false)) != _cena_nova or bool(Jogo.prefs.get("doctoreOssos", true)) != _doctore_ossos:
-		_doctore_ossos = bool(Jogo.prefs.get("doctoreOssos", true))
-		_criar_cena()
 	call_deferred("_ao_redimensionar")
 	call_deferred("_mostrar_oferta_nova")
 
@@ -153,16 +147,15 @@ func atualizar() -> void:
 		if not Game.tem_melhoria(e, r[0]):
 			_regras.add_child(_chip(r[1], Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
 
-	if bool(Jogo.prefs.get("treinoCombate", false)):
-		if Game.tem_melhoria(e, "palus"):
-			var bt := Tema.botao("Treino de combate", "ouro", 15)
-			bt.custom_minimum_size = Vector2(0, 30)
-			bt.pressed.connect(func() -> void:
-				var vivos: Array = e["gladiadores"].filter(func(g): return g["vivo"] and not g.get("semEstilo", false))
-				TelaTreinoCombate.abrir(self, vivos[0] if vivos.size() > 0 else {}))
-			_regras.add_child(bt)
-		else:
-			_regras.add_child(_chip("Treino de combate: construa os palus.", Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
+	if Game.tem_melhoria(e, "palus"):
+		var bt := Tema.botao("Treino de combate", "ouro", 15)
+		bt.custom_minimum_size = Vector2(0, 30)
+		bt.pressed.connect(func() -> void:
+			var vivos: Array = e["gladiadores"].filter(func(g): return g["vivo"] and not g.get("semEstilo", false))
+			TelaTreinoCombate.abrir(self, vivos[0] if vivos.size() > 0 else {}))
+		_regras.add_child(bt)
+	else:
+		_regras.add_child(_chip("Treino de combate: construa os palus.", Color("2a1c16"), Tema.BORDA, Tema.CINZA, 15))
 	var n_of := Patrocinio.ofertas(e).size()
 	var n_ct := Patrocinio.contratos(e).size()
 	var bp := Tema.botao("Patrocínios (%d)" % (n_of + n_ct) if n_of + n_ct > 0 else "Patrocínios", "ouro" if n_of > 0 else "normal", 15)

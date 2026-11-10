@@ -88,14 +88,6 @@ static func painel_audio() -> Control:
 		v.add_child(h)
 	return v
 
-## Alterna entre o ludus antigo e o novo (pátio ao entardecer). Vale para todas as partidas.
-static func painel_visual() -> Control:
-	var v := Tema.vbox(8)
-	v.add_child(_alternar("Novo visual do ludus (teste)", "ludusNovo"))
-	v.add_child(_alternar("Doctore por esqueleto", "doctoreOssos", true))
-	v.add_child(_alternar("Treino de combate controlado (teste)", "treinoCombate"))
-	return v
-
 static func _alternar(rotulo: String, chave: String, padrao: bool = false) -> Control:
 	var h := Tema.hbox(12)
 	var b := Tema.botao("")
@@ -204,7 +196,6 @@ static func conteudo_opcoes() -> Control:
 	v.add_child(_secao("Som"))
 	v.add_child(painel_audio())
 	v.add_child(_secao("Visual"))
-	v.add_child(painel_visual())
 	v.add_child(painel_escala())
 	if cheat_liberado():
 		v.add_child(_secao("Cheat mode"))

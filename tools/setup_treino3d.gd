@@ -13,7 +13,6 @@ func preparar(arvore: SceneTree) -> void:
 	var t := TelaTreinoCombate.abrir(ludus, e["gladiadores"][0])
 	for i in 6:
 		await arvore.process_frame
-	t._alternar_3d()
 	var n: TreinoCombate = t._nucleo
 	n.b_prox = 99.0
 	var modo := OS.get_environment("MODO")
