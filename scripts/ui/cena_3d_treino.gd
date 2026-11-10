@@ -23,6 +23,9 @@ var _bon_mats: Array = []
 var _x0 := 575.0
 var _fixo_j := ""            ## animação que não deve ser interrompida pelo andar
 var _atual_j := ""
+var _ini_j := -1              ## ms em que o gladiador entrou na guarda parada
+var _ini_b := -1              ## ms em que o boneco entrou na guarda parada
+const ESPERA_IDLE_MS := 10000
 var _defendendo := false
 
 
@@ -52,8 +55,8 @@ func _ready() -> void:
 	_ap_j = _achar_ap(_jog)
 	_ap_b = _achar_ap(_bon)
 	_ap_j.animation_finished.connect(func(n): _fim_anim_j(String(n)))
-	_tocar(_ap_j, "Sword_Idle", 0.0)
-	_tocar(_ap_b, "Idle", 0.0)
+	_entrar_guarda_j()
+	_entrar_guarda_b()
 	if OS.get_environment("DBG") != "":
 		print("FACE_J ", _jog.global_transform.basis * Vector3(0, 0, 1), " pos ", _jog.position, " BON ", _bon.global_transform.basis * Vector3(0, 0, 1), _bon.position)
 	if OS.get_environment("ANIM") != "":
@@ -242,9 +245,36 @@ func _anexar(sk: Skeleton3D, osso: String, caminho: String, pos: Vector3, rot: V
 	ba.add_child(n)
 
 
+func _process(_d: float) -> void:
+	var agora := Time.get_ticks_msec()
+	if _ini_j >= 0 and agora - _ini_j >= ESPERA_IDLE_MS and _ap_j.speed_scale == 0.0:
+		_ap_j.speed_scale = 1.0
+	if _ini_b >= 0 and agora - _ini_b >= ESPERA_IDLE_MS and _ap_b.speed_scale == 0.0:
+		_ap_b.speed_scale = 1.0
+
+
+## Guarda parada: fica no primeiro quadro do idle por 10 s sem ação, depois passa a animar.
+func _entrar_guarda_j() -> void:
+	_ini_j = Time.get_ticks_msec()
+	_ap_j.play("Sword_Idle", 0.08, 1.0)
+	_ap_j.seek(0.0, true)
+	_ap_j.speed_scale = 0.0
+
+
+func _entrar_guarda_b() -> void:
+	_ini_b = Time.get_ticks_msec()
+	_ap_b.play("Idle", 0.08, 1.0)
+	_ap_b.seek(0.0, true)
+	_ap_b.speed_scale = 0.0
+
+
 func _tocar(ap: AnimationPlayer, nome: String, dur: float, de_tras := false, lento := 1.0) -> void:
 	if not ap.has_animation(nome):
 		return
+	if ap == _ap_j:
+		_ini_j = -1
+	elif ap == _ap_b:
+		_ini_b = -1
 	var a := ap.get_animation(nome)
 	var vel := 1.0
 	if dur > 0.0 and a.length > 0.01:
@@ -273,22 +303,24 @@ func atualizar(nucleo: TreinoCombate) -> void:
 	if nucleo.estado == "livre" and not nucleo.defendendo:
 		if nucleo.direcao != 0:
 			var rumo := nucleo.direcao
-			var nome := "Walk"
+			var nome := "WalkTras" if rumo < 0 else "WalkFrente"
 			if _atual_j != "andar%d" % rumo:
 				_atual_j = "andar%d" % rumo
-				_tocar(_ap_j, nome, 0.0, rumo < 0, 1.0)
+				_tocar(_ap_j, nome, 0.0, false, 1.0)
 		elif _atual_j.begins_with("andar"):
 			_atual_j = "guarda"
-			_tocar(_ap_j, "Sword_Idle", 0.0)
+			_entrar_guarda_j()
 	elif _atual_j.begins_with("andar"):
 		_atual_j = ""
 
 
 func pose_jogador(pose: String, nucleo: TreinoCombate) -> void:
+	var anterior := _atual_j
 	_atual_j = pose
 	match pose:
 		"guarda":
-			_tocar(_ap_j, "Sword_Idle", 0.0)
+			if anterior != "guarda":
+				_entrar_guarda_j()
 		"defende":
 			_tocar(_ap_j, "Idle_Shield", 0.0)
 		"prepara":
@@ -319,12 +351,13 @@ func pose_boneco(pose: String, tinta: String) -> void:
 		(m as StandardMaterial3D).albedo_color = cor
 	match pose:
 		"guarda":
-			_tocar(_ap_b, "Idle", 0.0)
+			if _ini_b < 0:
+				_entrar_guarda_b()
 		"prepara":
 			_tocar(_ap_b, "Sword_Regular_B", 1.4, false, 1.0)
 		"dano":
 			if tinta == "atordoado":
-				_tocar(_ap_b, "Idle_Shield_Break", TreinoCombate.BONECO_ATORDOA)
+				_tocar(_ap_b, "Hit_Chest", TreinoCombate.BONECO_ATORDOA)
 			else:
 				_tocar(_ap_b, "Hit_Chest", TreinoCombate.BONECO_REACAO)
 		_:

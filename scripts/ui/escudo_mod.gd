@@ -6,8 +6,8 @@ extends SkeletonModifier3D
 ## no parry do boneco acompanha o movimento da mão.
 
 const ESC := 0.0026
-const FRENTE := Vector3(0.0014, 0.0121, 0.0026)
-const GUARDA := Vector3(0.0016, 0.0112, 0.0020)
+const FRENTE := Vector3(0.0014, 0.0135, 0.0026)
+const GUARDA := Vector3(0.0016, 0.0124, 0.0020)
 const ROLL := Basis(Vector3(0, 0, 1), PI / 2.0)
 
 var escudo: Node3D

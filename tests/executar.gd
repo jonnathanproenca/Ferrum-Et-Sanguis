@@ -378,8 +378,8 @@ func teste_treino_combate() -> void:
 	c.ataque_pesado()
 	_passos(c, 0.5)
 	ok(c.b_estado == "atordoado", "pesado quebra o golpe do boneco")
-	_passos(c, 0.5)  # recuperação do jogador
+	_passos(c, 0.7)  # recuperação do jogador
 	var crit0: int = c.placar["criticos"]
 	c.ataque_pesado()
-	_passos(c, 0.5)
+	_passos(c, 0.7)
 	ok(c.placar["criticos"] == crit0 + 1, "pesado no boneco atordoado é crítico")

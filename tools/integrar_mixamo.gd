@@ -5,10 +5,10 @@ const ORIG := "res://assets/3d/glad/anims.res"
 const PASTA := "res://assets/3d/_mix_tmp/"
 # [arquivo, nome no jogo, loop]
 const ITENS := [
-	["esquiva", "Sword_Dash", false],
-	["leve2", "Sword_Regular_B", false],
-	["parry", "Idle_Shield_Break", false],
+	["sword_and_shield_walk", "WalkFrente", true],
+	["sword_and_shield_walk_2_", "WalkTras", true],
 ]
+
 func _init() -> void:
 	var lib: AnimationLibrary = load(ORIG).duplicate() if false else ResourceLoader.load(ORIG, "", ResourceLoader.CACHE_MODE_IGNORE)
 	var prefixo := "Skeleton3D:"

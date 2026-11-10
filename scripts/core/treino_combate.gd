@@ -12,8 +12,8 @@ const DIST_MIN := 210.0
 const ALCANCE_JOGADOR := 380.0
 const ALCANCE_BONECO := 380.0
 
-const LEVE := {"prep": 0.12, "golpe": 0.08, "rec": 0.28}
-const PESADO := {"prep": 0.30, "golpe": 0.10, "rec": 0.55}
+const LEVE := {"prep": 0.2, "golpe": 0.14, "rec": 0.42}
+const PESADO := {"prep": 0.35, "golpe": 0.16, "rec": 0.6}
 const CARGA_PESADO := 0.40       ## segurar o ataque por esse tempo vira golpe pesado
 const ESQUIVA_DUR := 0.35
 const ESQUIVA_INVUL := [0.05, 0.28]
