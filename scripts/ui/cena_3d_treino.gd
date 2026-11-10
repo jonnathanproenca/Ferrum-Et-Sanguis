@@ -262,14 +262,14 @@ const POSE_NEUTRA := 0.55
 func _entrar_guarda_j() -> void:
 	_ini_j = Time.get_ticks_msec()
 	_ap_j.speed_scale = 1.0
-	_ap_j.play("WalkFrente", 0.12, 1.0)
+	_ap_j.play("WalkFrente", 0.0, 1.0)
 	_ap_j.seek(POSE_NEUTRA, true)
 	_ap_j.speed_scale = 0.0
 
 
 func _entrar_guarda_b() -> void:
 	_ini_b = Time.get_ticks_msec()
-	_ap_b.play("Idle", 0.08, 1.0)
+	_ap_b.play("Idle", 0.0, 1.0)
 	_ap_b.seek(0.0, true)
 	_ap_b.speed_scale = 0.0
 
