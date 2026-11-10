@@ -45,6 +45,9 @@ func _process_modification() -> void:
 				modo = "segue"
 		"Sword_Attack", "Sword_Heavy_Combo":
 			pref = Vector3.UP
+			# no fim do golpe pesado o escudo volta para a frente do corpo (madeira à mostra)
+			if jogador and ap.current_animation_length > 0.0 and ap.current_animation_position / ap.current_animation_length > 0.6:
+				modo = "guarda"
 	var alvo := 0.0 if modo == "mao" else 1.0
 	_peso = move_toward(_peso, alvo, dt * 9.0) if ap.is_playing() else alvo
 	_pref = _pref.lerp(pref, clampf(dt * 10.0, 0.0, 1.0)) if ap.is_playing() else pref
@@ -76,6 +79,8 @@ func _process_modification() -> void:
 	elif _peso > 0.0 and ap.is_playing():
 		pass
 	escudo.transform = t_fim
+	for tr in _tiras:
+		tr.visible = modo == "mao" and _peso < 0.2
 	# --- IK do braço até o escudo na defesa do jogador
 	if (modo == "frente" or modo == "guarda") and _peso > 0.0:
 		var alvo_mao := mv * (base_pos + Vector3(0, 0, -0.0007))
@@ -104,6 +109,24 @@ func _process_modification() -> void:
 		sk.set_bone_global_pose(b_arm, ga2)
 		sk.set_bone_global_pose(b_fore, gf2)
 		sk.set_bone_global_pose(b_hand, gh2)
+
+
+## Tiras de couro por cima do antebraço (as duas à vista), só quando o escudo está rente ao braço.
+var _tiras: Array[MeshInstance3D] = []
+
+func montar_tiras() -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.42, 0.24, 0.1)
+	mat.roughness = 0.85
+	for cx in [-0.32, 0.1]:
+		var mi := MeshInstance3D.new()
+		var bx := BoxMesh.new()
+		bx.size = Vector3(0.2, 0.46, 0.46)
+		mi.mesh = bx
+		mi.material_override = mat
+		mi.position = Vector3(cx, 0.0, -0.34)
+		escudo.add_child(mi)
+		_tiras.append(mi)
 
 
 func _arco(de: Vector3, para: Vector3) -> Quaternion:

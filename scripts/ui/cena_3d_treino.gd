@@ -173,6 +173,7 @@ func _criar_gladiador(cor: Color, com_equip: bool) -> Node3D:
 	mod.ap = ap
 	mod.jogador = com_equip
 	sk.add_child(mod)
+	mod.montar_tiras()
 	if OS.get_environment("DBG") != "":
 		_dbg_esq(sk)
 	return raiz
@@ -256,14 +257,13 @@ func _process(_d: float) -> void:
 		_ap_b.speed_scale = 1.0
 
 
-## Guarda parada do jogador: pose neutra do andar (pés juntos) por 10 s sem ação; depois anima o idle.
-const POSE_NEUTRA := 0.55
+## Guarda parada do jogador: primeiro quadro do idle por 10 s sem ação; depois anima o idle.
 
 func _entrar_guarda_j() -> void:
 	_ini_j = Time.get_ticks_msec()
 	_ap_j.speed_scale = 1.0
-	_ap_j.play("WalkFrente", 0.0, 1.0)
-	_ap_j.seek(POSE_NEUTRA, true)
+	_ap_j.play("Sword_Idle", 0.0, 1.0)
+	_ap_j.seek(0.0, true)
 	_ap_j.speed_scale = 0.0
 
 
