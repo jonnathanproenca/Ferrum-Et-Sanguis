@@ -275,6 +275,7 @@ func _tocar(ap: AnimationPlayer, nome: String, dur: float, de_tras := false, len
 		_ini_j = -1
 	elif ap == _ap_b:
 		_ini_b = -1
+	ap.speed_scale = 1.0
 	var a := ap.get_animation(nome)
 	var vel := 1.0
 	if dur > 0.0 and a.length > 0.01:
