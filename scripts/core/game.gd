@@ -48,6 +48,24 @@ const MELHORIAS_LUDUS: Array = [
 	{"id": "refeitorio", "nome": "Refeitório", "custo": 250, "efeito": "Reduz a manutenção por gladiador de 5 para 3 de ouro."},
 ]
 
+## Modos de campanha. dias: rodadas até o prazo (0 = sem prazo). passos: quantos passos da campanha precisam ser vencidos.
+## morte: "normal" (como nas arenas), "nunca" (ninguém morre) ou "sempre" (toda luta é até a morte).
+const MODOS_ORDEM: Array = ["municipais", "imperial", "sangue", "livre"]
+const MODOS := {
+	"municipais": {"nome": "Jogos Municipais", "dias": 40, "passos": 3, "morte": "nunca",
+		"resumo": "40 rodadas, 3 passos, final em dupla. Ninguém morre.",
+		"desc": "Uma campanha curta e tolerante, ideal para começar. Construa o ludus, treine seus gladiadores e vença 3 passos até a final em dupla. As lutas terminam em rendição: ninguém morre."},
+	"imperial": {"nome": "Campeonato Imperial", "dias": 165, "passos": 10, "morte": "normal", "infinito": true,
+		"resumo": "165 rodadas, os 10 passos da campanha. Depois, Modo Infinito.",
+		"desc": "A campanha completa: derrote os 9 lanistas rivais e o Lanista de Cápua em até 165 rodadas. Quem vence continua o legado no Modo Infinito, sem prazo."},
+	"sangue": {"nome": "Arena de Sangue", "dias": 90, "passos": 7, "morte": "sempre",
+		"resumo": "90 rodadas, 7 passos. Toda luta é até a morte.",
+		"desc": "Sobreviva a 90 rodadas e vença 7 passos. Toda luta, até nas arenas de honra, é até a morte: quem cai, morre. Sem gladiadores e sem ouro para recrutar, é o fim do perfil."},
+	"livre": {"nome": "Simulador", "dias": 0, "passos": 10, "morte": "nunca", "cheats": ["ouro", "energia", "vida", "fama", "round"],
+		"resumo": "Sem prazo, ouro e energia infinitos, ninguém morre.",
+		"desc": "Um ludus de testes: ouro e energia infinitos, ninguém morre e a fama não é exigida. Para experimentar equipamentos, estilos e combates sem pressão."},
+}
+
 const DIFICULDADES_ORDEM: Array = ["facil", "medio", "dificil", "extremo"]
 const REGRAS := {
 	"facil": {"nome": "Fácil", "campeao": 0, "lenda": 3, "liberdade": null, "precos": 0.8, "arenaBase": 0.9, "arenaFator": 0.7, "campReq": 0.7,
@@ -100,6 +118,48 @@ static func jsround(x: float) -> int:
 static func regras_de(e: Dictionary) -> Dictionary:
 	var d: String = str(e.get("config", {}).get("dificuldade", "medio"))
 	return REGRAS.get(d, REGRAS["medio"])
+
+static func modo_de(e: Dictionary) -> Dictionary:
+	return MODOS.get(str(e.get("modo", "imperial")), MODOS["imperial"])
+
+## Quantos passos da campanha este modo exige.
+static func n_passos(e: Dictionary) -> int:
+	return mini(passos().size(), int(modo_de(e)["passos"]))
+
+static func morte_de(e: Dictionary) -> String:
+	return str(modo_de(e)["morte"])
+
+## Fim da partida, gravado no save: "gameover" (sem gladiadores e sem ouro) e "prazo" (rodadas esgotadas) são definitivos
+## e exigem apagar o perfil; "vitoria" (campanha concluída) não bloqueia o jogo.
+static func atualizar_fim(e: Dictionary) -> void:
+	if e.is_empty() or str(e.get("fim", "")) != "":
+		return
+	var m := modo_de(e)
+	var concluida: bool = int(e["campanha"]) >= n_passos(e)
+	if concluida:
+		e["fim"] = "vitoria"
+	elif game_over(e):
+		e["fim"] = "gameover"
+	elif int(m["dias"]) > 0 and int(e["turno"]) > int(m["dias"]):
+		e["fim"] = "prazo"
+
+static func fim_bloqueia(e: Dictionary) -> bool:
+	return str(e.get("fim", "")) in ["gameover", "prazo"]
+
+## Resumo mostrado no cartão do perfil.
+static func resumo_perfil(e: Dictionary) -> Dictionary:
+	var st := estatisticas(e)
+	var lutas: int = batalhas_do_ludus(e)
+	var vit: int = int(e["vitoriasTotais"])
+	var m := modo_de(e)
+	return {
+		"nome": str(e.get("perfilNome", "")), "modo": str(m["nome"]), "casa": str(lanista_da_casa(e).get("nome", "")),
+		"dificuldade": str(regras_de(e)["nome"]), "turno": int(e["turno"]), "dias": int(m["dias"]),
+		"lutas": lutas, "vitorias": vit, "derrotas": maxi(0, lutas - vit), "mortes": int(st["mortes"]),
+		"atuais": e["gladiadores"].filter(func(g): return g["vivo"]).size(), "historico": int(st["recrutados"]) + 1,
+		"ouro": int(e["ouro"]), "ouroGanho": int(st["ouroGanho"]), "campanha": int(e["campanha"]), "passos": n_passos(e),
+		"fim": str(e.get("fim", "")), "tempoMs": int(st["tempoMs"]), "fama": int(e.get("famaMax", 0)),
+	}
 
 static func estatisticas(e: Dictionary) -> Dictionary:
 	if not e.has("estat"):
@@ -274,10 +334,10 @@ static func criar_campeao_rival(rng: Rng, l: Dictionary, indice: int) -> Diction
 
 # ---------- Partida ----------
 
-static func novo_jogo(semente: int, casa_id: String = "", dificuldade: String = "") -> Dictionary:
+static func novo_jogo(semente: int, casa_id: String = "", dificuldade: String = "", modo: String = "imperial") -> Dictionary:
 	var e := {
 		"versao": 5, "semente": semente if semente != 0 else 1, "casaId": "", "ouro": OURO_INICIAL, "energia": ENERGIA_TURNO,
-		"turno": 1, "proximoId": 1, "vitoriasTotais": 0, "fama": 0, "famaMax": 0, "campanha": 0, "libertados": [], "config": {"dificuldade": "medio"},
+		"turno": 1, "modo": modo if MODOS.has(modo) else "imperial", "fim": "", "proximoId": 1, "vitoriasTotais": 0, "fama": 0, "famaMax": 0, "campanha": 0, "libertados": [], "config": {"dificuldade": "medio"},
 		"gladiadores": [], "mercado": [], "inventario": [], "ofertas": [], "contratos": [], "campeoesRivais": {}, "melhorias": {}, "log": [],
 	}
 	if dificuldade != "":
@@ -381,6 +441,8 @@ static func game_over(e: Dictionary) -> bool:
 	return not e["gladiadores"].any(func(g): return g["vivo"]) and not _pode_recrutar(e)
 
 static func avancar_turno(e: Dictionary) -> String:
+	if fim_bloqueia(e):
+		return "Este perfil chegou ao fim."
 	if not _cheat(e, "round") and pode_gastar_energia(e):
 		return "Gaste toda a energia antes de encerrar a rodada (restam %d): lute nas arenas, treine ou troque de estilo." % int(e["energia"])
 	e["turno"] = int(e["turno"]) + 1
@@ -671,7 +733,9 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 	var fa: Array = d["ladoA"].map(func(g): return Model.para_lutador(g, casa["especialidade"], extra_a))
 	var fb: Array = d["ladoB"].map(func(g): return Model.para_lutador(g, d["especialidadeB"], d["bonusB"]))
 	var opcoes := {"efeitosPoco": d["poco"]}
-	if not d["mortal"]:
+	var morte := morte_de(e)
+	var letal: bool = (d["mortal"] or morte == "sempre") and morte != "nunca"
+	if not letal:
 		opcoes["rendicao"] = Combat.RENDICAO_PADRAO
 	var rng: Rng = d["rng"]
 	var r := Combat.simular_equipes(fa, fb, rng.inteiro(1, 2147483646), opcoes)
@@ -683,7 +747,7 @@ static func _disputar(e: Dictionary, d: Dictionary) -> Dictionary:
 			efeitos_novos.append_array(_aplicar_efeitos(g, r["efeitosAplicados"]))
 
 	var caidos: Dictionary = {}
-	if not (_cheat(e, "vida") or _cheat(e, "vencer")):
+	if not (_cheat(e, "vida") or _cheat(e, "vencer") or morte == "nunca"):
 		for ev in r["eventos"]:
 			if ev["tipo"] == "morte":
 				caidos[ev["alvo"]] = true
@@ -943,7 +1007,7 @@ static func _cumpre(e: Dictionary, r: Dictionary) -> bool:
 
 ## Próximo desafio da campanha; {} se a campanha acabou.
 static func proximo_desafio(e: Dictionary) -> Dictionary:
-	if int(e["campanha"]) >= passos().size():
+	if int(e["campanha"]) >= n_passos(e):
 		return {}
 	var passo: Dictionary = passos()[int(e["campanha"])]
 	var sequencia := sequencia_campanha(str(e["casaId"]))

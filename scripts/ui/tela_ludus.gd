@@ -9,9 +9,6 @@ const LARGURA_CARTA := 600
 var _raiz: VBoxContainer
 var _caixa_cena: Control
 var _cena: Control
-var _fim: PanelContainer
-var _l_fim_sub: Label
-var _l_fim_stats: Label
 var _l_contagem: Label
 var _regras: HFlowContainer
 var _grade: GridContainer
@@ -31,33 +28,6 @@ func construir() -> void:
 	_caixa_cena.custom_minimum_size = Vector2(0, 300)
 	_raiz.add_child(_caixa_cena)
 	_criar_cena()
-
-	# Fim de jogo
-	_fim = Tema.painel(Color("2a0f0c"), Tema.OURO_ESCURO)
-	var sb := Tema.caixa(Color("2a0f0c"), Tema.OURO, 10, 3, 22)
-	sb.shadow_color = Color(0.72, 0.16, 0.1, 0.45)
-	sb.shadow_size = 18
-	_fim.add_theme_stylebox_override("panel", sb)
-	_fim.visible = false
-	_raiz.add_child(_fim)
-	var vf := Tema.vbox(10)
-	_fim.add_child(vf)
-	var t := Tema.titulo("Fim de jogo", 44)
-	t.add_theme_color_override("font_color", Tema.SANGUE_CLARO)
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vf.add_child(t)
-	_l_fim_sub = Tema.rotulo("", 22, Tema.AREIA)
-	_l_fim_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vf.add_child(_l_fim_sub)
-	_l_fim_stats = Tema.rotulo("", 18, Tema.CINZA)
-	_l_fim_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vf.add_child(_l_fim_stats)
-	var cb := CenterContainer.new()
-	vf.add_child(cb)
-	var b := Tema.botao("Voltar ao menu", "primario", 22)
-	b.custom_minimum_size = Vector2(240, 52)
-	b.pressed.connect(func(): Jogo.navegar.emit("menu"))
-	cb.add_child(b)
 
 	# Cabeçalho
 	var cab := Tema.hbox(12)
@@ -133,12 +103,6 @@ func _mostrar_oferta_nova() -> void:
 func atualizar() -> void:
 	var e: Dictionary = Jogo.e
 	var casa := Game.lanista_da_casa(e)
-	var fim := Game.game_over(e)
-	_fim.visible = fim
-	if fim:
-		_l_fim_sub.text = "O ludus de %s ficou sem gladiadores e sem ouro para recrutar outro." % casa.get("nome", "")
-		_l_fim_stats.text = "%d vitórias em %d turnos." % [int(e["vitoriasTotais"]), int(e["turno"])]
-
 	_l_contagem.text = "Gladiadores: %d/%d" % [e["gladiadores"].size(), Game.capacidade_ludus(e)]
 
 	# Regras: o que falta construir

@@ -329,7 +329,7 @@ func _montar_barra(raiz: VBoxContainer) -> void:
 	var voltar := Tema.botao("Voltar", "normal", 20)
 	voltar.custom_minimum_size = Vector2(110, 48)
 	voltar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	voltar.pressed.connect(func(): Jogo.navegar.emit("menu"))
+	voltar.pressed.connect(func(): Jogo.navegar.emit("perfis"))
 	h.add_child(voltar)
 
 	var meio := Tema.vbox(6)

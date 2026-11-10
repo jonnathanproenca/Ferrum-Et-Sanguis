@@ -68,7 +68,7 @@ func _sprite_gladiador(g: Dictionary, altura: float, flip: bool) -> TextureRect:
 func _desafio() -> void:
 	var e: Dictionary = Jogo.e
 	var d: Dictionary = Game.proximo_desafio(e)
-	var passos: Array = Game.passos()
+	var passos: Array = Game.passos().slice(0, Game.n_passos(e))
 	var indice: int = d["indice"]
 	var passo: Dictionary = d["passo"]
 	var formato: int = int(passo.get("formato", 1))
@@ -542,6 +542,7 @@ func _final() -> void:
 		["Gladiadores recrutados", str(int(st["recrutados"]))],
 		["Gladiadores mortos", str(int(st["mortes"]))],
 		["Libertos", str(e["libertados"].size())],
+		["Modo", str(Game.modo_de(e)["nome"])],
 		["Dificuldade", str(Game.regras_de(e)["nome"])],
 	]
 	var centro := CenterContainer.new()
@@ -615,7 +616,7 @@ func _final() -> void:
 	nova.custom_minimum_size = Vector2(260, 52)
 	nova.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	nova.pressed.connect(func():
-		Jogo.apagar_save()
+		Jogo.preparar_reinicio()
 		Jogo.navegar.emit("selecao"))
 	v.add_child(nova)
 

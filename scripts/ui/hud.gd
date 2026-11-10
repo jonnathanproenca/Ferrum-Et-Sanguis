@@ -13,6 +13,10 @@ var _l_casa: Label
 var _l_ouro: Label
 var _l_energia: Label
 var _l_turno: Label
+var _fim_ov: Control
+var _l_fim_tit: Label
+var _l_fim_sub: Label
+var _l_fim_stats: Label
 var _l_vit: Label
 var _l_fama: Label
 var _b_turno: Button
@@ -79,6 +83,8 @@ func _ready() -> void:
 		_conteudo.add_child(t)
 		_telas[a[0]] = t
 
+	_montar_fim()
+
 	# Aviso (toast)
 	_toast = Tema.rotulo("", 20, Tema.AREIA)
 	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -99,6 +105,59 @@ func _ready() -> void:
 	_atualizar_barra()
 	abrir("ludus")
 	Tutorial.verificar(self)
+
+## Cobre o conteúdo quando o perfil acaba (sem gladiadores e sem ouro, ou prazo esgotado). Só apagar o perfil recomeça.
+func _montar_fim() -> void:
+	_fim_ov = PanelContainer.new()
+	_fim_ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fim_ov.add_theme_stylebox_override("panel", Tema.caixa(Color(0.05, 0.02, 0.02, 0.96), Tema.BG, 0, 0, 20))
+	_fim_ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	_fim_ov.visible = false
+	_fim_ov.z_index = 50
+	_conteudo.add_child(_fim_ov)
+	var c := CenterContainer.new()
+	_fim_ov.add_child(c)
+	var p := PanelContainer.new()
+	var sb := Tema.caixa(Color("2a0f0c"), Tema.OURO, 10, 3, 26)
+	sb.shadow_color = Color(0.72, 0.16, 0.1, 0.45)
+	sb.shadow_size = 18
+	p.add_theme_stylebox_override("panel", sb)
+	p.custom_minimum_size = Vector2(520, 0)
+	c.add_child(p)
+	var v := Tema.vbox(10)
+	p.add_child(v)
+	_l_fim_tit = Tema.titulo("GAME OVER", 52)
+	_l_fim_tit.add_theme_color_override("font_color", Tema.SANGUE_CLARO)
+	_l_fim_tit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(_l_fim_tit)
+	_l_fim_sub = Tema.rotulo("", 22, Tema.AREIA)
+	_l_fim_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(_l_fim_sub)
+	_l_fim_stats = Tema.rotulo("", 18, Tema.CINZA)
+	_l_fim_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(_l_fim_stats)
+	v.add_child(Tema.espaco(6))
+	var b := Tema.botao("Voltar aos perfis", "primario", 22)
+	b.custom_minimum_size = Vector2(260, 52)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(func(): Jogo.salvar(); Jogo.navegar.emit("perfis"))
+	v.add_child(b)
+	v.add_child(Tema.rotulo("Para recomeçar, apague este perfil na tela de perfis.", 15, Tema.CINZA))
+
+func _atualizar_fim(e: Dictionary) -> void:
+	var bloqueia := Game.fim_bloqueia(e)
+	_fim_ov.visible = bloqueia
+	if not bloqueia:
+		return
+	var r := Game.resumo_perfil(e)
+	var casa: String = r["casa"]
+	if r["fim"] == "prazo":
+		_l_fim_tit.text = "PRAZO ESGOTADO"
+		_l_fim_sub.text = "As %d rodadas de %s acabaram antes de a campanha ser concluída." % [int(r["dias"]), r["modo"]]
+	else:
+		_l_fim_tit.text = "GAME OVER"
+		_l_fim_sub.text = "O ludus de %s ficou sem gladiadores e sem ouro para recrutar outro." % casa
+	_l_fim_stats.text = "%d vitórias e %d derrotas em %d rodadas." % [int(r["vitorias"]), int(r["derrotas"]), int(r["turno"])]
 
 func _stat(pai: Control, cor: Color) -> Label:
 	var l := Tema.rotulo("", 20, cor)
@@ -132,11 +191,14 @@ func _atualizar_barra() -> void:
 	_l_casa.text = Game.lanista_da_casa(e)["nome"]
 	_l_ouro.text = "Ouro %d" % int(e["ouro"])
 	_l_energia.text = "Energia %d" % int(e["energia"])
-	_l_turno.text = "Turno %d" % int(e["turno"])
+	var dias := int(Game.modo_de(e)["dias"])
+	_l_turno.text = "Turno %d/%d" % [int(e["turno"]), dias] if dias > 0 else "Turno %d" % int(e["turno"])
 	_l_vit.text = "Vitórias %d" % int(e["vitoriasTotais"])
 	_l_fama.text = "Fama %d" % int(e.get("fama", 0))
-	_b_turno.disabled = false
-	Tutorial.verificar(self)
+	_b_turno.disabled = Game.fim_bloqueia(e)
+	_atualizar_fim(e)
+	if not Game.fim_bloqueia(e):
+		Tutorial.verificar(self)
 
 func avisar(texto: String) -> void:
 	_toast.text = " " + texto + " "

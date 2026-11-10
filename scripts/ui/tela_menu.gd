@@ -170,20 +170,21 @@ func _montar_centro() -> void:
 	_caixa_botoes.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(_caixa_botoes)
 	var tem_partida: bool = not Jogo.e.is_empty()
-	var tem_save: bool = tem_partida or Jogo.tem_save()
-	if tem_save:
+	if tem_partida:
 		var c := _botao_grande("Continuar", "primario")
 		c.pressed.connect(_continuar)
 		_caixa_botoes.add_child(c)
-	var n := _botao_grande("Novo ludus", "ouro" if tem_save else "primario")
-	n.pressed.connect(func(): Jogo.navegar.emit("selecao"))
+	var n := _botao_grande("Perfis" if tem_partida else "Jogar", "ouro" if tem_partida else "primario")
+	n.pressed.connect(func():
+		Jogo.salvar()
+		Jogo.navegar.emit("perfis"))
 	_caixa_botoes.add_child(n)
 	var o := _botao_grande("Opções", "normal")
 	o.pressed.connect(_abrir_opcoes)
 	_caixa_botoes.add_child(o)
 
 	if tem_partida:
-		var l := Tema.rotulo("Partida em curso: ludus de %s, turno %d" % [Game.lanista_da_casa(Jogo.e)["nome"], int(Jogo.e["turno"])], 17, Tema.OCRE)
+		var l := Tema.rotulo("Em jogo: %s, rodada %d" % [str(Jogo.e.get("perfilNome", "")), int(Jogo.e["turno"])], 17, Tema.OCRE)
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		v.add_child(Tema.espaco(4))
 		v.add_child(l)
@@ -227,13 +228,7 @@ func _montar_rodape() -> void:
 	add_child(l)
 
 func _continuar() -> void:
-	if not Jogo.e.is_empty():
-		Jogo.navegar.emit("jogo")   # partida em curso (menu aberto de dentro do jogo)
-	elif Jogo.continuar():
-		Jogo.navegar.emit("jogo")
-	else:
-		_aviso.add_theme_color_override("font_color", Tema.SANGUE_CLARO)
-		_aviso.text = "Não foi possível carregar o save (%s)." % Jogo.erro_save
+	Jogo.navegar.emit("jogo")   # partida em curso (menu aberto de dentro do jogo)
 
 func _abrir_opcoes() -> void:
 	Modal.abrir(self, "Opções", TelaConfig.conteudo_opcoes(), 560.0)

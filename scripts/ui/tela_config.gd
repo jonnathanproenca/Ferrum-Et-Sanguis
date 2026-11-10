@@ -310,8 +310,6 @@ func _pedir_reinicio() -> void:
 	var ok := Tema.botao("Apagar e recomeçar", "primario")
 	ok.pressed.connect(func():
 		m.fechar()
-		Jogo.apagar_save()
-		Jogo.e = {}
-		Jogo.equipe = []
+		Jogo.preparar_reinicio()
 		Jogo.navegar.emit("selecao"))
 	h.add_child(ok)

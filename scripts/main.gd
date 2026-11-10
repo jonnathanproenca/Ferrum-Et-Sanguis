@@ -23,6 +23,10 @@ func _ir(destino: String) -> void:
 	match destino:
 		"menu":
 			_atual = TelaMenu.new()
+		"perfis":
+			_atual = TelaPerfis.new()
+		"modos":
+			_atual = TelaModos.new()
 		"selecao":
 			_atual = TelaSelecao.new()
 		_:

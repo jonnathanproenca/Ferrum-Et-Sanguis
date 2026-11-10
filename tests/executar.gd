@@ -13,6 +13,7 @@ func _init() -> void:
 	teste_fluxo()
 	teste_patrocinio()
 	teste_treino_combate()
+	teste_modos()
 	print("TESTES: ", total, " FALHAS: ", falhas)
 	quit(1 if falhas > 0 else 0)
 
@@ -383,3 +384,51 @@ func teste_treino_combate() -> void:
 	c.ataque_pesado()
 	_passos(c, 0.7)
 	ok(c.placar["criticos"] == crit0 + 1, "pesado no boneco atordoado é crítico")
+
+
+func teste_modos() -> void:
+	# modos: prazo, passos e morte
+	var e := Game.novo_jogo(1, "lanista-3", "medio", "municipais")
+	ok(Game.modo_de(e)["nome"] == "Jogos Municipais" and Game.n_passos(e) == 3, "modo municipais: 3 passos")
+	ok(Game.morte_de(e) == "nunca", "municipais: ninguém morre")
+	e["energia"] = 0
+	for i in range(39):
+		e["gladiadores"][0]["vivo"] = true
+		Game.avancar_turno(e)
+		e["energia"] = 0
+	Game.atualizar_fim(e)
+	ok(e["fim"] == "" and int(e["turno"]) == 40, "rodada 40 ainda dentro do prazo")
+	Game.avancar_turno(e)
+	Game.atualizar_fim(e)
+	ok(e["fim"] == "prazo", "passou da rodada 40: prazo esgotado")
+	ok(Game.avancar_turno(e) != "", "perfil acabado não avança turno")
+	# game over fica gravado, mesmo se o ouro voltar
+	var g := Game.novo_jogo(2, "lanista-3", "medio", "imperial")
+	for gl in g["gladiadores"]:
+		gl["vivo"] = false
+	g["ouro"] = 0
+	Game.atualizar_fim(g)
+	ok(g["fim"] == "gameover", "sem gladiadores e sem ouro: game over")
+	g["ouro"] = 99999
+	Game.atualizar_fim(g)
+	ok(g["fim"] == "gameover" and Game.fim_bloqueia(g), "game over persiste")
+	# campanha concluída = vitória, sem bloquear
+	var v := Game.novo_jogo(3, "lanista-3", "medio", "sangue")
+	v["campanha"] = Game.n_passos(v)
+	ok(Game.proximo_desafio(v).is_empty(), "sangue termina em 7 passos")
+	Game.atualizar_fim(v)
+	ok(v["fim"] == "vitoria" and not Game.fim_bloqueia(v), "vitória não bloqueia")
+	# resumo
+	var r := Game.resumo_perfil(e)
+	ok(r["modo"] == "Jogos Municipais" and r["atuais"] >= 0 and r["historico"] >= 1, "resumo do perfil")
+	# perfis (arquivos)
+	var J = load("res://scripts/jogo.gd").new()
+	J.slot_novo = 3
+	J.novo("lanista-3", "medio", "livre")
+	ok(J.perfil_existe(3) and J.slot == 3, "novo perfil grava no slot")
+	ok(bool(J.e["cheats"].get("ouro", false)) and int(J.e["ouro"]) >= 9999999, "simulador: ouro infinito")
+	J.renomear_perfil(3, "Meu Ludus")
+	J.e = {}
+	ok(J.continuar(3) and J.e["perfilNome"] == "Meu Ludus", "carrega e renomeia perfil")
+	J.apagar_save(3)
+	ok(not J.perfil_existe(3) and J.e.is_empty(), "apagar perfil")
