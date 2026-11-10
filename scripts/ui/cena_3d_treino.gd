@@ -60,7 +60,8 @@ func _ready() -> void:
 	if OS.get_environment("DBG") != "":
 		print("FACE_J ", _jog.global_transform.basis * Vector3(0, 0, 1), " pos ", _jog.position, " BON ", _bon.global_transform.basis * Vector3(0, 0, 1), _bon.position)
 	if OS.get_environment("ANIM") != "":
-		_ap_j.play(OS.get_environment("ANIM"))
+		_ap_j.speed_scale = 1.0
+		_ap_j.play(OS.get_environment("ANIM"), 0.0)
 		_ap_j.seek(float(OS.get_environment("ANIMT")), true)
 		_ap_j.speed_scale = 0.0
 	if OS.get_environment("ANIMB") != "":
@@ -248,16 +249,21 @@ func _anexar(sk: Skeleton3D, osso: String, caminho: String, pos: Vector3, rot: V
 func _process(_d: float) -> void:
 	var agora := Time.get_ticks_msec()
 	if _ini_j >= 0 and agora - _ini_j >= ESPERA_IDLE_MS and _ap_j.speed_scale == 0.0:
+		_ini_j = -1
 		_ap_j.speed_scale = 1.0
+		_ap_j.play("Sword_Idle", 0.4, 1.0)
 	if _ini_b >= 0 and agora - _ini_b >= ESPERA_IDLE_MS and _ap_b.speed_scale == 0.0:
 		_ap_b.speed_scale = 1.0
 
 
-## Guarda parada: fica no primeiro quadro do idle por 10 s sem ação, depois passa a animar.
+## Guarda parada do jogador: pose neutra do andar (pés juntos) por 10 s sem ação; depois anima o idle.
+const POSE_NEUTRA := 0.55
+
 func _entrar_guarda_j() -> void:
 	_ini_j = Time.get_ticks_msec()
-	_ap_j.play("Sword_Idle", 0.08, 1.0)
-	_ap_j.seek(0.0, true)
+	_ap_j.speed_scale = 1.0
+	_ap_j.play("WalkFrente", 0.12, 1.0)
+	_ap_j.seek(POSE_NEUTRA, true)
 	_ap_j.speed_scale = 0.0
 
 
@@ -290,7 +296,7 @@ func _tocar(ap: AnimationPlayer, nome: String, dur: float, de_tras := false, len
 func _fim_anim_j(n: String) -> void:
 	if n == "Sword_Block" and _defendendo:
 		_ap_j.pause()
-	elif n in ["Sword_Regular_A", "Sword_Heavy_Combo", "Hit_Chest", "Sword_Dash", "Shield_OneShot", "Roll"]:
+	elif n in ["Sword_Regular_A", "Sword_Heavy_Combo", "Hit_Chest", "Sword_Dash", "Esquiva", "Shield_OneShot", "Roll"]:
 		_fixo_j = ""
 
 
@@ -327,12 +333,12 @@ func pose_jogador(pose: String, nucleo: TreinoCombate) -> void:
 		"prepara":
 			if nucleo.estado == "pesado":
 				var t: float = float(TreinoCombate.PESADO["prep"]) + float(TreinoCombate.PESADO["golpe"]) + float(TreinoCombate.PESADO["rec"])
-				_tocar(_ap_j, "Sword_Attack", t)
+				_tocar(_ap_j, "Sword_Attack", t * 1.2)
 			else:
 				var t2: float = float(TreinoCombate.LEVE["prep"]) + float(TreinoCombate.LEVE["golpe"]) + float(TreinoCombate.LEVE["rec"])
-				_tocar(_ap_j, "Sword_Regular_A", t2)
+				_tocar(_ap_j, "Sword_Regular_A", t2 * 1.2)
 		"esquiva":
-			_tocar(_ap_j, "Sword_Dash", TreinoCombate.ESQUIVA_DUR, true)
+			_tocar(_ap_j, "Esquiva", TreinoCombate.ESQUIVA_DUR)
 		"dano":
 			_tocar(_ap_j, "Hit_Chest", TreinoCombate.DANO_DUR)
 		"empurrao":
