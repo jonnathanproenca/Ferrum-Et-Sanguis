@@ -29,7 +29,7 @@ const ESTILOS := {
 ## dir = direção da lâmina em T-pose (padrão: +Z, para a frente: o punho fecha nesse eixo), tex = textura Kickin It, inv = inverte a ponta.
 const ARMAS := {
 	"gladio": {"p": "res://assets/3d/gladio.glb", "eixo": Vector3(0, 1, 0), "m": 0.58, "grip": 0.12},
-	"sica": {"p": "res://assets/3d/acc/k_Kopesh.fbx", "eixo": Vector3(0, 0, 1), "m": 0.55, "grip": 0.12, "tex": true},
+	"sica": {"p": "res://assets/3d/acc/k_Kopesh.fbx", "eixo": Vector3(0, 0, 1), "m": 0.55, "grip": 0.12, "tex": true, "inv": true},
 	"lanca": {"p": "res://assets/3d/acc/q_Spear.fbx", "eixo": Vector3(0, 1, 0), "m": 2.0, "grip": 0.35, "axis0": true},
 	"pilum": {"p": "res://assets/3d/cap/a_pilum.fbx", "eixo": Vector3(0, 1, 0), "m": 1.9, "grip": 0.4, "pilum": true, "axis0": true},
 	"tridente": {"p": "res://assets/3d/acc/k_Pitchfork.fbx", "eixo": Vector3(0, 0, 1), "m": 1.7, "grip": 0.3, "tex": true, "inv": true, "axis0": true},
@@ -49,7 +49,7 @@ const CAPACETES := {
 	"g_gladiador": {"p": "res://assets/3d/cap/h_gladiador.fbx", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "9c8a55", "metal": 0.7},
 	"g_grego": {"p": "res://assets/3d/cap/h_grego.fbx", "w": 0.29, "rot": 0.0, "dy": -0.07, "dz": 0.02, "cor": "b08a3c", "metal": 0.7},
 	"g_espartano": {"p": "res://assets/3d/cap/h_espartano.fbx", "w": 0.30, "rot": 0.0, "dy": -0.12, "dz": 0.02, "cor": "a67c3a", "metal": 0.7},
-	"g_metal": {"p": "res://assets/3d/cap/h_metal.fbx", "w": 0.37, "rot": 0.0, "dy": -0.05, "dz": 0.03, "cor": "8a8f98", "metal": 0.8},
+	"g_metal": {"dupla": true, "p": "res://assets/3d/cap/h_metal.fbx", "w": 0.37, "rot": 0.0, "dy": -0.05, "dz": 0.03, "cor": "8a8f98", "metal": 0.8},
 }
 
 
@@ -133,6 +133,11 @@ const ARQ_AJUSTES := "user://ajustes_estilos.json"
 
 static func carregar_ajustes() -> void:
 	ajustes = {}
+	if OS.get_environment("AJ") != "":   # depuração: AJ='{"estilo/item": {...}}'
+		var dd = JSON.parse_string(OS.get_environment("AJ"))
+		if dd is Dictionary:
+			ajustes = dd
+		return
 	if not FileAccess.file_exists(ARQ_AJUSTES):
 		return
 	var d = JSON.parse_string(FileAccess.get_file_as_string(ARQ_AJUSTES))
@@ -155,13 +160,21 @@ static func itens_vivos() -> Array:
 
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
-	"murmilo/cap": {"esc": 1.02, "pos": [-9.6, -8.2, 11.6], "rot": [-11.0, 0.0, -6.0]},
+	"murmilo/cap": {"esc": 1.02, "pos": [-5.0, -10.0, 8.5], "rot": [-8.0, 0.0, -6.0]},
 	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0]},
+	"provocator/cap": {"esc": 1.02, "pos": [-5.0, -10.0, 8.5], "rot": [-8.0, 0.0, -6.0]},
+	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0]},
 	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
 	"samnita/esc": {"esc": 1.0, "pos": [0.0, 0.0, -1.0], "rot": [41.0, 0.0, 84.0]},
 	"tracio/cap": {"esc": 0.88, "pos": [2.0, -3.0, 1.5], "rot": [-8.0, 3.0, 0.0]},
 	"tracio/dir": {"esc": 1.0, "pos": [-3.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
 	"tracio/esc": {"esc": 1.0, "pos": [-1.0, -4.5, -3.5], "rot": [36.0, 4.0, 0.0]},
+	"hoplomaco/cap": {"esc": 0.64, "pos": [0.0, 6.5, 2.0], "rot": [0.0, 0.0, 0.0]},
+	"hoplomaco/esc": {"esc": 0.96, "pos": [1.0, 1.5, -1.5], "rot": [35.0, 0.0, 0.0]},
+	"dimachaerus/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
+	"velite/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
+	"velite/dir": {"esc": 1.0, "pos": [15.5, 13.0, -30.0], "rot": [0.0, -5.0, -1.0]},
+	"scissor/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
 }
 
 
@@ -175,7 +188,9 @@ static func _transf_ajustada(chave: String, rb: Basis, bw: Basis, pw: Vector3, a
 	var a := ajuste_de(chave)
 	var r: Array = a["rot"]
 	var p: Array = a["pos"]
-	var q := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
+	var ang := Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2])))
+	# armas: ordem XYZ (eixo do meio = Y), assim girar X em ~90° não faz Y e Z virarem o mesmo eixo; capacetes mantêm a ordem original
+	var q := Basis.from_euler(ang, EULER_ORDER_XYZ) if (chave.ends_with("/dir") or chave.ends_with("/esq")) else Basis.from_euler(ang)
 	var bw2 := q * bw * Basis.from_scale(Vector3.ONE * float(a["esc"]))
 	var m_a := bw.inverse() * (ancora - pw)   # a âncora no espaço do modelo
 	var pw2 := ancora + Vector3(float(p[0]), float(p[1]), float(p[2])) * 0.01 * ESC_M - bw2 * m_a
@@ -364,7 +379,10 @@ static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
 	var alvo := Vector3(0, float(c.get("dy", -0.06)), 0.015 + float(c.get("dz", 0.0))) * ESC_M
 	# a origem do osso da cabeça fica na base do crânio: o capacete sobe do queixo até o topo
 	var pw := alvo - Basis(Vector3.UP, 0) * (base_pt * k)
-	_pintar(no, _mat(Color(str(c["cor"])), float(c["metal"]), 0.4))
+	var mc := _mat(Color(str(c["cor"])), float(c["metal"]), 0.4)
+	if c.get("dupla", false):   # casco oco: desenha também o lado de dentro
+		mc.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_pintar(no, mc)
 	_anexar(sk, osso, no, rb, bw2, pw, chave, alvo)
 
 

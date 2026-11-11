@@ -157,7 +157,7 @@ func _escolher_estilo(id: String) -> void:
 # ---------- Editor de peças ----------
 
 const ED_CAMPOS := [
-	["px", "Posição X (cm)", -30.0, 30.0, 0.5], ["py", "Posição Y (cm)", -30.0, 30.0, 0.5], ["pz", "Posição Z (cm)", -30.0, 30.0, 0.5],
+	["px", "Posição X (cm)", -60.0, 60.0, 0.5], ["py", "Posição Y (cm)", -60.0, 60.0, 0.5], ["pz", "Posição Z (cm)", -60.0, 60.0, 0.5],
 	["rx", "Giro X (°)", -180.0, 180.0, 1.0], ["ry", "Giro Y (°)", -180.0, 180.0, 1.0], ["rz", "Giro Z (°)", -180.0, 180.0, 1.0],
 	["esc", "Tamanho", 0.3, 2.5, 0.01],
 ]
