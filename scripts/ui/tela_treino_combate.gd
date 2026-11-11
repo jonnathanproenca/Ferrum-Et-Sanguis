@@ -28,6 +28,7 @@ var _ed_item := "cap"
 var _ed_sl: Dictionary = {}        ## campo -> HSlider
 var _ed_val: Dictionary = {}       ## campo -> Label
 var _ed_bot: Dictionary = {}       ## item -> Button
+var _ed_cor: ColorPickerButton
 var _ed_ocultos: Array = []        ## nós escondidos pelo botão "Ocultar interface"
 var _bot_ocultar: Button
 var _rep: Timer                    ## repetição ao segurar as setas
@@ -151,7 +152,7 @@ func _montar_estilos() -> void:
 func _escolher_estilo(id: String) -> void:
 	_c3d.trocar_jogador(id)
 	_marcar_estilo()
-	_ed_carregar()
+	_ed_escolher(_ed_item)
 
 
 # ---------- Editor de peças ----------
@@ -160,8 +161,9 @@ const ED_CAMPOS := [
 	["px", "Posição X (cm)", -60.0, 60.0, 0.5], ["py", "Posição Y (cm)", -60.0, 60.0, 0.5], ["pz", "Posição Z (cm)", -60.0, 60.0, 0.5],
 	["rx", "Giro X (°)", -180.0, 180.0, 1.0], ["ry", "Giro Y (°)", -180.0, 180.0, 1.0], ["rz", "Giro Z (°)", -180.0, 180.0, 1.0],
 	["esc", "Tamanho", 0.3, 2.5, 0.01],
+	["met", "Metálico", 0.0, 1.0, 0.02], ["rug", "Rugosidade", 0.0, 1.0, 0.02],
 ]
-const ED_ITENS := [["cap", "Capacete"], ["dir", "Mão dir."], ["esq", "Mão esq."], ["esc", "Escudo"]]
+const ED_ITENS := [["cap", "Capacete"], ["dir", "Mão dir."], ["esq", "Mão esq."], ["esc", "Escudo"], ["manica_dir", "Manopla dir."], ["manica_esq", "Manopla esq."], ["greva_dir", "Caneleira dir."], ["greva_esq", "Caneleira esq."], ["galerus", "Ombreira"]]
 const ED_POSES := [["Guarda", "Sword_Idle", 0.0], ["Leve", "Sword_Regular_A", 0.3], ["Pesado", "Sword_Attack", 0.5], ["Defesa", "Idle_Shield", 0.3]]
 
 
@@ -179,20 +181,27 @@ func _montar_editor() -> void:
 	_ed.offset_left = -330
 	_ed.offset_right = -12
 	_ed.offset_top = 52
+	_ed.offset_bottom = 708
+	var rolagem := ScrollContainer.new()
+	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_ed.add_child(rolagem)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
-	_ed.add_child(v)
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rolagem.add_child(v)
 	_bot_ocultar = Tema.botao("Ocultar interface", "normal", 13)
 	_bot_ocultar.custom_minimum_size = Vector2(0, 26)
 	_bot_ocultar.pressed.connect(_ed_alternar_interface)
 	v.add_child(_bot_ocultar)
 	v.add_child(Tema.rotulo("Ajustar peça do estilo atual", 15, Tema.OURO))
-	var linha := HBoxContainer.new()
-	linha.add_theme_constant_override("separation", 4)
+	var linha := GridContainer.new()
+	linha.columns = 3
+	linha.add_theme_constant_override("h_separation", 4)
+	linha.add_theme_constant_override("v_separation", 3)
 	v.add_child(linha)
 	for it in ED_ITENS:
-		var b := Tema.botao(it[1], "normal", 13)
-		b.custom_minimum_size = Vector2(0, 28)
+		var b := Tema.botao(it[1], "normal", 12)
+		b.custom_minimum_size = Vector2(0, 26)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(_ed_escolher.bind(it[0]))
 		linha.add_child(b)
@@ -243,6 +252,17 @@ func _montar_editor() -> void:
 		linha_s.add_child(val)
 		_ed_sl[c[0]] = sl
 		_ed_val[c[0]] = val
+	var lc := HBoxContainer.new()
+	v.add_child(lc)
+	var rc := Tema.rotulo("Cor", 13, Tema.AREIA)
+	rc.custom_minimum_size = Vector2(60, 0)
+	lc.add_child(rc)
+	_ed_cor = ColorPickerButton.new()
+	_ed_cor.edit_alpha = false
+	_ed_cor.custom_minimum_size = Vector2(150, 26)
+	_ed_cor.focus_mode = Control.FOCUS_NONE
+	_ed_cor.color_changed.connect(func(_c): _ed_mudou())
+	lc.add_child(_ed_cor)
 	var lb := HBoxContainer.new()
 	lb.add_theme_constant_override("separation", 4)
 	v.add_child(lb)
@@ -317,6 +337,9 @@ func _ed_chave() -> String:
 
 
 func _ed_escolher(item: String) -> void:
+	_ed_itens_visiveis()
+	if not (_ed_bot[item] as Button).visible:
+		item = _ed_item
 	_ed_item = item
 	for k in _ed_bot:
 		(_ed_bot[k] as Button).modulate = Color(1.0, 0.85, 0.4) if k == item else Color(1, 1, 1)
@@ -326,31 +349,59 @@ func _ed_escolher(item: String) -> void:
 func _ed_carregar() -> void:
 	if _ed == null:
 		return
-	var a := Estilos3D.ajuste_de(_ed_chave())
-	var vals := {"px": a["pos"][0], "py": a["pos"][1], "pz": a["pos"][2], "rx": a["rot"][0], "ry": a["rot"][1], "rz": a["rot"][2], "esc": a["esc"]}
+	var ch := _ed_chave()
+	var a := Estilos3D.ajuste_de(ch)
+	var mat := Estilos3D.material_de(ch)
+	var met: float = float(a["metal"]) if float(a["metal"]) >= 0.0 else (mat.metallic if mat != null else 0.0)
+	var rug: float = float(a["rug"]) if float(a["rug"]) >= 0.0 else (mat.roughness if mat != null else 0.5)
+	var vals := {"px": a["pos"][0], "py": a["pos"][1], "pz": a["pos"][2], "rx": a["rot"][0], "ry": a["rot"][1], "rz": a["rot"][2], "esc": a["esc"], "met": met, "rug": rug}
 	for k in vals:
 		(_ed_sl[k] as HSlider).set_value_no_signal(float(vals[k]))
 		(_ed_val[k] as Label).text = str(snappedf(float(vals[k]), 0.01))
+	_ed_cor.disabled = mat == null
+	_ed_cor.color = Color(str(a["cor"])) if str(a["cor"]) != "" else (mat.albedo_color if mat != null else Color.WHITE)
+
+
+## Só mostra os botões das peças que o estilo atual tem.
+func _ed_itens_visiveis() -> void:
+	var vivos := Estilos3D.itens_vivos()
+	var atual := _c3d.estilo_atual()
+	var primeiro := ""
+	for it in ED_ITENS:
+		var existe: bool = vivos.has(atual + "/" + str(it[0]))
+		(_ed_bot[it[0]] as Button).visible = existe
+		if existe and primeiro == "":
+			primeiro = str(it[0])
+	if not vivos.has(atual + "/" + _ed_item) and primeiro != "":
+		_ed_item = primeiro
 
 
 func _ed_mudou() -> void:
 	var g := func(k: String) -> float: return (_ed_sl[k] as HSlider).value
-	Estilos3D.ajustes[_ed_chave()] = {
+	var ch := _ed_chave()
+	var d: Dictionary = {
 		"pos": [g.call("px"), g.call("py"), g.call("pz")],
 		"rot": [g.call("rx"), g.call("ry"), g.call("rz")],
 		"esc": g.call("esc"),
 	}
+	if Estilos3D.material_de(ch) != null:
+		d["cor"] = _ed_cor.color.to_html(false)
+		d["metal"] = g.call("met")
+		d["rug"] = g.call("rug")
+	Estilos3D.ajustes[ch] = d
 	for k in _ed_sl:
 		(_ed_val[k] as Label).text = str(snappedf((_ed_sl[k] as HSlider).value, 0.01))
-	Estilos3D.reaplicar(_ed_chave())
+	Estilos3D.reaplicar(ch)
 	Estilos3D.salvar_ajustes()
 
 
 func _ed_zerar() -> void:
 	Estilos3D.ajustes.erase(_ed_chave())
-	Estilos3D.reaplicar(_ed_chave())
 	Estilos3D.salvar_ajustes()
-	_ed_carregar()
+	_c3d.trocar_jogador(_c3d.estilo_atual(), true)   # remonta para voltar também a cor original
+	_c3d.ver_pose("Sword_Idle", 0.0)
+	_ed_itens_visiveis()
+	_ed_escolher(_ed_item)
 
 
 func _ed_copiar() -> void:

@@ -180,7 +180,35 @@ const AJUSTES_PADRAO := {
 
 static func ajuste_de(chave: String) -> Dictionary:
 	var a: Dictionary = ajustes.get(chave, AJUSTES_PADRAO.get(chave, {}))
-	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0))}
+	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0)),
+		"cor": str(a.get("cor", "")), "metal": float(a.get("metal", -1.0)), "rug": float(a.get("rug", -1.0))}
+
+
+## Material (override) da peça montada: o primeiro que existir. As partes de uma peça que têm a mesma cor compartilham o mesmo material.
+static func material_de(chave: String) -> StandardMaterial3D:
+	var v: Dictionary = _vivos.get(chave, {})
+	if v.is_empty() or not is_instance_valid(v["no"]):
+		return null
+	for mi in (v["no"] as Node).find_children("*", "MeshInstance3D", true, false):
+		var m := (mi as MeshInstance3D).material_override
+		if m is StandardMaterial3D:
+			return m as StandardMaterial3D
+	if (v["no"] is MeshInstance3D) and ((v["no"] as MeshInstance3D).material_override is StandardMaterial3D):
+		return (v["no"] as MeshInstance3D).material_override as StandardMaterial3D
+	return null
+
+
+static func _aplicar_cor(chave: String) -> void:
+	var m := material_de(chave)
+	if m == null:
+		return
+	var a := ajuste_de(chave)
+	if str(a["cor"]) != "":
+		m.albedo_color = Color(str(a["cor"]))
+	if float(a["metal"]) >= 0.0:
+		m.metallic = float(a["metal"])
+	if float(a["rug"]) >= 0.0:
+		m.roughness = float(a["rug"])
 
 
 ## Giro e tamanho são aplicados em torno da âncora (ponto de pegada da arma / base do capacete), para a peça não "andar" ao redimensionar.
@@ -205,6 +233,7 @@ static func reaplicar(chave: String) -> void:
 	if v.has("escudo"):
 		_aplicar_escudo(chave)
 		return
+	_aplicar_cor(chave)
 	(v["no"] as Node3D).transform = _transf_ajustada(chave, v["rb"], v["bw"], v["pw"], v["anc"])
 
 
@@ -215,6 +244,9 @@ static func _anexar(sk: Skeleton3D, osso: String, no: Node3D, basis_osso: Basis,
 	if chave != "":
 		_vivos[chave] = {"no": no, "rb": basis_osso, "bw": bw, "pw": pw, "anc": ancora}
 		no.transform = _transf_ajustada(chave, basis_osso, bw, pw, ancora)
+		ba.add_child(no)
+		_aplicar_cor(chave)
+		return ba
 	else:
 		no.transform = Transform3D(basis_osso.inverse() * bw, basis_osso.inverse() * pw)
 	ba.add_child(no)
@@ -251,7 +283,7 @@ static func montar(sk: Skeleton3D, id: String, escudo_base: Vector3) -> Dictiona
 	if cap != "":
 		_capacete(sk, cap, id + "/cap")
 	for x in e.get("ext", []):
-		_extra(sk, str(x))
+		_extra(sk, str(x), id + "/" + str(x))
 	return res
 
 
@@ -398,7 +430,7 @@ static func _arco(de: Vector3, para: Vector3) -> Quaternion:
 # ---------- Peças extras (procedurais) ----------
 
 ## Cilindro acompanhando o osso `a` até o osso `b` (trecho de f0 a f1), raio em metros.
-static func _tubo(sk: Skeleton3D, a: String, b: String, raio_m: float, f0: float, f1: float, mat: Material, afunila := 1.0) -> void:
+static func _tubo(sk: Skeleton3D, a: String, b: String, raio_m: float, f0: float, f1: float, mat: Material, chave := "", afunila := 1.0) -> void:
 	var ra := _rest(sk, a)
 	var rb := _rest(sk, b)
 	var ini := ra.origin.lerp(rb.origin, f0)
@@ -414,35 +446,28 @@ static func _tubo(sk: Skeleton3D, a: String, b: String, raio_m: float, f0: float
 	mi.material_override = mat
 	var rbo := ra.basis.orthonormalized()
 	var eixo_local := rbo.inverse() * ((fim - ini) / comp)
-	var ba := BoneAttachment3D.new()
-	ba.bone_name = a
-	sk.add_child(ba)
-	mi.transform = Transform3D(Basis(Quaternion(Vector3.UP, eixo_local)), rbo.inverse() * ((ini + fim) / 2.0 - ra.origin))
-	ba.add_child(mi)
+	var t0 := Transform3D(Basis(Quaternion(Vector3.UP, eixo_local)), rbo.inverse() * ((ini + fim) / 2.0 - ra.origin))
+	_anexar(sk, a, mi, rbo, rbo * t0.basis, rbo * t0.origin, chave, rbo * t0.origin)
 
 
-static func _extra(sk: Skeleton3D, nome_extra: String) -> void:
-	var couro := _mat(Color("5a3a22"), 0.0, 0.85)
+static func _extra(sk: Skeleton3D, nome_extra: String, chave: String) -> void:
 	var bronze := _mat(Color("b08a3c"), 0.7, 0.4)
 	var ferro := _mat(Color("7d8088"), 0.8, 0.45)
 	match nome_extra:
 		"manica_dir":
-			_tubo(sk, "mixamorig_RightForeArm", "mixamorig_RightHand", 0.058, 0.08, 0.92, ferro)
+			_tubo(sk, "mixamorig_RightForeArm", "mixamorig_RightHand", 0.058, 0.08, 0.92, ferro, chave)
 		"manica_esq":
-			_tubo(sk, "mixamorig_LeftForeArm", "mixamorig_LeftHand", 0.058, 0.08, 0.92, ferro)
+			_tubo(sk, "mixamorig_LeftForeArm", "mixamorig_LeftHand", 0.058, 0.08, 0.92, ferro, chave)
 		"greva_dir":
-			_tubo(sk, "mixamorig_RightLeg", "mixamorig_RightFoot", 0.07, 0.1, 0.9, bronze, 0.85)
+			_tubo(sk, "mixamorig_RightLeg", "mixamorig_RightFoot", 0.07, 0.1, 0.9, bronze, chave, 0.85)
 		"greva_esq":
-			_tubo(sk, "mixamorig_LeftLeg", "mixamorig_LeftFoot", 0.07, 0.1, 0.9, bronze, 0.85)
+			_tubo(sk, "mixamorig_LeftLeg", "mixamorig_LeftFoot", 0.07, 0.1, 0.9, bronze, chave, 0.85)
 		"peitoral":
-			_tubo(sk, "mixamorig_Spine", "mixamorig_Spine2", 0.2, -0.3, 1.5, bronze, 0.9)
+			_tubo(sk, "mixamorig_Spine", "mixamorig_Spine2", 0.2, -0.3, 1.5, bronze, chave, 0.9)
 		"galerus":
-			var ba := BoneAttachment3D.new()
-			ba.bone_name = "mixamorig_LeftShoulder"
-			sk.add_child(ba)
-			var g := galerus_proc()
-			g.transform = Transform3D(Basis.from_scale(Vector3.ONE * ESC_M), Vector3(0, 0.05, 0) * ESC_M)
-			ba.add_child(g)
+			var rb := _base_osso(sk, "mixamorig_LeftShoulder")
+			var o := Vector3(0, 0.05, 0) * ESC_M
+			_anexar(sk, "mixamorig_LeftShoulder", galerus_proc(), rb, rb * Basis.from_scale(Vector3.ONE * ESC_M), rb * o, chave, rb * o)
 
 
 # ---------- Peças procedurais (em metros; o chamador escala) ----------

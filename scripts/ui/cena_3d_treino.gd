@@ -225,8 +225,8 @@ func _criar_gladiador2(estilo: String) -> Node3D:
 
 
 ## Troca o gladiador do jogador na hora (menu de estilos do treino).
-func trocar_jogador(id: String) -> void:
-	if id == _estilo:
+func trocar_jogador(id: String, forcar := false) -> void:
+	if id == _estilo and not forcar:
 		return
 	_estilo = id
 	var giro := _jog.rotation_degrees.y
