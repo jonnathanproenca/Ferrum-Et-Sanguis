@@ -155,9 +155,13 @@ static func itens_vivos() -> Array:
 
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
-	"murmilo/cap": {"esc": 1.02, "pos": [-6.5, -8.5, 6.0], "rot": [-11.0, 0.0, -6.0]},
+	"murmilo/cap": {"esc": 1.02, "pos": [-9.6, -8.2, 11.6], "rot": [-11.0, 0.0, -6.0]},
+	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0]},
+	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
+	"samnita/esc": {"esc": 1.0, "pos": [0.0, 0.0, -1.0], "rot": [41.0, 0.0, 84.0]},
 	"tracio/cap": {"esc": 0.88, "pos": [2.0, -3.0, 1.5], "rot": [-8.0, 3.0, 0.0]},
 	"tracio/dir": {"esc": 1.0, "pos": [-3.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
+	"tracio/esc": {"esc": 1.0, "pos": [-1.0, -4.5, -3.5], "rot": [36.0, 4.0, 0.0]},
 }
 
 
@@ -166,13 +170,15 @@ static func ajuste_de(chave: String) -> Dictionary:
 	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0))}
 
 
-static func _transf_ajustada(chave: String, rb: Basis, bw: Basis, pw: Vector3) -> Transform3D:
+## Giro e tamanho são aplicados em torno da âncora (ponto de pegada da arma / base do capacete), para a peça não "andar" ao redimensionar.
+static func _transf_ajustada(chave: String, rb: Basis, bw: Basis, pw: Vector3, ancora: Vector3) -> Transform3D:
 	var a := ajuste_de(chave)
 	var r: Array = a["rot"]
 	var p: Array = a["pos"]
 	var q := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
 	var bw2 := q * bw * Basis.from_scale(Vector3.ONE * float(a["esc"]))
-	var pw2 := pw + Vector3(float(p[0]), float(p[1]), float(p[2])) * 0.01 * ESC_M
+	var m_a := bw.inverse() * (ancora - pw)   # a âncora no espaço do modelo
+	var pw2 := ancora + Vector3(float(p[0]), float(p[1]), float(p[2])) * 0.01 * ESC_M - bw2 * m_a
 	return Transform3D(rb.inverse() * bw2, rb.inverse() * pw2)
 
 
@@ -184,16 +190,16 @@ static func reaplicar(chave: String) -> void:
 	if v.has("escudo"):
 		_aplicar_escudo(chave)
 		return
-	(v["no"] as Node3D).transform = _transf_ajustada(chave, v["rb"], v["bw"], v["pw"])
+	(v["no"] as Node3D).transform = _transf_ajustada(chave, v["rb"], v["bw"], v["pw"], v["anc"])
 
 
-static func _anexar(sk: Skeleton3D, osso: String, no: Node3D, basis_osso: Basis, bw: Basis, pw: Vector3, chave := "") -> BoneAttachment3D:
+static func _anexar(sk: Skeleton3D, osso: String, no: Node3D, basis_osso: Basis, bw: Basis, pw: Vector3, chave := "", ancora := Vector3.ZERO) -> BoneAttachment3D:
 	var ba := BoneAttachment3D.new()
 	ba.bone_name = osso
 	sk.add_child(ba)
 	if chave != "":
-		_vivos[chave] = {"no": no, "rb": basis_osso, "bw": bw, "pw": pw}
-		no.transform = _transf_ajustada(chave, basis_osso, bw, pw)
+		_vivos[chave] = {"no": no, "rb": basis_osso, "bw": bw, "pw": pw, "anc": ancora}
+		no.transform = _transf_ajustada(chave, basis_osso, bw, pw, ancora)
 	else:
 		no.transform = Transform3D(basis_osso.inverse() * bw, basis_osso.inverse() * pw)
 	ba.add_child(no)
@@ -265,7 +271,7 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> voi
 		_pintar(no, _mat(Color("6d6a64"), 0.8, 0.5))
 		_so_uma_variante(no)
 	var osso := "mixamorig_RightHand" if direita else "mixamorig_LeftHand"
-	_anexar(sk, osso, no, _base_osso(sk, osso), bw, pw, chave)
+	_anexar(sk, osso, no, _base_osso(sk, osso), bw, pw, chave, g)
 
 
 ## Média (perpendicular ao eixo) dos vértices do modelo próximos de `along` ao longo do eixo: onde fica o cabo de fato.
@@ -344,7 +350,7 @@ static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
 	if c.is_empty():
 		var proc := capacete_proc(id.trim_prefix("p_"))
 		var bw := Basis.from_scale(Vector3.ONE * ESC_M)
-		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.155, 0.02) * ESC_M, chave)
+		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.155, 0.02) * ESC_M, chave, Vector3(0, 0.155, 0.02) * ESC_M)
 		return
 	var no := _carregar(str(c["p"]))
 	if no == null:
@@ -359,7 +365,7 @@ static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
 	# a origem do osso da cabeça fica na base do crânio: o capacete sobe do queixo até o topo
 	var pw := alvo - Basis(Vector3.UP, 0) * (base_pt * k)
 	_pintar(no, _mat(Color(str(c["cor"])), float(c["metal"]), 0.4))
-	_anexar(sk, osso, no, rb, bw2, pw, chave)
+	_anexar(sk, osso, no, rb, bw2, pw, chave, alvo)
 
 
 static func _arco(de: Vector3, para: Vector3) -> Quaternion:
