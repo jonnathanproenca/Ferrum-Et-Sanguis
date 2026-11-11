@@ -7,11 +7,10 @@ extends RefCounted
 const ESC_M := 1.0 / 105.0            ## unidades do esqueleto por metro (instância do gladiador 2 com escala 105)
 const GLAD2_ESCALA := 105.0
 
-const ORDEM: Array = ["g1", "murmilo", "tracio", "samnita", "hoplomaco", "secutor", "provocator", "dimachaerus", "retiario", "velite", "scissor", "nu"]
+const ORDEM: Array = ["murmilo", "tracio", "samnita", "hoplomaco", "secutor", "provocator", "dimachaerus", "retiario", "velite", "scissor", "nu"]
 
 ## dir/esq: arma ou escudo; cap: capacete; ext: peças extras.
 const ESTILOS := {
-	"g1": {"nome": "Gladiador 1 (Murmilo)"},
 	"murmilo": {"nome": "Murmilo", "dir": "gladio", "esq": "scutum", "cap": "g_gladiador", "ext": ["manica_dir", "greva_esq"]},
 	"tracio": {"nome": "Trácio", "dir": "sica", "esq": "parma", "cap": "p_tracio", "ext": ["manica_dir", "greva_dir", "greva_esq"]},
 	"samnita": {"nome": "Samnita", "dir": "gladio", "esq": "scutum", "cap": "g_grego", "ext": ["manica_dir", "greva_esq"]},
@@ -31,9 +30,9 @@ const ESTILOS := {
 const ARMAS := {
 	"gladio": {"p": "res://assets/3d/gladio.glb", "eixo": Vector3(0, 1, 0), "m": 0.58, "grip": 0.12},
 	"sica": {"p": "res://assets/3d/acc/k_Kopesh.fbx", "eixo": Vector3(0, 0, 1), "m": 0.55, "grip": 0.12, "tex": true},
-	"lanca": {"p": "res://assets/3d/acc/q_Spear.fbx", "eixo": Vector3(0, 1, 0), "m": 2.0, "grip": 0.35},
-	"pilum": {"p": "res://assets/3d/cap/a_pilum.fbx", "eixo": Vector3(0, 1, 0), "m": 1.9, "grip": 0.4, "pilum": true},
-	"tridente": {"p": "res://assets/3d/acc/k_Pitchfork.fbx", "eixo": Vector3(0, 0, 1), "m": 1.7, "grip": 0.3, "tex": true},
+	"lanca": {"p": "res://assets/3d/acc/q_Spear.fbx", "eixo": Vector3(0, 1, 0), "m": 2.0, "grip": 0.35, "axis0": true},
+	"pilum": {"p": "res://assets/3d/cap/a_pilum.fbx", "eixo": Vector3(0, 1, 0), "m": 1.9, "grip": 0.4, "pilum": true, "axis0": true},
+	"tridente": {"p": "res://assets/3d/acc/k_Pitchfork.fbx", "eixo": Vector3(0, 0, 1), "m": 1.7, "grip": 0.3, "tex": true, "inv": true, "axis0": true},
 	"lamina_braco": {"p": "res://assets/3d/acc/q_Sword.fbx", "eixo": Vector3(0, 1, 0), "m": 0.9, "grip": 0.08, "dir": Vector3(1, 0, 0)},
 }
 
@@ -47,15 +46,44 @@ const ESCUDOS := {
 ## Capacetes: g_* = modelo 3D, p_* = procedural. w = largura em metros, rot = giro em Y para a frente apontar para +Z,
 ## dy/dz = deslocamento (metros) a partir da origem do osso da cabeça, cor/metal = material.
 const CAPACETES := {
-	"g_gladiador": {"p": "res://assets/3d/cap/h_gladiador.fbx", "w": 0.30, "rot": 0.0, "dy": -0.06, "dz": 0.0, "cor": "9c8a55", "metal": 0.7},
-	"g_grego": {"p": "res://assets/3d/cap/h_grego.fbx", "w": 0.24, "rot": 0.0, "dy": -0.06, "dz": 0.0, "cor": "b08a3c", "metal": 0.7},
-	"g_espartano": {"p": "res://assets/3d/cap/h_espartano.fbx", "w": 0.25, "rot": 0.0, "dy": -0.11, "dz": 0.0, "cor": "a67c3a", "metal": 0.7},
-	"g_metal": {"p": "res://assets/3d/cap/h_metal.fbx", "w": 0.31, "rot": 0.0, "dy": -0.03, "dz": 0.0, "cor": "8a8f98", "metal": 0.8},
+	"g_gladiador": {"p": "res://assets/3d/cap/h_gladiador.fbx", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "9c8a55", "metal": 0.7},
+	"g_grego": {"p": "res://assets/3d/cap/h_grego.fbx", "w": 0.29, "rot": 0.0, "dy": -0.07, "dz": 0.02, "cor": "b08a3c", "metal": 0.7},
+	"g_espartano": {"p": "res://assets/3d/cap/h_espartano.fbx", "w": 0.30, "rot": 0.0, "dy": -0.12, "dz": 0.02, "cor": "a67c3a", "metal": 0.7},
+	"g_metal": {"p": "res://assets/3d/cap/h_metal.fbx", "w": 0.37, "rot": 0.0, "dy": -0.05, "dz": 0.03, "cor": "8a8f98", "metal": 0.8},
 }
 
 
 static func nome(id: String) -> String:
 	return str(ESTILOS.get(id, {}).get("nome", id))
+
+
+## Tira o cabelo da malha (triângulos com 2+ vértices de cabelo) para o capacete não ter fios atravessando.
+## A máscara vem de tools/gerar_mascara_cabelo.gd.
+static func sem_cabelo(inst: Node3D) -> void:
+	var mask_img := load("res://assets/3d/glad2/cabelo_mask.res") as Image
+	if mask_img == null:
+		return
+	var mask := mask_img.get_data()
+	var mi := inst.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var am := mi.mesh as ArrayMesh
+	var arr := am.surface_get_arrays(0)
+	var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+	var novo := PackedInt32Array()
+	for t in range(0, idx.size(), 3):
+		var n := 0
+		for k in 3:
+			if mask[idx[t + k]] != 0:
+				n += 1
+		if n < 2:
+			novo.append(idx[t])
+			novo.append(idx[t + 1])
+			novo.append(idx[t + 2])
+	arr[Mesh.ARRAY_INDEX] = novo
+	var mat := am.surface_get_material(0)
+	var m2 := ArrayMesh.new()
+	m2.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr, [], {}, Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
+	m2.surface_set_material(0, mat)
+	mi.mesh = m2
 
 
 # ---------- Medição e material ----------
@@ -157,7 +185,10 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool) -> void:
 	q = Quaternion(alvo, deg_to_rad(float(a.get("roll", 0.0)))) * q
 	var bw := Basis(q) * Basis.from_scale(Vector3.ONE * k)
 	var grip_pt := bb.get_center() + eixo * ((float(a.get("grip", 0.15)) - 0.5) * comp)
-	var g := Vector3(-0.07 if direita else 0.07, 0.0, 0.0) * ESC_M   # centro da palma (a mão da T-pose aponta para o lado)
+	if a.get("axis0", false):   # armas longas: o cabo passa pelos vértices perto do ponto de pegada (não pelo centro da caixa)
+		var along := bb.get_center().dot(eixo) + (float(a.get("grip", 0.15)) - 0.5) * comp
+		grip_pt = eixo * along + _centro_do_cabo(no, eixo, along, comp)
+	var g := Vector3(-0.075 if direita else 0.075, -0.03, 0.0) * ESC_M   # centro da palma (a mão da T-pose aponta para o lado)
 	var pw := g - bw * grip_pt
 	if a.get("tex", false):
 		_pintar(no, _mat(Color("b9bcc2") if id == "sica" else Color("4a4d52"), 0.8, 0.35))
@@ -166,6 +197,28 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool) -> void:
 		_so_uma_variante(no)
 	var osso := "mixamorig_RightHand" if direita else "mixamorig_LeftHand"
 	_anexar(sk, osso, no, _base_osso(sk, osso), bw, pw)
+
+
+## Média (perpendicular ao eixo) dos vértices do modelo próximos de `along` ao longo do eixo: onde fica o cabo de fato.
+static func _centro_do_cabo(no: Node3D, eixo: Vector3, along: float, comp: float) -> Vector3:
+	var soma := Vector3.ZERO
+	var n := 0
+	for mi in no.find_children("*", "MeshInstance3D", true, false):
+		if not (mi as MeshInstance3D).visible:
+			continue
+		var xf := Transform3D()
+		var p: Node = mi
+		while p != null:
+			if p is Node3D:
+				xf = (p as Node3D).transform * xf
+			p = p.get_parent()
+		var arr := (mi as MeshInstance3D).mesh.surface_get_arrays(0)
+		for v in (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+			var w := xf * v
+			if absf(w.dot(eixo) - along) < comp * 0.03:
+				soma += w - eixo * w.dot(eixo)
+				n += 1
+	return soma / float(n) if n > 0 else Vector3.ZERO
 
 
 ## O pilum vem com 6 malhas sobrepostas (3 acabamentos × 2 LOD): fica só uma.
@@ -207,7 +260,7 @@ static func _capacete(sk: Skeleton3D, id: String) -> void:
 	if c.is_empty():
 		var proc := capacete_proc(id.trim_prefix("p_"))
 		var bw := Basis.from_scale(Vector3.ONE * ESC_M)
-		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.15, 0.015) * ESC_M)
+		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.155, 0.02) * ESC_M)
 		return
 	var no := _carregar(str(c["p"]))
 	if no == null:
@@ -313,7 +366,7 @@ static func _cil(r_cima: float, r_baixo: float, h: float) -> CylinderMesh:
 static func _domo(r: float) -> SphereMesh:
 	var s := SphereMesh.new()
 	s.radius = r
-	s.height = r
+	s.height = r * 1.25   # calota um pouco achatada
 	s.is_hemisphere = true
 	s.radial_segments = 24
 	s.rings = 10
@@ -327,16 +380,16 @@ static func capacete_proc(tipo: String) -> Node3D:
 	var ferro := _mat(Color("7d8088"), 0.8, 0.45)
 	var pluma := _mat(Color("a32a1f"), 0.0, 0.9)
 	if tipo == "tracio":
-		raiz.add_child(_mi(_domo(0.125), ferro, Vector3(0, 0.0, 0)))
-		raiz.add_child(_mi(_cil(0.19, 0.19, 0.012), ferro, Vector3(0, 0.0, 0)))
+		raiz.add_child(_mi(_domo(0.16), ferro, Vector3(0, 0.0, 0)))
+		raiz.add_child(_mi(_cil(0.21, 0.21, 0.012), ferro, Vector3(0, 0.0, 0)))
 		raiz.add_child(_mi(_caixa(Vector3(0.03, 0.17, 0.19)), ferro, Vector3(0, 0.17, 0.0)))
 		raiz.add_child(_mi(_domo(0.045), bronze, Vector3(0, 0.22, 0.1), Vector3(90, 0, 0)))
-		raiz.add_child(_mi(_caixa(Vector3(0.015, 0.14, 0.09)), ferro, Vector3(0.115, -0.07, 0.03)))
-		raiz.add_child(_mi(_caixa(Vector3(0.015, 0.14, 0.09)), ferro, Vector3(-0.115, -0.07, 0.03)))
+		raiz.add_child(_mi(_caixa(Vector3(0.015, 0.14, 0.09)), ferro, Vector3(0.15, -0.02, 0.03)))
+		raiz.add_child(_mi(_caixa(Vector3(0.015, 0.14, 0.09)), ferro, Vector3(-0.15, -0.02, 0.03)))
 	elif tipo == "aberto":
-		raiz.add_child(_mi(_domo(0.128), ferro, Vector3(0, 0.0, 0)))
-		raiz.add_child(_mi(_caixa(Vector3(0.016, 0.1, 0.09)), ferro, Vector3(0.12, -0.05, 0.02)))
-		raiz.add_child(_mi(_caixa(Vector3(0.016, 0.1, 0.09)), ferro, Vector3(-0.12, -0.05, 0.02)))
+		raiz.add_child(_mi(_domo(0.165), ferro, Vector3(0, 0.0, 0)))
+		raiz.add_child(_mi(_caixa(Vector3(0.016, 0.1, 0.09)), ferro, Vector3(0.16, 0.0, 0.02)))
+		raiz.add_child(_mi(_caixa(Vector3(0.016, 0.1, 0.09)), ferro, Vector3(-0.16, 0.0, 0.02)))
 		raiz.add_child(_mi(_caixa(Vector3(0.03, 0.06, 0.2)), pluma, Vector3(0, 0.14, -0.02)))
 	return raiz
 

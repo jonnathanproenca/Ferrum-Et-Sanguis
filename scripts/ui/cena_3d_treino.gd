@@ -28,7 +28,7 @@ var _ini_j := -1              ## ms em que o gladiador entrou na guarda parada
 var _ini_b := -1              ## ms em que o boneco entrou na guarda parada
 const ESPERA_IDLE_MS := 10000
 var _defendendo := false
-var _estilo := "g1"           ## "g1" = gladiador 1 (murmilo); os demais usam o gladiador 2 com acessórios (Estilos3D)
+var _estilo := "murmilo"      ## estilo do jogador (gladiador 2 + acessórios, Estilos3D); "g1" = gladiador 1 (só o boneco usa)
 
 
 var _cam: Camera3D
@@ -83,7 +83,7 @@ func _montar_mundo() -> void:
 		cam.position = Vector3(float(cp[0]), float(cp[1]), float(cp[2]))
 	_vp.add_child(cam)
 	_cam = cam
-	cam.look_at(Vector3(0.95, 0.95, 0.0) if OS.get_environment("CAMPOS") == "" else Vector3(_ENV_ALVO(), 0.95, 0.0), Vector3.UP)
+	cam.look_at(Vector3(0.95, 0.95, 0.0) if OS.get_environment("CAMPOS") == "" else Vector3(_ENV_ALVO(), float(OS.get_environment("CAMALVOY")) if OS.get_environment("CAMALVOY") != "" else 0.95, 0.0), Vector3.UP)
 	var chao := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(60, 24)
@@ -200,6 +200,8 @@ func _criar_gladiador2(estilo: String) -> Node3D:
 	for n in nossas.get_animation_list():
 		lib.add_animation(n, nossas.get_animation(n))
 	var sk := inst.find_children("*", "Skeleton3D", true, false)[0] as Skeleton3D
+	if str(Estilos3D.ESTILOS.get(estilo, {}).get("cap", "")) != "":
+		Estilos3D.sem_cabelo(inst)
 	var res := Estilos3D.montar(sk, estilo, Vector3.ZERO)
 	var esc := Node3D.new()
 	sk.add_child(esc)
@@ -213,6 +215,7 @@ func _criar_gladiador2(estilo: String) -> Node3D:
 		sk.add_child(mod)
 		mod.montar_tiras()
 		mod.esc_k = Estilos3D.ESC_M / (1.0 / 94.7)
+		mod.sobe = 0.0013 * mod.esc_k
 	else:
 		esc.queue_free()
 		mod.queue_free()

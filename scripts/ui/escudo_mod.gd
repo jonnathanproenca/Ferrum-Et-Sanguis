@@ -13,6 +13,7 @@ const ROLL := Basis(Vector3(0, 0, 1), PI / 2.0)
 var escudo: Node3D
 var ap: AnimationPlayer
 var jogador := true
+var sobe := 0.0                 ## sobe o escudo (unidades do esqueleto) na guarda/defesa
 var esc_k := 1.0                ## fator de escala do esqueleto (gladiador 2 usa outra escala de instância)
 var _peso := 0.0
 var _pref := Vector3.RIGHT
@@ -72,7 +73,7 @@ func _process_modification() -> void:
 	var esc_s := ROLL * Basis.from_scale(Vector3.ONE * esc_ef)
 	var b_peito := sk.find_bone("mixamorig_Spine2")
 	var mv := sk.get_bone_global_pose(b_peito) * sk.get_bone_global_rest(b_peito).affine_inverse()
-	var base_pos := (GUARDA if modo == "guarda" else FRENTE) * esc_k
+	var base_pos := (GUARDA if modo == "guarda" else FRENTE) * esc_k + Vector3(0, sobe, 0)
 	if modo == "frente" or modo == "guarda" or (modo == "segue" and _peso > 0.0):
 		var t_f := mv * Transform3D(esc_s, base_pos)
 		if modo == "segue":
