@@ -125,11 +125,69 @@ static func _carregar(caminho: String) -> Node3D:
 	return ps.instantiate() as Node3D
 
 
-static func _anexar(sk: Skeleton3D, osso: String, no: Node3D, basis_osso: Basis, bw: Basis, pw: Vector3) -> BoneAttachment3D:
+## Ajustes feitos à mão no editor do treino: chave "estilo/item" -> {pos (cm, no espaço da T-pose), rot (graus), esc (fator)}.
+static var ajustes: Dictionary = {}
+static var _vivos: Dictionary = {}     ## chave -> {no, rb, bw, pw} do personagem atual (para ajustar ao vivo)
+const ARQ_AJUSTES := "user://ajustes_estilos.json"
+
+
+static func carregar_ajustes() -> void:
+	ajustes = {}
+	if not FileAccess.file_exists(ARQ_AJUSTES):
+		return
+	var d = JSON.parse_string(FileAccess.get_file_as_string(ARQ_AJUSTES))
+	if d is Dictionary:
+		ajustes = d
+
+
+static func salvar_ajustes() -> void:
+	var f := FileAccess.open(ARQ_AJUSTES, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(ajustes))
+
+
+static func itens_vivos() -> Array:
+	var r := []
+	for k in _vivos:
+		r.append(k)
+	return r
+
+
+static func ajuste_de(chave: String) -> Dictionary:
+	var a: Dictionary = ajustes.get(chave, {})
+	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0))}
+
+
+static func _transf_ajustada(chave: String, rb: Basis, bw: Basis, pw: Vector3) -> Transform3D:
+	var a := ajuste_de(chave)
+	var r: Array = a["rot"]
+	var p: Array = a["pos"]
+	var q := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
+	var bw2 := q * bw * Basis.from_scale(Vector3.ONE * float(a["esc"]))
+	var pw2 := pw + Vector3(float(p[0]), float(p[1]), float(p[2])) * 0.01 * ESC_M
+	return Transform3D(rb.inverse() * bw2, rb.inverse() * pw2)
+
+
+## Reaplica o ajuste de um item já montado (sliders do editor).
+static func reaplicar(chave: String) -> void:
+	var v: Dictionary = _vivos.get(chave, {})
+	if v.is_empty() or not is_instance_valid(v["no"]):
+		return
+	if v.has("escudo"):
+		_aplicar_escudo(chave)
+		return
+	(v["no"] as Node3D).transform = _transf_ajustada(chave, v["rb"], v["bw"], v["pw"])
+
+
+static func _anexar(sk: Skeleton3D, osso: String, no: Node3D, basis_osso: Basis, bw: Basis, pw: Vector3, chave := "") -> BoneAttachment3D:
 	var ba := BoneAttachment3D.new()
 	ba.bone_name = osso
 	sk.add_child(ba)
-	no.transform = Transform3D(basis_osso.inverse() * bw, basis_osso.inverse() * pw)
+	if chave != "":
+		_vivos[chave] = {"no": no, "rb": basis_osso, "bw": bw, "pw": pw}
+		no.transform = _transf_ajustada(chave, basis_osso, bw, pw)
+	else:
+		no.transform = Transform3D(basis_osso.inverse() * bw, basis_osso.inverse() * pw)
 	ba.add_child(no)
 	return ba
 
@@ -148,24 +206,27 @@ static func _base_osso(sk: Skeleton3D, osso: String) -> Basis:
 static func montar(sk: Skeleton3D, id: String, escudo_base: Vector3) -> Dictionary:
 	var e: Dictionary = ESTILOS.get(id, {})
 	var res := {"escudo": null}
+	_vivos.clear()
+	if ajustes.is_empty():
+		carregar_ajustes()
 	var dir_id := str(e.get("dir", ""))
 	var esq_id := str(e.get("esq", ""))
 	if dir_id != "":
-		_arma(sk, dir_id, true)
+		_arma(sk, dir_id, true, id + "/dir")
 	if esq_id != "":
 		if ESCUDOS.has(esq_id):
-			res["escudo"] = _escudo(esq_id, escudo_base)
+			res["escudo"] = _escudo(esq_id, escudo_base, id + "/esc")
 		else:
-			_arma(sk, esq_id, false)
+			_arma(sk, esq_id, false, id + "/esq")
 	var cap := str(e.get("cap", ""))
 	if cap != "":
-		_capacete(sk, cap)
+		_capacete(sk, cap, id + "/cap")
 	for x in e.get("ext", []):
 		_extra(sk, str(x))
 	return res
 
 
-static func _arma(sk: Skeleton3D, id: String, direita: bool) -> void:
+static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> void:
 	var a: Dictionary = ARMAS.get(id, {})
 	if a.is_empty():
 		return
@@ -196,7 +257,7 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool) -> void:
 		_pintar(no, _mat(Color("6d6a64"), 0.8, 0.5))
 		_so_uma_variante(no)
 	var osso := "mixamorig_RightHand" if direita else "mixamorig_LeftHand"
-	_anexar(sk, osso, no, _base_osso(sk, osso), bw, pw)
+	_anexar(sk, osso, no, _base_osso(sk, osso), bw, pw, chave)
 
 
 ## Média (perpendicular ao eixo) dos vértices do modelo próximos de `along` ao longo do eixo: onde fica o cabo de fato.
@@ -238,7 +299,7 @@ static func _mat_textura(caminho: String) -> StandardMaterial3D:
 	return m
 
 
-static func _escudo(id: String, base: Vector3) -> Node3D:
+static func _escudo(id: String, base: Vector3, chave := "") -> Node3D:
 	var s: Dictionary = ESCUDOS[id]
 	var no := _carregar(str(s["p"]))
 	var pivo := Node3D.new()
@@ -250,17 +311,32 @@ static func _escudo(id: String, base: Vector3) -> Node3D:
 	no.transform = Transform3D(Basis(Vector3(0, 0, 1), deg_to_rad(float(s.get("z", 0.0)))) * Basis.from_scale(Vector3.ONE * k), Vector3.ZERO)
 	no.position = -(no.basis * bb.get_center()) + Vector3(0, 0, 0)
 	pivo.add_child(no)
+	if chave != "":
+		_vivos[chave] = {"no": pivo, "escudo": true}
+		_aplicar_escudo(chave)
 	return pivo
 
 
-static func _capacete(sk: Skeleton3D, id: String) -> void:
+## O escudo é posicionado pelo EscudoMod; o ajuste vai no pivô (unidades do escudo: 1 ≈ 24,6 cm).
+static func _aplicar_escudo(chave: String) -> void:
+	var v: Dictionary = _vivos.get(chave, {})
+	if v.is_empty() or not is_instance_valid(v["no"]):
+		return
+	var a := ajuste_de(chave)
+	var r: Array = a["rot"]
+	var p: Array = a["pos"]
+	var q := Basis.from_euler(Vector3(deg_to_rad(float(r[0])), deg_to_rad(float(r[1])), deg_to_rad(float(r[2]))))
+	(v["no"] as Node3D).transform = Transform3D(q * Basis.from_scale(Vector3.ONE * float(a["esc"])), Vector3(float(p[0]), float(p[1]), float(p[2])) / 24.6)
+
+
+static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
 	var c: Dictionary = CAPACETES.get(id, {})
 	var osso := "mixamorig_Head"
 	var rb := _base_osso(sk, osso)
 	if c.is_empty():
 		var proc := capacete_proc(id.trim_prefix("p_"))
 		var bw := Basis.from_scale(Vector3.ONE * ESC_M)
-		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.155, 0.02) * ESC_M)
+		_anexar(sk, osso, proc, rb, bw, Vector3(0, 0.155, 0.02) * ESC_M, chave)
 		return
 	var no := _carregar(str(c["p"]))
 	if no == null:
@@ -275,7 +351,7 @@ static func _capacete(sk: Skeleton3D, id: String) -> void:
 	# a origem do osso da cabeça fica na base do crânio: o capacete sobe do queixo até o topo
 	var pw := alvo - Basis(Vector3.UP, 0) * (base_pt * k)
 	_pintar(no, _mat(Color(str(c["cor"])), float(c["metal"]), 0.4))
-	_anexar(sk, osso, no, rb, bw2, pw)
+	_anexar(sk, osso, no, rb, bw2, pw, chave)
 
 
 static func _arco(de: Vector3, para: Vector3) -> Quaternion:

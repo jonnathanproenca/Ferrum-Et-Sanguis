@@ -23,6 +23,11 @@ var _toques: Dictionary = {}   ## índice do dedo -> id do botão
 var _fechado := false
 var _c3d: Cena3DTreino
 var _bot_estilo: Dictionary = {}   ## id do estilo -> Button
+var _ed: PanelContainer            ## editor de peças (posição/rotação/escala de cada acessório)
+var _ed_item := "cap"
+var _ed_sl: Dictionary = {}        ## campo -> HSlider
+var _ed_val: Dictionary = {}       ## campo -> Label
+var _ed_bot: Dictionary = {}       ## item -> Button
 
 
 ## Abre o treino sobre `pai`, com o estilo do gladiador `g` (vazio = murmilo).
@@ -129,12 +134,167 @@ func _montar_estilos() -> void:
 		add_child(b)
 		_bot_estilo[id] = b
 		y += 31.0
+	var bed := Tema.botao("Ajustar peças", "ouro", 14)
+	bed.custom_minimum_size = Vector2(170, 30)
+	bed.position = Vector2(20, y + 8)
+	bed.pressed.connect(_alternar_editor)
+	add_child(bed)
+	_montar_editor()
 	_marcar_estilo()
 
 
 func _escolher_estilo(id: String) -> void:
 	_c3d.trocar_jogador(id)
 	_marcar_estilo()
+	_ed_carregar()
+
+
+# ---------- Editor de peças ----------
+
+const ED_CAMPOS := [
+	["px", "Posição X (cm)", -30.0, 30.0, 0.5], ["py", "Posição Y (cm)", -30.0, 30.0, 0.5], ["pz", "Posição Z (cm)", -30.0, 30.0, 0.5],
+	["rx", "Giro X (°)", -180.0, 180.0, 1.0], ["ry", "Giro Y (°)", -180.0, 180.0, 1.0], ["rz", "Giro Z (°)", -180.0, 180.0, 1.0],
+	["esc", "Tamanho", 0.3, 2.5, 0.01],
+]
+const ED_ITENS := [["cap", "Capacete"], ["dir", "Mão dir."], ["esq", "Mão esq."], ["esc", "Escudo"]]
+const ED_POSES := [["Guarda", "Sword_Idle", 0.0], ["Leve", "Sword_Regular_A", 0.3], ["Pesado", "Sword_Attack", 0.5], ["Defesa", "Idle_Shield", 0.3]]
+
+
+func _montar_editor() -> void:
+	_ed = PanelContainer.new()
+	_ed.visible = false
+	_ed.mouse_filter = Control.MOUSE_FILTER_STOP
+	_ed.add_theme_stylebox_override("panel", Tema.caixa(Color(0.08, 0.06, 0.05, 0.92), Tema.OURO_ESCURO, 8, 1, 10))
+	add_child(_ed)
+	_ed.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_ed.offset_left = -330
+	_ed.offset_right = -12
+	_ed.offset_top = 96
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 5)
+	_ed.add_child(v)
+	v.add_child(Tema.rotulo("Ajustar peça do estilo atual", 15, Tema.OURO))
+	var linha := HBoxContainer.new()
+	linha.add_theme_constant_override("separation", 4)
+	v.add_child(linha)
+	for it in ED_ITENS:
+		var b := Tema.botao(it[1], "normal", 13)
+		b.custom_minimum_size = Vector2(0, 28)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(_ed_escolher.bind(it[0]))
+		linha.add_child(b)
+		_ed_bot[it[0]] = b
+	v.add_child(Tema.rotulo("Pose para conferir", 13, Tema.CINZA))
+	var lp := HBoxContainer.new()
+	lp.add_theme_constant_override("separation", 4)
+	v.add_child(lp)
+	for ps in ED_POSES:
+		var b2 := Tema.botao(ps[0], "normal", 13)
+		b2.custom_minimum_size = Vector2(0, 28)
+		b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b2.pressed.connect(func(): _c3d.ver_pose(ps[1], ps[2]))
+		lp.add_child(b2)
+	var lz := HBoxContainer.new()
+	lz.add_theme_constant_override("separation", 4)
+	v.add_child(lz)
+	for zz in [["Câmera normal", 0], ["Corpo", 1], ["Cabeça", 2]]:
+		var bzm := Tema.botao(zz[0], "normal", 13)
+		bzm.custom_minimum_size = Vector2(0, 28)
+		bzm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bzm.pressed.connect(func(): _c3d.zoom(zz[1]))
+		lz.add_child(bzm)
+	for c in ED_CAMPOS:
+		var linha_s := HBoxContainer.new()
+		linha_s.add_theme_constant_override("separation", 6)
+		v.add_child(linha_s)
+		var l := Tema.rotulo(c[1], 13, Tema.AREIA)
+		l.custom_minimum_size = Vector2(108, 0)
+		l.autowrap_mode = TextServer.AUTOWRAP_OFF
+		linha_s.add_child(l)
+		var sl := HSlider.new()
+		sl.min_value = c[2]
+		sl.max_value = c[3]
+		sl.step = c[4]
+		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		sl.custom_minimum_size = Vector2(90, 18)
+		sl.focus_mode = Control.FOCUS_NONE
+		sl.value_changed.connect(func(_x): _ed_mudou())
+		linha_s.add_child(sl)
+		var val := Tema.rotulo("0", 13, Tema.OURO)
+		val.custom_minimum_size = Vector2(40, 0)
+		val.autowrap_mode = TextServer.AUTOWRAP_OFF
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		linha_s.add_child(val)
+		_ed_sl[c[0]] = sl
+		_ed_val[c[0]] = val
+	var lb := HBoxContainer.new()
+	lb.add_theme_constant_override("separation", 4)
+	v.add_child(lb)
+	var bz := Tema.botao("Zerar peça", "normal", 13)
+	bz.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bz.pressed.connect(_ed_zerar)
+	lb.add_child(bz)
+	var bc := Tema.botao("Copiar ajustes", "primario", 13)
+	bc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bc.pressed.connect(_ed_copiar)
+	lb.add_child(bc)
+
+
+func _alternar_editor() -> void:
+	_ed.visible = not _ed.visible
+	_c3d.editor = _ed.visible
+	if _ed.visible:
+		_c3d.ver_pose("Sword_Idle", 0.0)
+		_ed_escolher(_ed_item)
+	else:
+		_c3d.editor = false
+
+
+func _ed_chave() -> String:
+	return _c3d.estilo_atual() + "/" + _ed_item
+
+
+func _ed_escolher(item: String) -> void:
+	_ed_item = item
+	for k in _ed_bot:
+		(_ed_bot[k] as Button).modulate = Color(1.0, 0.85, 0.4) if k == item else Color(1, 1, 1)
+	_ed_carregar()
+
+
+func _ed_carregar() -> void:
+	if _ed == null:
+		return
+	var a := Estilos3D.ajuste_de(_ed_chave())
+	var vals := {"px": a["pos"][0], "py": a["pos"][1], "pz": a["pos"][2], "rx": a["rot"][0], "ry": a["rot"][1], "rz": a["rot"][2], "esc": a["esc"]}
+	for k in vals:
+		(_ed_sl[k] as HSlider).set_value_no_signal(float(vals[k]))
+		(_ed_val[k] as Label).text = str(snappedf(float(vals[k]), 0.01))
+
+
+func _ed_mudou() -> void:
+	var g := func(k: String) -> float: return (_ed_sl[k] as HSlider).value
+	Estilos3D.ajustes[_ed_chave()] = {
+		"pos": [g.call("px"), g.call("py"), g.call("pz")],
+		"rot": [g.call("rx"), g.call("ry"), g.call("rz")],
+		"esc": g.call("esc"),
+	}
+	for k in _ed_sl:
+		(_ed_val[k] as Label).text = str(snappedf((_ed_sl[k] as HSlider).value, 0.01))
+	Estilos3D.reaplicar(_ed_chave())
+	Estilos3D.salvar_ajustes()
+
+
+func _ed_zerar() -> void:
+	Estilos3D.ajustes.erase(_ed_chave())
+	Estilos3D.reaplicar(_ed_chave())
+	Estilos3D.salvar_ajustes()
+	_ed_carregar()
+
+
+func _ed_copiar() -> void:
+	DisplayServer.clipboard_set(JSON.stringify(Estilos3D.ajustes))
+	_fb_texto("Ajustes copiados: cole na conversa", "cinza")
 
 
 func _marcar_estilo() -> void:

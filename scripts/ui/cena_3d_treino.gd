@@ -28,6 +28,7 @@ var _ini_j := -1              ## ms em que o gladiador entrou na guarda parada
 var _ini_b := -1              ## ms em que o boneco entrou na guarda parada
 const ESPERA_IDLE_MS := 10000
 var _defendendo := false
+var editor := false           ## editor de peças aberto: congela a pose escolhida
 var _estilo := "murmilo"      ## estilo do jogador (gladiador 2 + acessórios, Estilos3D); "g1" = gladiador 1 (só o boneco usa)
 
 
@@ -319,6 +320,8 @@ func _anexar(sk: Skeleton3D, osso: String, caminho: String, pos: Vector3, rot: V
 
 
 func _process(_d: float) -> void:
+	if editor:
+		return
 	var agora := Time.get_ticks_msec()
 	if _ini_j >= 0 and agora - _ini_j >= ESPERA_IDLE_MS and _ap_j.speed_scale == 0.0:
 		_ini_j = -1
@@ -392,7 +395,31 @@ func atualizar(nucleo: TreinoCombate) -> void:
 		_atual_j = ""
 
 
+## Editor de peças: aproxima a câmera do gladiador (0 = normal, 1 = tronco, 2 = cabeça).
+func zoom(nivel: int) -> void:
+	if nivel == 0:
+		_cam.fov = 34.0
+		_cam.look_at(Vector3(0.95, 0.95, 0.0), Vector3.UP)
+		return
+	var alvo := _jog.position + Vector3(0, 1.45 if nivel == 2 else 1.15, 0)
+	_cam.fov = 9.0 if nivel == 2 else 17.0
+	_cam.look_at(alvo, Vector3.UP)
+
+
+## Editor de peças: congela o jogador numa pose (animação e instante).
+func ver_pose(anim: String, t: float) -> void:
+	if not _ap_j.has_animation(anim):
+		return
+	_ini_j = -1
+	_ap_j.speed_scale = 1.0
+	_ap_j.play(anim, 0.0)
+	_ap_j.seek(t, true)
+	_ap_j.speed_scale = 0.0
+
+
 func pose_jogador(pose: String, nucleo: TreinoCombate) -> void:
+	if editor:
+		return
 	var anterior := _atual_j
 	_atual_j = pose
 	match pose:
