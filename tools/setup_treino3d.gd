@@ -20,6 +20,7 @@ func preparar(arvore: SceneTree) -> void:
 	for i in alvo:
 		await arvore.process_frame
 		if OS.get_environment("EDITOR") != "" and i == 5: t._alternar_editor()
+		if OS.get_environment("EDITOR") == "2" and i == 8: t._ed_alternar_interface()
 		if OS.get_environment("TROCAR") != "" and i == 5: t._escolher_estilo(OS.get_environment("TROCAR"))
 		if modo == "leve" and i == 10: n.ataque_leve()
 		if modo == "pesado" and i == 10: n.ataque_pesado()

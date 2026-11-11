@@ -28,6 +28,8 @@ var _ed_item := "cap"
 var _ed_sl: Dictionary = {}        ## campo -> HSlider
 var _ed_val: Dictionary = {}       ## campo -> Label
 var _ed_bot: Dictionary = {}       ## item -> Button
+var _ed_ocultos: Array = []        ## nós escondidos pelo botão "Ocultar interface"
+var _bot_ocultar: Button
 var _rep: Timer                    ## repetição ao segurar as setas
 var _rep_campo := ""
 var _rep_passo := 0.0
@@ -180,6 +182,10 @@ func _montar_editor() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
 	_ed.add_child(v)
+	_bot_ocultar = Tema.botao("Ocultar interface", "normal", 13)
+	_bot_ocultar.custom_minimum_size = Vector2(0, 26)
+	_bot_ocultar.pressed.connect(_ed_alternar_interface)
+	v.add_child(_bot_ocultar)
 	v.add_child(Tema.rotulo("Ajustar peça do estilo atual", 15, Tema.OURO))
 	var linha := HBoxContainer.new()
 	linha.add_theme_constant_override("separation", 4)
@@ -273,6 +279,27 @@ func _rep_tick() -> void:
 	_rep.start(0.06)
 
 
+## Esconde (ou mostra de volta) botões, textos e placar que ficam na frente do gladiador; o painel do editor fica.
+func _ed_alternar_interface() -> void:
+	if _ed_ocultos.is_empty():
+		for c in get_children():
+			if c == _ed or c == _rep:
+				continue
+			if (c is Button or c is Label or c is PanelContainer) and (c as CanvasItem).visible:
+				(c as CanvasItem).visible = false
+				_ed_ocultos.append(c)
+		if _barra != null and _barra.visible:
+			_barra.visible = false
+			_ed_ocultos.append(_barra)
+		_bot_ocultar.text = "Mostrar interface"
+	else:
+		for c in _ed_ocultos:
+			if is_instance_valid(c):
+				(c as CanvasItem).visible = true
+		_ed_ocultos.clear()
+		_bot_ocultar.text = "Ocultar interface"
+
+
 func _alternar_editor() -> void:
 	_ed.visible = not _ed.visible
 	_c3d.editor = _ed.visible
@@ -281,6 +308,8 @@ func _alternar_editor() -> void:
 		_ed_escolher(_ed_item)
 	else:
 		_c3d.editor = false
+		if not _ed_ocultos.is_empty():
+			_ed_alternar_interface()
 
 
 func _ed_chave() -> String:
