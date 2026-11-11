@@ -217,6 +217,7 @@ func _criar_gladiador2(estilo: String) -> Node3D:
 		mod.montar_tiras()
 		mod.esc_k = Estilos3D.ESC_M / (1.0 / 94.7)
 		mod.sobe = 0.0013 * mod.esc_k
+		mod.fixo = true
 	else:
 		esc.queue_free()
 		mod.queue_free()

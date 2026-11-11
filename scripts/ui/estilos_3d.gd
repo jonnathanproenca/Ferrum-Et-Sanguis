@@ -153,8 +153,16 @@ static func itens_vivos() -> Array:
 	return r
 
 
+## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
+const AJUSTES_PADRAO := {
+	"murmilo/cap": {"esc": 1.02, "pos": [-6.5, -8.5, 6.0], "rot": [-11.0, 0.0, -6.0]},
+	"tracio/cap": {"esc": 0.88, "pos": [2.0, -3.0, 1.5], "rot": [-8.0, 3.0, 0.0]},
+	"tracio/dir": {"esc": 1.0, "pos": [-3.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
+}
+
+
 static func ajuste_de(chave: String) -> Dictionary:
-	var a: Dictionary = ajustes.get(chave, {})
+	var a: Dictionary = ajustes.get(chave, AJUSTES_PADRAO.get(chave, {}))
 	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0))}
 
 

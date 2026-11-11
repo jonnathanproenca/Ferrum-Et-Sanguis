@@ -28,6 +28,9 @@ var _ed_item := "cap"
 var _ed_sl: Dictionary = {}        ## campo -> HSlider
 var _ed_val: Dictionary = {}       ## campo -> Label
 var _ed_bot: Dictionary = {}       ## item -> Button
+var _rep: Timer                    ## repetição ao segurar as setas
+var _rep_campo := ""
+var _rep_passo := 0.0
 
 
 ## Abre o treino sobre `pai`, com o estilo do gladiador `g` (vazio = murmilo).
@@ -161,6 +164,10 @@ const ED_POSES := [["Guarda", "Sword_Idle", 0.0], ["Leve", "Sword_Regular_A", 0.
 
 
 func _montar_editor() -> void:
+	_rep = Timer.new()
+	_rep.one_shot = true
+	_rep.timeout.connect(_rep_tick)
+	add_child(_rep)
 	_ed = PanelContainer.new()
 	_ed.visible = false
 	_ed.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -169,9 +176,9 @@ func _montar_editor() -> void:
 	_ed.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
 	_ed.offset_left = -330
 	_ed.offset_right = -12
-	_ed.offset_top = 96
+	_ed.offset_top = 52
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 5)
+	v.add_theme_constant_override("separation", 3)
 	_ed.add_child(v)
 	v.add_child(Tema.rotulo("Ajustar peça do estilo atual", 15, Tema.OURO))
 	var linha := HBoxContainer.new()
@@ -184,7 +191,6 @@ func _montar_editor() -> void:
 		b.pressed.connect(_ed_escolher.bind(it[0]))
 		linha.add_child(b)
 		_ed_bot[it[0]] = b
-	v.add_child(Tema.rotulo("Pose para conferir", 13, Tema.CINZA))
 	var lp := HBoxContainer.new()
 	lp.add_theme_constant_override("separation", 4)
 	v.add_child(lp)
@@ -204,25 +210,28 @@ func _montar_editor() -> void:
 		bzm.pressed.connect(func(): _c3d.zoom(zz[1]))
 		lz.add_child(bzm)
 	for c in ED_CAMPOS:
-		var linha_s := HBoxContainer.new()
-		linha_s.add_theme_constant_override("separation", 6)
-		v.add_child(linha_s)
 		var l := Tema.rotulo(c[1], 13, Tema.AREIA)
-		l.custom_minimum_size = Vector2(108, 0)
 		l.autowrap_mode = TextServer.AUTOWRAP_OFF
-		linha_s.add_child(l)
+		v.add_child(l)
+		var linha_s := HBoxContainer.new()
+		linha_s.add_theme_constant_override("separation", 3)
+		v.add_child(linha_s)
 		var sl := HSlider.new()
 		sl.min_value = c[2]
 		sl.max_value = c[3]
 		sl.step = c[4]
 		sl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		sl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		sl.custom_minimum_size = Vector2(90, 18)
+		sl.custom_minimum_size = Vector2(60, 18)
 		sl.focus_mode = Control.FOCUS_NONE
 		sl.value_changed.connect(func(_x): _ed_mudou())
+		for sp in [["«", -5.0], ["‹", -1.0]]:
+			linha_s.add_child(_ed_seta(sp[0], str(c[0]), float(sp[1]) * float(c[4])))
 		linha_s.add_child(sl)
+		for sp2 in [["›", 1.0], ["»", 5.0]]:
+			linha_s.add_child(_ed_seta(sp2[0], str(c[0]), float(sp2[1]) * float(c[4])))
 		var val := Tema.rotulo("0", 13, Tema.OURO)
-		val.custom_minimum_size = Vector2(40, 0)
+		val.custom_minimum_size = Vector2(42, 0)
 		val.autowrap_mode = TextServer.AUTOWRAP_OFF
 		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		linha_s.add_child(val)
@@ -239,6 +248,29 @@ func _montar_editor() -> void:
 	bc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bc.pressed.connect(_ed_copiar)
 	lb.add_child(bc)
+
+
+## Botão de seta: um clique soma o passo; segurando, repete.
+func _ed_seta(txt: String, campo: String, passo: float) -> Button:
+	var b := Tema.botao(txt, "normal", 14)
+	b.custom_minimum_size = Vector2(24, 24)
+	b.button_down.connect(func():
+		_ed_passo(campo, passo)
+		_rep_campo = campo
+		_rep_passo = passo
+		_rep.start(0.4))
+	b.button_up.connect(func(): _rep.stop())
+	return b
+
+
+func _ed_passo(campo: String, passo: float) -> void:
+	var sl := _ed_sl[campo] as HSlider
+	sl.value = clampf(sl.value + passo, sl.min_value, sl.max_value)   # dispara value_changed -> _ed_mudou
+
+
+func _rep_tick() -> void:
+	_ed_passo(_rep_campo, _rep_passo)
+	_rep.start(0.06)
 
 
 func _alternar_editor() -> void:

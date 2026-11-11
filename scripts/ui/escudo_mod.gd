@@ -13,6 +13,7 @@ const ROLL := Basis(Vector3(0, 0, 1), PI / 2.0)
 var escudo: Node3D
 var ap: AnimationPlayer
 var jogador := true
+var fixo := false               ## escudo preso ao antebraço, sempre na mesma posição relativa (qualquer animação)
 var sobe := 0.0                 ## sobe o escudo (unidades do esqueleto) na guarda/defesa
 var esc_k := 1.0                ## fator de escala do esqueleto (gladiador 2 usa outra escala de instância)
 var _peso := 0.0
@@ -35,6 +36,9 @@ func _process_modification() -> void:
 	var esc_ef := ESC * esc_k
 	var nome := String(ap.current_animation)
 	var modo := "mao"
+	if fixo:
+		_fixar(sk, b_fore, b_hand, esc_ef)
+		return
 	var pref := Vector3.RIGHT
 	match nome:
 		"Idle_Shield", "Sword_Block":
@@ -112,6 +116,22 @@ func _process_modification() -> void:
 		sk.set_bone_global_pose(b_arm, ga2)
 		sk.set_bone_global_pose(b_fore, gf2)
 		sk.set_bone_global_pose(b_hand, gh2)
+
+
+## Escudo preso ao antebraço: a "face de fora" é um vetor fixo no osso (gira junto com o antebraço), sem IK nem posição no peito.
+const FACE_LOCAL := Vector3(0.47, 0.0, -0.88)
+
+func _fixar(sk: Skeleton3D, b_fore: int, b_hand: int, esc_ef: float) -> void:
+	var gf := sk.get_bone_global_pose(b_fore)
+	var gh := sk.get_bone_global_pose(b_hand)
+	var a := (gh.origin - gf.origin).normalized()
+	var n := gf.basis.orthonormalized() * FACE_LOCAL.normalized()
+	n = (n - a * n.dot(a)).normalized()
+	var y := a
+	var x := y.cross(n).normalized()
+	escudo.transform = Transform3D(Basis(y, -x, n) * Basis.from_scale(Vector3.ONE * esc_ef), gf.origin + a * 0.0014 * esc_k + n * 0.0009 * esc_k)
+	for tr in _tiras:
+		tr.visible = true
 
 
 ## Tiras de couro por cima do antebraço (as duas à vista), só quando o escudo está rente ao braço.
