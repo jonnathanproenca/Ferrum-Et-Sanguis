@@ -227,7 +227,7 @@ static func _textura_pack(nome: String) -> Dictionary:
 static func _tem_tangentes(no: Node) -> bool:
 	for mi in (no as Node).find_children("*", "MeshInstance3D", true, false):
 		var msh := (mi as MeshInstance3D).mesh
-		if msh == null:
+		if not (msh is ArrayMesh):   # malhas primitivas (BoxMesh...) geram tangentes; surface_get_format não existe nelas no 4.7
 			continue
 		for i in msh.get_surface_count():
 			if (msh.surface_get_format(i) & Mesh.ARRAY_FORMAT_TANGENT) == 0:
