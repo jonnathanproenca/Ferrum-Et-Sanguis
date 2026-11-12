@@ -75,7 +75,100 @@ func _ready() -> void:
 		_ap_b.speed_scale = 0.0
 
 
-## Coliseu previz (FBX, Y para cima).
+## Materiais por parte da arena (chave = nome do material original do FBX).
+const MAT_ARENA := {
+	"mat_wall_seatfronts": "marmore_claro",   # laterais dos degraus
+	"mat_wall_seattops": "marfim",            # topo branco onde sentam
+	"mat_wall_seattopsb": "marfim",
+}
+const MAT_OBELISCO_TOPO := "marmore_escuro"
+const MAT_OBELISCO_BASE := "rocha"
+const OBELISCO_BASE := 0.13   ## fração da altura que é a base de pedra
+
+static var _mats_arena := {}
+
+
+static func _mat_pasta(pasta: String) -> StandardMaterial3D:
+	if _mats_arena.has(pasta):
+		return _mats_arena[pasta]
+	var base := "res://assets/materiais/%s/" % pasta
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(base + "cor.jpg")
+	m.normal_texture = load(base + "normal.jpg")
+	m.roughness_texture = load(base + "rug.jpg")
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.uv1_scale = Vector3.ONE * 2.0
+	_mats_arena[pasta] = m
+	return m
+
+
+## Aplica material por parte: o obelisco é cortado na altura (topo escuro, base de rocha); o resto segue o material original do FBX.
+func _materiais_da_arena(no: Node3D) -> void:
+	for mi in no.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		var nome_mat := ""
+		var original := m.get_active_material(0)
+		if original != null:
+			nome_mat = original.resource_name
+		if m.get_parent() != null and str(m.get_parent().name).begins_with("Obelisk") and m.mesh != null:
+			_cortar_obelisco(m)
+			continue
+		if MAT_ARENA.has(nome_mat):
+			var sem_normal := m.mesh != null and not Estilos3D._tem_tangentes(m)
+			var base := _mat_pasta(str(MAT_ARENA[nome_mat]))
+			if sem_normal:
+				var c := base.duplicate() as StandardMaterial3D
+				c.normal_enabled = false
+				m.material_override = c
+			else:
+				m.material_override = base
+
+
+## Divide a malha do obelisco em duas superfícies pela altura do centro de cada triângulo.
+func _cortar_obelisco(m: MeshInstance3D) -> void:
+	var fonte := m.mesh
+	var topo := {"v": PackedVector3Array(), "n": PackedVector3Array(), "u": PackedVector2Array()}
+	var base := {"v": PackedVector3Array(), "n": PackedVector3Array(), "u": PackedVector2Array()}
+	var ymin := INF
+	var ymax := -INF
+	for sf in fonte.get_surface_count():
+		var arr := fonte.surface_get_arrays(sf)
+		for v in (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+			ymin = minf(ymin, v.y)
+			ymax = maxf(ymax, v.y)
+	var corte := ymin + (ymax - ymin) * OBELISCO_BASE
+	for sf in fonte.get_surface_count():
+		var arr := fonte.surface_get_arrays(sf)
+		var vs: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var ns: PackedVector3Array = arr[Mesh.ARRAY_NORMAL] if arr[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
+		var us: PackedVector2Array = arr[Mesh.ARRAY_TEX_UV] if arr[Mesh.ARRAY_TEX_UV] != null else PackedVector2Array()
+		var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(vs.size()))
+		for t in range(0, idx.size() - 2, 3):
+			var alvo: Dictionary = topo if (vs[idx[t]].y + vs[idx[t + 1]].y + vs[idx[t + 2]].y) / 3.0 >= corte else base
+			for k in 3:
+				var i := idx[t + k]
+				(alvo["v"] as PackedVector3Array).append(vs[i])
+				(alvo["n"] as PackedVector3Array).append(ns[i] if ns.size() > i else Vector3.UP)
+				(alvo["u"] as PackedVector2Array).append(us[i] if us.size() > i else Vector2.ZERO)
+	var am := ArrayMesh.new()
+	var partes := [[topo, _mat_pasta(MAT_OBELISCO_TOPO)], [base, _mat_pasta(MAT_OBELISCO_BASE)]]
+	var i_s := 0
+	for pr in partes:
+		var d: Dictionary = pr[0]
+		if (d["v"] as PackedVector3Array).is_empty():
+			continue
+		var arr2: Array = []
+		arr2.resize(Mesh.ARRAY_MAX)
+		arr2[Mesh.ARRAY_VERTEX] = d["v"]
+		arr2[Mesh.ARRAY_NORMAL] = d["n"]
+		arr2[Mesh.ARRAY_TEX_UV] = d["u"]
+		am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr2)
+		am.surface_set_material(i_s, pr[1])
+		i_s += 1
+	m.mesh = am
+	m.material_override = null
+
+
 const ARENA := "res://assets/3d/arena/source/colosseum.fbx"
 
 func _carregar_arena() -> Node3D:
@@ -84,13 +177,7 @@ func _carregar_arena() -> Node3D:
 		return null
 	var no := ps.instantiate() as Node3D
 	# malhas de arquibancada são de face única: sem isso somem quando vistas por dentro
-	for mi in no.find_children("*", "MeshInstance3D", true, false):
-		var m := StandardMaterial3D.new()
-		var base := (mi as MeshInstance3D).get_active_material(0) as StandardMaterial3D
-		m.albedo_color = base.albedo_color if base != null else Color("8a7a60")
-		m.roughness = 0.9
-		m.cull_mode = BaseMaterial3D.CULL_DISABLED
-		(mi as MeshInstance3D).material_override = m
+	_materiais_da_arena(no)
 	no.rotation_degrees = Vector3.ZERO
 	no.position = Vector3(0, -0.02, 0)
 	return no
