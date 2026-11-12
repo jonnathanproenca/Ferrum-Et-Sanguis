@@ -31,6 +31,7 @@ jobs:
         with:
           path: build/web
   deploy:
+    if: github.ref == 'refs/heads/main'   # execuções manuais em outras branches não publicam no Pages
     needs: build
     runs-on: ubuntu-latest
     environment:
