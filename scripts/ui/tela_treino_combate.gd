@@ -187,7 +187,8 @@ func _montar_editor() -> void:
 	_ed_dimensionar()
 	get_viewport().size_changed.connect(_ed_dimensionar)
 	var rolagem := ScrollContainer.new()
-	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# AUTO (não DISABLED): com DISABLED a largura mínima do conteúdo empurra o painel para fora da tela.
+	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED   # o que não cabe desce para a linha de baixo (HFlowContainer)
 	_ed.add_child(rolagem)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
@@ -205,14 +206,14 @@ func _montar_editor() -> void:
 	lt.add_child(rt)
 	_ed_teste = OptionButton.new()
 	_ed_teste.focus_mode = Control.FOCUS_NONE
+	_ed_teste.fit_to_longest_item = false   # senão a largura mínima vira o nome mais longo da lista (337 px) e estoura o painel
 	_ed_teste.custom_minimum_size = Vector2(150, 26)
 	_ed_teste.add_item("— nenhuma —", 0)
 	for i in Estilos3D.CATALOGO_TESTE.size():
 		_ed_teste.add_item(str(Estilos3D.CATALOGO_TESTE[i][1]), i + 1)
 	_ed_teste.item_selected.connect(_ed_trocar_teste)
 	lt.add_child(_ed_teste)
-	var linha := GridContainer.new()
-	linha.columns = 3
+	var linha := HFlowContainer.new()
 	linha.add_theme_constant_override("h_separation", 4)
 	linha.add_theme_constant_override("v_separation", 3)
 	v.add_child(linha)
@@ -223,8 +224,9 @@ func _montar_editor() -> void:
 		b.pressed.connect(_ed_escolher.bind(it[0]))
 		linha.add_child(b)
 		_ed_bot[it[0]] = b
-	var lp := HBoxContainer.new()
-	lp.add_theme_constant_override("separation", 4)
+	var lp := HFlowContainer.new()
+	lp.add_theme_constant_override("h_separation", 4)
+	lp.add_theme_constant_override("v_separation", 4)
 	v.add_child(lp)
 	for ps in ED_POSES:
 		var b2 := Tema.botao(ps[0], "normal", 13)
@@ -232,8 +234,9 @@ func _montar_editor() -> void:
 		b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b2.pressed.connect(func(): _c3d.ver_pose(ps[1], ps[2]))
 		lp.add_child(b2)
-	var lz := HBoxContainer.new()
-	lz.add_theme_constant_override("separation", 4)
+	var lz := HFlowContainer.new()
+	lz.add_theme_constant_override("h_separation", 4)
+	lz.add_theme_constant_override("v_separation", 4)
 	v.add_child(lz)
 	for zz in [["Câmera normal", 0], ["Corpo", 1], ["Cabeça", 2]]:
 		var bzm := Tema.botao(zz[0], "normal", 13)

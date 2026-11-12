@@ -2,16 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c80iktkowxlm5"
-path="res://.godot/imported/ferreiro.png-6970953de34e85f7804d6d8f776f2f80.ctex"
+uid="uid://btrxtdfa8kmd2"
+path="res://.godot/imported/espada_romana_6.jpg-73ad06009559da612f93cb243510c2f7.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "d4d716996c2160c20f6055b949e4d0de"
 }
 
 [deps]
 
-source_file="res://assets/anim/ferreiro.png"
-dest_files=["res://.godot/imported/ferreiro.png-6970953de34e85f7804d6d8f776f2f80.ctex"]
+source_file="res://assets/candidatos/espada_romana_6.jpg"
+dest_files=["res://.godot/imported/espada_romana_6.jpg-73ad06009559da612f93cb243510c2f7.ctex"]
 
 [params]
 
@@ -21,7 +24,7 @@ compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: barichello/godot-ci:4.4.1
+      image: barichello/godot-ci:4.7.2
     steps:
       - uses: actions/checkout@v4
       - name: Testes de paridade com o jogo em TypeScript
@@ -31,6 +31,7 @@ jobs:
         with:
           path: build/web
   deploy:
+    if: github.ref == 'refs/heads/main'   # execuções manuais em outras branches não publicam no Pages
     needs: build
     runs-on: ubuntu-latest
     environment:

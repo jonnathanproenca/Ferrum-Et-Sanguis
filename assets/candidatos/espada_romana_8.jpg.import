@@ -2,16 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnhbvxpme5eee"
-path="res://.godot/imported/engenheiro.png-150aaf9d16dac7ef1fe9c7de5fdc6049.ctex"
+uid="uid://ct5ir2iivxllw"
+path="res://.godot/imported/espada_romana_8.jpg-e641846d8e2c8bf73833a2ed7eec5368.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "88168a216dc3cdd799bf8df7cd9c75f2"
 }
 
 [deps]
 
-source_file="res://assets/anim/engenheiro.png"
-dest_files=["res://.godot/imported/engenheiro.png-150aaf9d16dac7ef1fe9c7de5fdc6049.ctex"]
+source_file="res://assets/candidatos/espada_romana_8.jpg"
+dest_files=["res://.godot/imported/espada_romana_8.jpg-e641846d8e2c8bf73833a2ed7eec5368.ctex"]
 
 [params]
 
@@ -21,7 +24,7 @@ compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

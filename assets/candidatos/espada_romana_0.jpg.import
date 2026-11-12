@@ -2,16 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ri4005l3ikvq"
-path="res://.godot/imported/medico.png-a48d8a45e0a7bd53abb22ac257ef9247.ctex"
+uid="uid://dee1xhti37g3j"
+path="res://.godot/imported/espada_romana_0.jpg-636a9bc192dc5d6fff38e2c1acd21b6b.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "afd0908d0b07533bea84cf1e79a3a05b"
 }
 
 [deps]
 
-source_file="res://assets/anim/medico.png"
-dest_files=["res://.godot/imported/medico.png-a48d8a45e0a7bd53abb22ac257ef9247.ctex"]
+source_file="res://assets/candidatos/espada_romana_0.jpg"
+dest_files=["res://.godot/imported/espada_romana_0.jpg-636a9bc192dc5d6fff38e2c1acd21b6b.ctex"]
 
 [params]
 
@@ -21,7 +24,7 @@ compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

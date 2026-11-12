@@ -1,4 +1,4 @@
-"""Godot não anima WebP: converte os WebP animados em folhas de sprites (PNG) + JSON com a grade e o fps."""
+"""Godot não anima WebP: converte os WebP animados em folhas de sprites (WebP com alfa) + JSON com a grade e o fps."""
 import json, math, sys
 from pathlib import Path
 from PIL import Image
@@ -21,7 +21,7 @@ def converter(origem: Path, nome: str, escala: float = 1.0, passo: int = 1) -> N
     folha = Image.new("RGBA", (cols * w, linhas * h), (0, 0, 0, 0))
     for i, q in enumerate(quadros):
         folha.paste(q, ((i % cols) * w, (i // cols) * h))
-    folha.save(f"assets/anim/{nome}.png")
+    folha.save(f"assets/anim/{nome}.webp", "WEBP", quality=86, method=6, alpha_quality=90)
     fps = round(1000 / (sum(dur) / len(dur)), 2)
     json.dump({"w": w, "h": h, "n": len(quadros), "cols": cols, "fps": fps}, open(f"assets/anim/{nome}.json", "w"))
     print(nome, w, h, len(quadros), cols, fps)

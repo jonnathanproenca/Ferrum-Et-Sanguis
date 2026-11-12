@@ -71,7 +71,7 @@ const _TESTE_CAP := {
 	"t_elmo_3": {"p": "res://assets/candidatos/elmo_3.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
 }
 const _TESTE_ARMA := {
-	"t_espada_romana": {"p": "res://assets/candidatos/espada_romana.glb", "eixo": Vector3(0, 1, 0), "m": 0.7, "grip": 0.12},
+	"t_espada_romana": {"p": "res://assets/candidatos/espada_romana.glb", "eixo": Vector3(0, 1, 0), "m": 0.7, "grip": 0.12, "sem": ["sheath", "Wooden Plate"]},
 }
 
 
@@ -192,8 +192,8 @@ static func itens_vivos() -> Array:
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
 	"retiario/esq": {"esc": 0.4, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
-	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "mat": "escudo"},
-	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "mat": "escudo"},
+	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "metal": 0.0},   # metálico 0: sem reflexo no Compatibility, o escudo ficava escuro
+	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "metal": 0.0},   # metálico 0: sem reflexo no Compatibility, o escudo ficava escuro
 	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
 	"samnita/esc": {"esc": 1.0, "pos": [0.0, 0.0, -1.0], "rot": [41.0, 0.0, 84.0]},
 	"tracio/cap": {"esc": 0.88, "pos": [2.0, -3.0, 1.5], "rot": [-8.0, 3.0, 0.0]},
@@ -227,7 +227,7 @@ static func _textura_pack(nome: String) -> Dictionary:
 static func _tem_tangentes(no: Node) -> bool:
 	for mi in (no as Node).find_children("*", "MeshInstance3D", true, false):
 		var msh := (mi as MeshInstance3D).mesh
-		if msh == null:
+		if not (msh is ArrayMesh):   # malhas primitivas (BoxMesh...) geram tangentes; surface_get_format não existe nelas no 4.7
 			continue
 		for i in msh.get_surface_count():
 			if (msh.surface_get_format(i) & Mesh.ARRAY_FORMAT_TANGENT) == 0:
@@ -433,6 +433,22 @@ static func _corpo(sk: Skeleton3D, slug: String, chave: String) -> void:
 const BALANCO := preload("res://scripts/ui/balanco.gd")
 
 
+## Remove nós do modelo cujo nome começa com um dos prefixos (ex.: bainha da espada), em qualquer nível.
+static func _remover_partes(no: Node, prefixos: Array) -> void:
+	for ch in no.get_children():
+		var nome := str(ch.name)
+		var fora := false
+		for p in prefixos:
+			if nome.begins_with(str(p)):
+				fora = true
+				break
+		if fora:
+			no.remove_child(ch)
+			ch.queue_free()
+		else:
+			_remover_partes(ch, prefixos)
+
+
 static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> void:
 	var a: Dictionary = ARMAS.get(id, _TESTE_ARMA.get(id, {}))
 	if a.is_empty():
@@ -440,6 +456,7 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> voi
 	var no := _carregar(str(a["p"]))
 	if no == null:
 		return
+	_remover_partes(no, a.get("sem", []))
 	if id.begins_with("t_"):   # peça de teste: embrulha para preservar a transformação interna do arquivo
 		var emb := Node3D.new()
 		emb.add_child(no)
