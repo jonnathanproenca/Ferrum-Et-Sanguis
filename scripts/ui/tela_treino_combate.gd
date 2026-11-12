@@ -180,10 +180,11 @@ func _montar_editor() -> void:
 	_ed.add_theme_stylebox_override("panel", Tema.caixa(Color(0.08, 0.06, 0.05, 0.92), Tema.OURO_ESCURO, 8, 1, 10))
 	add_child(_ed)
 	_ed.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	_ed.offset_left = -330
-	_ed.offset_right = -12
 	_ed.offset_top = 52
-	_ed.offset_bottom = 708
+	_ed.offset_bottom = -12
+	_ed.z_index = 100   # sempre por cima dos botões de luta
+	_ed_dimensionar()
+	get_viewport().size_changed.connect(_ed_dimensionar)
 	var rolagem := ScrollContainer.new()
 	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_ed.add_child(rolagem)
@@ -345,6 +346,14 @@ func _ed_alternar_interface() -> void:
 				(c as CanvasItem).visible = true
 		_ed_ocultos.clear()
 		_bot_ocultar.text = "Ocultar interface"
+
+
+## Largura do editor: 330 px no desktop, mas nunca mais que a tela (celular/janela estreita).
+func _ed_dimensionar() -> void:
+	var vw := get_viewport_rect().size.x
+	var largura := minf(330.0, vw - 24.0)
+	_ed.offset_left = -largura - 12.0
+	_ed.offset_right = -12.0
 
 
 func _alternar_editor() -> void:
