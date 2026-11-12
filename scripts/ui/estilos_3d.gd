@@ -148,6 +148,8 @@ static func _pintar(n: Node, m: Material) -> void:
 
 
 static func _carregar(caminho: String) -> Node3D:
+	if not ResourceLoader.exists(caminho):   # arquivo que não foi importado/exportado: não tenta carregar (evita erro no console)
+		return null
 	var ps := load(caminho) as PackedScene
 	if ps == null:
 		return null
@@ -403,9 +405,11 @@ static func _teste(sk: Skeleton3D, slug: String) -> void:
 
 
 static func _corpo(sk: Skeleton3D, slug: String, chave: String) -> void:
-	var no := _carregar("res://assets/candidatos/%s.glb" % slug)
-	if no == null:
+	var carregado := _carregar("res://assets/candidatos/%s.glb" % slug)
+	if carregado == null:
 		return
+	var no := Node3D.new()   # embrulha: a transformação interna do arquivo não pode ser sobrescrita pelo encaixe
+	no.add_child(carregado)
 	var bb := medir(no)
 	var k: float = 0.55 * ESC_M / maxf(bb.size.x, maxf(bb.size.y, bb.size.z))
 	var bw := Basis.from_scale(Vector3.ONE * k)
@@ -424,6 +428,10 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> voi
 	var no := _carregar(str(a["p"]))
 	if no == null:
 		return
+	if id.begins_with("t_"):   # peça de teste: embrulha para preservar a transformação interna do arquivo
+		var emb := Node3D.new()
+		emb.add_child(no)
+		no = emb
 	var bb := medir(no)
 	if a.get("balanco", false):   # peça solta que balança: a malha fica numa articulação com mola
 		var piv := Node3D.new()

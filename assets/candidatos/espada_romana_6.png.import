@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgfim58n46igs"
-path="res://.godot/imported/espada_romana_19.jpg-6975a19484ab0b7e74bef4821a0120c6.ctex"
+uid="uid://75v5447wlhac"
+path="res://.godot/imported/espada_romana_6.png-29479cd36e3a81f5e8db5ae57611d98b.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "fce0e45c55bc68786a45f1841fc66cce"
+"md5": "b05352d15263ebb8ea782a37e22b0d7c"
 }
 
 [deps]
 
-source_file="res://assets/candidatos/espada_romana_19.jpg"
-dest_files=["res://.godot/imported/espada_romana_19.jpg-6975a19484ab0b7e74bef4821a0120c6.ctex"]
+source_file="res://assets/candidatos/espada_romana_6.png"
+dest_files=["res://.godot/imported/espada_romana_6.png-29479cd36e3a81f5e8db5ae57611d98b.ctex"]
 
 [params]
 
