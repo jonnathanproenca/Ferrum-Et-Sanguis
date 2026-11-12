@@ -450,18 +450,102 @@ static func _tubo(sk: Skeleton3D, a: String, b: String, raio_m: float, f0: float
 	_anexar(sk, a, mi, rbo, rbo * t0.basis, rbo * t0.origin, chave, rbo * t0.origin)
 
 
+## Casca (meio cano) com espessura: eixo Y, centrada em +Z, aberta no lado oposto. arco=360 gera um anel fechado (tira).
+static func _casca_mesh(r: float, esp: float, h: float, arco: float, afunila: float, seg := 18) -> ArrayMesh:
+	var V: Array = []
+	var N: Array = []
+	var I: Array = []
+	var cols := seg + 1
+	var ponto := func(i: int, y: float, f: float, interno: bool) -> Vector3:
+		var th := deg_to_rad(-arco / 2.0 + arco * float(i) / float(seg))
+		var rr: float = r * lerpf(1.0, afunila, f) - (esp if interno else 0.0)
+		return Vector3(sin(th) * rr, y, cos(th) * rr)
+	for interno in [false, true]:
+		var base := V.size()
+		for j in 2:
+			for i in cols:
+				var pt: Vector3 = ponto.call(i, -h / 2.0 + h * j, float(j), interno)
+				V.append(pt)
+				var d := Vector3(pt.x, 0, pt.z).normalized()
+				N.append(-d if interno else d)
+		for i in seg:
+			var a := base + i
+			I.append_array([a, a + cols, a + 1, a + 1, a + cols, a + cols + 1])
+	var quad := func(p0: Vector3, p1: Vector3, p2: Vector3, p3: Vector3, n: Vector3) -> void:
+		var b := V.size()
+		for q in [p0, p1, p2, p3]:
+			V.append(q)
+			N.append(n)
+		I.append_array([b, b + 1, b + 2, b, b + 2, b + 3])
+	for j in 2:   # bordas de cima e de baixo
+		var y := -h / 2.0 + h * j
+		for i in seg:
+			quad.call(ponto.call(i, y, float(j), false), ponto.call(i + 1, y, float(j), false), ponto.call(i + 1, y, float(j), true), ponto.call(i, y, float(j), true), Vector3(0, 1 if j == 1 else -1, 0))
+	if arco < 359.0:   # bordas laterais
+		for lado in [0, seg]:
+			var th := deg_to_rad(-arco / 2.0 + arco * float(lado) / float(seg))
+			var n := Vector3(cos(th), 0, -sin(th)) * (-1.0 if lado == 0 else 1.0)
+			quad.call(ponto.call(lado, -h / 2.0, 0.0, false), ponto.call(lado, h / 2.0, 1.0, false), ponto.call(lado, h / 2.0, 1.0, true), ponto.call(lado, -h / 2.0, 0.0, true), n)
+	var arr: Array = []
+	arr.resize(Mesh.ARRAY_MAX)
+	arr[Mesh.ARRAY_VERTEX] = PackedVector3Array(V)
+	arr[Mesh.ARRAY_NORMAL] = PackedVector3Array(N)
+	arr[Mesh.ARRAY_INDEX] = PackedInt32Array(I)
+	var m := ArrayMesh.new()
+	m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return m
+
+
+## Caneleira/braçal: meio cano de metal preso por tiras de couro (com fivela do lado de fora).
+static func _protecao(sk: Skeleton3D, a: String, b: String, raio_m: float, f0: float, f1: float, frente: Vector3, arco: float, mat: Material, chave: String, afunila := 0.85) -> void:
+	var ra := _rest(sk, a)
+	var rb := _rest(sk, b)
+	var ini := ra.origin.lerp(rb.origin, f0)
+	var fim := ra.origin.lerp(rb.origin, f1)
+	var comp := (fim - ini).length()
+	var eixo := (fim - ini) / comp
+	var z := (frente - eixo * frente.dot(eixo)).normalized()
+	var bw := Basis(eixo.cross(z), eixo, z)
+	var r := raio_m * ESC_M
+	var esp := 0.006 * ESC_M
+	var raiz := Node3D.new()
+	var casca := MeshInstance3D.new()
+	casca.mesh = _casca_mesh(r, esp, comp, arco, afunila)
+	var m2: StandardMaterial3D = (mat as StandardMaterial3D).duplicate()
+	m2.cull_mode = BaseMaterial3D.CULL_DISABLED
+	casca.material_override = m2
+	raiz.add_child(casca)   # tem que ser o 1º filho: é o material editável
+	var couro := _mat(Color("5a3a22"), 0.0, 0.85)
+	var bronze := _mat(Color("b08a3c"), 0.7, 0.4)
+	for f in [0.2, 0.8]:
+		var rr: float = r * lerpf(1.0, afunila, f) + 0.0025 * ESC_M
+		var tira := MeshInstance3D.new()
+		tira.mesh = _casca_mesh(rr, 0.005 * ESC_M, 0.026 * ESC_M, 360.0, 1.0, 20)
+		tira.material_override = couro
+		tira.position.y = -comp / 2.0 + comp * f
+		raiz.add_child(tira)
+		var fivela := MeshInstance3D.new()
+		fivela.mesh = _caixa(Vector3(0.02, 0.03, 0.006) * ESC_M)
+		fivela.material_override = bronze
+		fivela.position = Vector3(0, tira.position.y, rr + 0.002 * ESC_M)
+		raiz.add_child(fivela)
+	var pos := (ini + fim) / 2.0 - ra.origin
+	var rbo := ra.basis.orthonormalized()
+	_anexar(sk, a, raiz, rbo, bw, pos, chave, pos)
+
+
 static func _extra(sk: Skeleton3D, nome_extra: String, chave: String) -> void:
 	var bronze := _mat(Color("b08a3c"), 0.7, 0.4)
 	var ferro := _mat(Color("7d8088"), 0.8, 0.45)
 	match nome_extra:
 		"manica_dir":
-			_tubo(sk, "mixamorig_RightForeArm", "mixamorig_RightHand", 0.058, 0.08, 0.92, ferro, chave)
+			_protecao(sk, "mixamorig_RightForeArm", "mixamorig_RightHand", 0.072, 0.1, 0.92, Vector3.UP, 210.0, ferro, chave, 0.85)
 		"manica_esq":
-			_tubo(sk, "mixamorig_LeftForeArm", "mixamorig_LeftHand", 0.058, 0.08, 0.92, ferro, chave)
+			_protecao(sk, "mixamorig_LeftForeArm", "mixamorig_LeftHand", 0.072, 0.1, 0.92, Vector3.UP, 210.0, ferro, chave, 0.85)
 		"greva_dir":
-			_tubo(sk, "mixamorig_RightLeg", "mixamorig_RightFoot", 0.07, 0.1, 0.9, bronze, chave, 0.85)
+			_protecao(sk, "mixamorig_RightLeg", "mixamorig_RightFoot", 0.07, 0.1, 0.9, Vector3.BACK, 190.0, bronze, chave, 0.78)
 		"greva_esq":
-			_tubo(sk, "mixamorig_LeftLeg", "mixamorig_LeftFoot", 0.07, 0.1, 0.9, bronze, chave, 0.85)
+			_protecao(sk, "mixamorig_LeftLeg", "mixamorig_LeftFoot", 0.07, 0.1, 0.9, Vector3.BACK, 190.0, bronze, chave, 0.78)
 		"peitoral":
 			_tubo(sk, "mixamorig_Spine", "mixamorig_Spine2", 0.2, -0.3, 1.5, bronze, chave, 0.9)
 		"galerus":
