@@ -75,6 +75,30 @@ func _ready() -> void:
 		_ap_b.speed_scale = 0.0
 
 
+## Coliseu previz (FBX, Y para cima).
+const ARENA := "res://assets/3d/arena/source/colosseum.fbx"
+
+func _carregar_arena() -> Node3D:
+	var ps := load(ARENA) as PackedScene
+	if ps == null:
+		return null
+	var no := ps.instantiate() as Node3D
+	# malhas de arquibancada são de face única: sem isso somem quando vistas por dentro
+	for mi in no.find_children("*", "MeshInstance3D", true, false):
+		var m := StandardMaterial3D.new()
+		var base := (mi as MeshInstance3D).get_active_material(0) as StandardMaterial3D
+		m.albedo_color = base.albedo_color if base != null else Color("8a7a60")
+		m.roughness = 0.9
+		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+		(mi as MeshInstance3D).material_override = m
+	no.rotation_degrees = Vector3.ZERO
+	no.position = Vector3(0, -0.02, 0)
+	return no
+
+
+var _arena_ok := false
+
+
 func _montar_mundo() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 34.0
@@ -95,8 +119,13 @@ func _montar_mundo() -> void:
 	cm.roughness = 1.0
 	chao.material_override = cm
 	_vp.add_child(chao)
+	var arena := _carregar_arena()
+	_arena_ok = arena != null
+	if arena != null:
+		_vp.add_child(arena)
+		chao.visible = false
 	var tex := load(FUNDO) as Texture2D
-	if tex != null:
+	if tex != null and arena == null:
 		var s := Sprite3D.new()
 		s.texture = tex
 		s.shaded = false
@@ -106,7 +135,7 @@ func _montar_mundo() -> void:
 		_vp.add_child(s)
 	var sol := DirectionalLight3D.new()
 	sol.rotation_degrees = Vector3(-48, 35, 0)
-	sol.light_energy = 0.8
+	sol.light_energy = 0.4 if _arena_ok else 0.8
 	sol.light_color = Color("ffe2b0")
 	sol.shadow_enabled = true
 	_vp.add_child(sol)
@@ -116,7 +145,9 @@ func _montar_mundo() -> void:
 	e.background_color = Color("3a2a20")
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	e.ambient_light_color = Color("b9a58a")
-	e.ambient_light_energy = 0.7
+	e.ambient_light_energy = 0.4 if _arena_ok else 0.7
+	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	e.tonemap_exposure = 0.8 if _arena_ok else 1.0
 	env.environment = e
 	_vp.add_child(env)
 
