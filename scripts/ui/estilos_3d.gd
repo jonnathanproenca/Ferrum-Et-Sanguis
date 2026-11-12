@@ -11,12 +11,12 @@ const ORDEM: Array = ["murmilo", "tracio", "samnita", "hoplomaco", "secutor", "p
 
 ## dir/esq: arma ou escudo; cap: capacete; ext: peças extras.
 const ESTILOS := {
-	"murmilo": {"nome": "Murmilo", "dir": "gladio", "esq": "scutum", "cap": "g_gladiador", "ext": ["manica_dir", "greva_esq"]},
+	"murmilo": {"nome": "Murmilo", "dir": "gladio", "esq": "scutum", "cap": "g_glb", "ext": ["manica_dir", "greva_esq"]},
 	"tracio": {"nome": "Trácio", "dir": "sica", "esq": "parma", "cap": "p_tracio", "ext": ["manica_dir", "greva_dir", "greva_esq"]},
 	"samnita": {"nome": "Samnita", "dir": "gladio", "esq": "scutum", "cap": "g_grego", "ext": ["manica_dir", "greva_esq"]},
 	"hoplomaco": {"nome": "Hoplomaco", "dir": "lanca", "esq": "redondo", "cap": "g_espartano", "ext": ["greva_dir", "greva_esq"]},
 	"secutor": {"nome": "Secutor", "dir": "gladio", "esq": "scutum", "cap": "g_metal", "ext": ["manica_dir"]},
-	"provocator": {"nome": "Provocator", "dir": "gladio", "esq": "scutum", "cap": "g_gladiador", "ext": ["manica_dir", "greva_esq", "greva_dir"]},
+	"provocator": {"nome": "Provocator", "dir": "gladio", "esq": "scutum", "cap": "g_glb", "ext": ["manica_dir", "greva_esq", "greva_dir"]},
 	"dimachaerus": {"nome": "Dimachaerus", "dir": "gladio", "esq": "gladio", "cap": "p_aberto", "ext": ["manica_dir", "manica_esq"]},
 	"retiario": {"nome": "Retiário", "dir": "tridente", "esq": "", "cap": "", "ext": ["galerus", "manica_esq"]},
 	"velite": {"nome": "Velite", "dir": "pilum", "esq": "parma", "cap": "p_aberto", "ext": []},
@@ -40,7 +40,7 @@ const ARMAS := {
 const ESCUDOS := {
 	"redondo": {"p": "res://assets/3d/acc/q_Shield_Round_2.fbx", "f": 1.0},
 	"parma": {"p": "res://assets/3d/acc/q_Shield_Round.fbx", "f": 0.62},
-	"scutum": {"p": "res://assets/3d/acc/q_Shield_Heater.fbx", "f": 1.0, "z": 90.0},
+	"scutum": {"p": "res://assets/3d/esc/source/Scutum_low.fbx", "f": 1.0, "z": 90.0},
 }
 
 ## Capacetes: g_* = modelo 3D, p_* = procedural. w = largura em metros, rot = giro em Y para a frente apontar para +Z,
@@ -49,6 +49,7 @@ const CAPACETES := {
 	"g_gladiador": {"p": "res://assets/3d/cap/h_gladiador.fbx", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "9c8a55", "metal": 0.7},
 	"g_grego": {"p": "res://assets/3d/cap/h_grego.fbx", "w": 0.29, "rot": 0.0, "dy": -0.07, "dz": 0.02, "cor": "b08a3c", "metal": 0.7},
 	"g_espartano": {"p": "res://assets/3d/cap/h_espartano.fbx", "w": 0.30, "rot": 0.0, "dy": -0.12, "dz": 0.02, "cor": "a67c3a", "metal": 0.7},
+	"g_glb": {"p": "res://assets/3d/cap/elmo_gladiador.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
 	"g_metal": {"dupla": true, "p": "res://assets/3d/cap/h_metal.fbx", "w": 0.37, "rot": 0.0, "dy": -0.05, "dz": 0.03, "cor": "8a8f98", "metal": 0.8},
 }
 
@@ -160,9 +161,7 @@ static func itens_vivos() -> Array:
 
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
-	"murmilo/cap": {"esc": 1.02, "pos": [-5.0, -10.0, 8.5], "rot": [-8.0, 0.0, -6.0]},
-	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0]},
-	"provocator/cap": {"esc": 1.02, "pos": [-5.0, -10.0, 8.5], "rot": [-8.0, 0.0, -6.0]},
+	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0], "mat": "escudo"},
 	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [35.0, 9.0, 95.0]},
 	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
 	"samnita/esc": {"esc": 1.0, "pos": [0.0, 0.0, -1.0], "rot": [41.0, 0.0, 84.0]},
@@ -213,8 +212,9 @@ static func aplicar_textura(m: StandardMaterial3D, nome: String) -> void:
 	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
 	m.metallic_texture = t["metal"]
 	m.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
-	m.uv1_triplanar = true   # projeção pelo volume: não depende de UV da peça procedural
-	m.uv1_scale = Vector3.ONE * 2.0
+	# escudo importado tem UV: usa o UV; as peças procedurais usam projeção pelo volume
+	m.uv1_triplanar = nome != "escudo"
+	m.uv1_scale = Vector3.ONE * (1.0 if nome == "escudo" else 2.0)
 
 
 static func _textura_pack_valida(nome: String) -> bool:
@@ -477,10 +477,11 @@ static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
 	var alvo := Vector3(0, float(c.get("dy", -0.06)), 0.015 + float(c.get("dz", 0.0))) * ESC_M
 	# a origem do osso da cabeça fica na base do crânio: o capacete sobe do queixo até o topo
 	var pw := alvo - Basis(Vector3.UP, 0) * (base_pt * k)
-	var mc := _mat(Color(str(c["cor"])), float(c["metal"]), 0.4)
-	if c.get("dupla", false):   # casco oco: desenha também o lado de dentro
-		mc.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_pintar(no, mc)
+	if not c.get("original", false):   # modelo com material próprio (texturas) fica como está
+		var mc := _mat(Color(str(c["cor"])), float(c["metal"]), 0.4)
+		if c.get("dupla", false):   # casco oco: desenha também o lado de dentro
+			mc.cull_mode = BaseMaterial3D.CULL_DISABLED
+		_pintar(no, mc)
 	_anexar(sk, osso, no, rb, bw2, pw, chave, alvo)
 
 
