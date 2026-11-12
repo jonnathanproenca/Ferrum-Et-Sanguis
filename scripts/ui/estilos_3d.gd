@@ -223,7 +223,19 @@ static func _textura_pack(nome: String) -> Dictionary:
 
 
 ## Liga/desliga as texturas PBR do material. Guarda as originais na 1ª vez para poder voltar em "Padrão".
-static func aplicar_textura(m: StandardMaterial3D, nome: String) -> void:
+## Malhas sem tangentes não suportam mapa de normal (o Godot avisa e a iluminação falha): nesses casos o normal fica desligado.
+static func _tem_tangentes(no: Node) -> bool:
+	for mi in (no as Node).find_children("*", "MeshInstance3D", true, false):
+		var msh := (mi as MeshInstance3D).mesh
+		if msh == null:
+			continue
+		for i in msh.get_surface_count():
+			if (msh.surface_get_format(i) & Mesh.ARRAY_FORMAT_TANGENT) == 0:
+				return false
+	return true
+
+
+static func aplicar_textura(m: StandardMaterial3D, nome: String, com_normal := true) -> void:
 	if not m.has_meta("base_tex"):
 		m.set_meta("base_tex", {"cor": m.albedo_texture, "normal": m.normal_texture, "normal_on": m.normal_enabled, "rug": m.roughness_texture, "metal": m.metallic_texture, "tri": m.uv1_triplanar})
 	var b: Dictionary = m.get_meta("base_tex")
@@ -237,7 +249,7 @@ static func aplicar_textura(m: StandardMaterial3D, nome: String) -> void:
 		return
 	var t := _textura_pack(nome)
 	m.albedo_texture = t["cor"]
-	m.normal_enabled = true
+	m.normal_enabled = com_normal
 	m.normal_texture = t["normal"]
 	m.roughness_texture = t["rug"]
 	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
@@ -295,7 +307,7 @@ static func _aplicar_cor(chave: String) -> void:
 		m.set_meta("met0", m.metallic)
 		m.set_meta("rug0", m.roughness)
 	var a := ajuste_de(chave)
-	aplicar_textura(m, str(a["mat"]))
+	aplicar_textura(m, str(a["mat"]), _tem_tangentes(_vivos[chave]["no"]) if _vivos.has(chave) else true)
 	var com_tex := _textura_pack_valida(str(a["mat"]))
 	if str(a["cor"]) != "":
 		m.albedo_color = Color(str(a["cor"]))
