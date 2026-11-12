@@ -180,6 +180,7 @@ func _montar_editor() -> void:
 	_ed.add_theme_stylebox_override("panel", Tema.caixa(Color(0.08, 0.06, 0.05, 0.92), Tema.OURO_ESCURO, 8, 1, 10))
 	add_child(_ed)
 	_ed.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	_ed.anchor_bottom = 1.0   # ocupa da altura do topo até o rodapé (o preset deixa a âncora de baixo em 0)
 	_ed.offset_top = 52
 	_ed.offset_bottom = -12
 	_ed.z_index = 100   # sempre por cima dos botões de luta
