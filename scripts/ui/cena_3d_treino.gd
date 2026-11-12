@@ -99,6 +99,28 @@ func _carregar_arena() -> Node3D:
 var _arena_ok := false
 
 
+## Areia do chão da arena (textura PBR, projeção pelo volume).
+func _areia() -> MeshInstance3D:
+	var base := "res://assets/materiais/areia/"
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(base + "cor.jpg")
+	m.normal_enabled = true
+	m.normal_texture = load(base + "normal.jpg")
+	m.roughness_texture = load(base + "rug.jpg")
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.ao_enabled = true
+	m.ao_texture = load(base + "ao.jpg")
+	m.uv1_triplanar = true
+	m.uv1_scale = Vector3.ONE * 0.35
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(70, 70)
+	var mi := MeshInstance3D.new()
+	mi.mesh = pm
+	mi.material_override = m
+	mi.position = Vector3(0, 0.03, 0)
+	return mi
+
+
 func _montar_mundo() -> void:
 	var cam := Camera3D.new()
 	cam.fov = 34.0
@@ -124,6 +146,7 @@ func _montar_mundo() -> void:
 	if arena != null:
 		_vp.add_child(arena)
 		chao.visible = false
+		_vp.add_child(_areia())
 	var tex := load(FUNDO) as Texture2D
 	if tex != null and arena == null:
 		var s := Sprite3D.new()

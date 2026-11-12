@@ -30,6 +30,7 @@ var _ed_val: Dictionary = {}       ## campo -> Label
 var _ed_bot: Dictionary = {}       ## item -> Button
 var _ed_cor: ColorPickerButton
 var _ed_mat: OptionButton
+var _ed_teste: OptionButton
 var _ed_ocultos: Array = []        ## nós escondidos pelo botão "Ocultar interface"
 var _bot_ocultar: Button
 var _rep: Timer                    ## repetição ao segurar as setas
@@ -164,7 +165,7 @@ const ED_CAMPOS := [
 	["esc", "Tamanho", 0.3, 2.5, 0.01],
 	["met", "Metálico", 0.0, 1.0, 0.02], ["rug", "Rugosidade", 0.0, 1.0, 0.02],
 ]
-const ED_ITENS := [["cap", "Capacete"], ["dir", "Mão dir."], ["esq", "Mão esq."], ["esc", "Escudo"], ["manica_dir", "Manopla dir."], ["manica_esq", "Manopla esq."], ["greva_dir", "Caneleira dir."], ["greva_esq", "Caneleira esq."], ["galerus", "Ombreira"]]
+const ED_ITENS := [["teste", "Peça de teste"], ["cap", "Capacete"], ["dir", "Mão dir."], ["esq", "Mão esq."], ["esc", "Escudo"], ["manica_dir", "Manopla dir."], ["manica_esq", "Manopla esq."], ["greva_dir", "Caneleira dir."], ["greva_esq", "Caneleira esq."], ["galerus", "Ombreira"]]
 const ED_POSES := [["Guarda", "Sword_Idle", 0.0], ["Leve", "Sword_Regular_A", 0.3], ["Pesado", "Sword_Attack", 0.5], ["Defesa", "Idle_Shield", 0.3]]
 
 
@@ -195,6 +196,19 @@ func _montar_editor() -> void:
 	_bot_ocultar.pressed.connect(_ed_alternar_interface)
 	v.add_child(_bot_ocultar)
 	v.add_child(Tema.rotulo("Ajustar peça do estilo atual", 15, Tema.OURO))
+	var lt := HBoxContainer.new()
+	v.add_child(lt)
+	var rt := Tema.rotulo("Peça de teste", 13, Tema.AREIA)
+	rt.custom_minimum_size = Vector2(90, 0)
+	lt.add_child(rt)
+	_ed_teste = OptionButton.new()
+	_ed_teste.focus_mode = Control.FOCUS_NONE
+	_ed_teste.custom_minimum_size = Vector2(150, 26)
+	_ed_teste.add_item("— nenhuma —", 0)
+	for i in Estilos3D.CATALOGO_TESTE.size():
+		_ed_teste.add_item(str(Estilos3D.CATALOGO_TESTE[i][1]), i + 1)
+	_ed_teste.item_selected.connect(_ed_trocar_teste)
+	lt.add_child(_ed_teste)
 	var linha := GridContainer.new()
 	linha.columns = 3
 	linha.add_theme_constant_override("h_separation", 4)
@@ -345,7 +359,17 @@ func _alternar_editor() -> void:
 			_ed_alternar_interface()
 
 
+func _ed_trocar_teste(i: int) -> void:
+	Estilos3D.teste_slug = "" if i == 0 else str(Estilos3D.CATALOGO_TESTE[i - 1][0])
+	_c3d.trocar_jogador(_c3d.estilo_atual(), true)
+	_ed_itens_visiveis()
+	if Estilos3D.teste_slug != "":
+		_ed_escolher("teste")
+
+
 func _ed_chave() -> String:
+	if _ed_item == "teste":
+		return "teste/" + Estilos3D.teste_slug
 	return _c3d.estilo_atual() + "/" + _ed_item
 
 
@@ -387,6 +411,8 @@ func _ed_itens_visiveis() -> void:
 	var primeiro := ""
 	for it in ED_ITENS:
 		var existe: bool = vivos.has(atual + "/" + str(it[0]))
+		if it[0] == "teste":
+			existe = Estilos3D.teste_slug != "" and vivos.has("teste/" + Estilos3D.teste_slug)
 		(_ed_bot[it[0]] as Button).visible = existe
 		if existe and primeiro == "":
 			primeiro = str(it[0])

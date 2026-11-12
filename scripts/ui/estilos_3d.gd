@@ -18,7 +18,7 @@ const ESTILOS := {
 	"secutor": {"nome": "Secutor", "dir": "gladio", "esq": "scutum", "cap": "g_metal", "ext": ["manica_dir"]},
 	"provocator": {"nome": "Provocator", "dir": "gladio", "esq": "scutum", "cap": "g_glb", "ext": ["manica_dir", "greva_esq", "greva_dir"]},
 	"dimachaerus": {"nome": "Dimachaerus", "dir": "gladio", "esq": "gladio", "cap": "p_aberto", "ext": ["manica_dir", "manica_esq"]},
-	"retiario": {"nome": "Retiário", "dir": "tridente", "esq": "", "cap": "", "ext": ["galerus", "manica_esq"]},
+	"retiario": {"nome": "Retiário", "dir": "tridente", "esq": "rede", "cap": "", "ext": ["galerus", "manica_esq"]},
 	"velite": {"nome": "Velite", "dir": "pilum", "esq": "parma", "cap": "p_aberto", "ext": []},
 	"scissor": {"nome": "Scissor", "dir": "gladio", "esq": "lamina_braco", "cap": "p_aberto", "ext": ["manica_esq"]},
 	"nu": {"nome": "Sem equipamento", "dir": "", "esq": "", "cap": "", "ext": []},
@@ -33,6 +33,7 @@ const ARMAS := {
 	"lanca": {"p": "res://assets/3d/acc/q_Spear.fbx", "eixo": Vector3(0, 1, 0), "m": 2.0, "grip": 0.35, "axis0": true},
 	"pilum": {"p": "res://assets/3d/cap/a_pilum.fbx", "eixo": Vector3(0, 1, 0), "m": 1.9, "grip": 0.4, "pilum": true, "axis0": true},
 	"tridente": {"p": "res://assets/3d/acc/k_Pitchfork.fbx", "eixo": Vector3(0, 0, 1), "m": 1.7, "grip": 0.3, "tex": true, "inv": true, "axis0": true},
+	"rede": {"p": "res://assets/3d/rede/rede.fbx", "eixo": Vector3(0, 1, 0), "m": 1.1, "grip": 0.1, "balanco": true},
 	"lamina_braco": {"p": "res://assets/3d/acc/q_Sword.fbx", "eixo": Vector3(0, 1, 0), "m": 0.9, "grip": 0.08, "dir": Vector3(1, 0, 0)},
 }
 
@@ -52,6 +53,33 @@ const CAPACETES := {
 	"g_glb": {"p": "res://assets/3d/cap/elmo_gladiador.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
 	"g_metal": {"dupla": true, "p": "res://assets/3d/cap/h_metal.fbx", "w": 0.37, "rot": 0.0, "dy": -0.05, "dz": 0.03, "cor": "8a8f98", "metal": 0.8},
 }
+
+
+## Catálogo de peças para testar (candidatas, ainda sem tamanho/encaixe definitivo).
+## tipo: cap = capacete, arma = mão direita, corpo = peitoral no tronco.
+const CATALOGO_TESTE := [
+	["elmo_1", "Elmo 1", "cap"],
+	["elmo_2", "Elmo 2", "cap"],
+	["elmo_3", "Elmo 3 (pesado, ~1,2 M tri)", "cap"],
+	["espada_romana", "Espada romana", "arma"],
+	["armadura_peitoral", "Armadura peitoral (pesada, ~1,3 M vértices)", "corpo"],
+]
+static var teste_slug := ""   ## peça de teste escolhida no editor ("" = nenhuma)
+const _TESTE_CAP := {
+	"t_elmo_1": {"p": "res://assets/candidatos/elmo_1.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
+	"t_elmo_2": {"p": "res://assets/candidatos/elmo_2.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
+	"t_elmo_3": {"p": "res://assets/candidatos/elmo_3.glb", "w": 0.36, "rot": 0.0, "dy": -0.07, "dz": -0.02, "cor": "b08a3c", "metal": 0.7, "original": true},
+}
+const _TESTE_ARMA := {
+	"t_espada_romana": {"p": "res://assets/candidatos/espada_romana.glb", "eixo": Vector3(0, 1, 0), "m": 0.7, "grip": 0.12},
+}
+
+
+static func tipo_teste(slug: String) -> String:
+	for c in CATALOGO_TESTE:
+		if c[0] == slug:
+			return str(c[2])
+	return ""
 
 
 static func nome(id: String) -> String:
@@ -161,6 +189,7 @@ static func itens_vivos() -> Array:
 
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
+	"retiario/esq": {"esc": 0.4, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
 	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "mat": "escudo"},
 	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "mat": "escudo"},
 	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
@@ -337,6 +366,11 @@ static func montar(sk: Skeleton3D, id: String, escudo_base: Vector3) -> Dictiona
 		carregar_ajustes()
 	var dir_id := str(e.get("dir", ""))
 	var esq_id := str(e.get("esq", ""))
+	if OS.get_environment("TESTE") != "":   # depuração: TESTE=<slug do catálogo>
+		teste_slug = OS.get_environment("TESTE")
+	var tipo := tipo_teste(teste_slug)
+	if tipo == "arma":   # a peça de teste troca a arma da mão direita
+		dir_id = ""
 	if dir_id != "":
 		_arma(sk, dir_id, true, id + "/dir")
 	if esq_id != "":
@@ -345,21 +379,63 @@ static func montar(sk: Skeleton3D, id: String, escudo_base: Vector3) -> Dictiona
 		else:
 			_arma(sk, esq_id, false, id + "/esq")
 	var cap := str(e.get("cap", ""))
+	if tipo == "cap":   # a peça de teste troca o capacete do estilo
+		cap = ""
 	if cap != "":
 		_capacete(sk, cap, id + "/cap")
 	for x in e.get("ext", []):
 		_extra(sk, str(x), id + "/" + str(x))
+	if teste_slug != "":
+		_teste(sk, teste_slug)
 	return res
 
 
+## Peça de teste: "teste/<slug>" é a chave de ajuste (vale para qualquer estilo).
+static func _teste(sk: Skeleton3D, slug: String) -> void:
+	var chave := "teste/" + slug
+	match tipo_teste(slug):
+		"cap":
+			_capacete(sk, "t_" + slug, chave)
+		"arma":
+			_arma(sk, "t_" + slug, true, chave)
+		"corpo":
+			_corpo(sk, slug, chave)
+
+
+static func _corpo(sk: Skeleton3D, slug: String, chave: String) -> void:
+	var no := _carregar("res://assets/candidatos/%s.glb" % slug)
+	if no == null:
+		return
+	var bb := medir(no)
+	var k: float = 0.55 * ESC_M / maxf(bb.size.x, maxf(bb.size.y, bb.size.z))
+	var bw := Basis.from_scale(Vector3.ONE * k)
+	var rb := _base_osso(sk, "mixamorig_Spine2")
+	var pw := _rest(sk, "mixamorig_Spine2").origin - bw * bb.get_center()
+	_anexar(sk, "mixamorig_Spine2", no, rb, bw, pw, chave, pw)
+
+
+const BALANCO := preload("res://scripts/ui/balanco.gd")
+
+
 static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> void:
-	var a: Dictionary = ARMAS.get(id, {})
+	var a: Dictionary = ARMAS.get(id, _TESTE_ARMA.get(id, {}))
 	if a.is_empty():
 		return
 	var no := _carregar(str(a["p"]))
 	if no == null:
 		return
 	var bb := medir(no)
+	if a.get("balanco", false):   # peça solta que balança: a malha fica numa articulação com mola
+		var piv := Node3D.new()
+		piv.set_script(BALANCO)
+		piv.add_child(no)
+		var raiz := Node3D.new()
+		raiz.add_child(piv)
+		for mi in no.find_children("*", "MeshInstance3D", true, false):   # corda escura, sem face única
+			var cord := _mat(Color("4a4238"), 0.0, 0.9)
+			cord.cull_mode = BaseMaterial3D.CULL_DISABLED
+			(mi as MeshInstance3D).material_override = cord
+		no = raiz
 	var eixo: Vector3 = (a["eixo"] as Vector3).normalized()
 	if a.get("inv", false):
 		eixo = -eixo
@@ -457,7 +533,7 @@ static func _aplicar_escudo(chave: String) -> void:
 
 
 static func _capacete(sk: Skeleton3D, id: String, chave := "") -> void:
-	var c: Dictionary = CAPACETES.get(id, {})
+	var c: Dictionary = CAPACETES.get(id, _TESTE_CAP.get(id, {}))
 	var osso := "mixamorig_Head"
 	var rb := _base_osso(sk, osso)
 	if c.is_empty():

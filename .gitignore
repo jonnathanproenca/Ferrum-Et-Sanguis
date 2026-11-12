@@ -5,3 +5,9 @@ build/
 export.cfg
 *.apk
 *.aab
+
+# Candidatas pesadas (ainda sem redução de polígonos; não vão para o build web)
+assets/candidatos/armadura_peitoral.glb
+assets/candidatos/elmo_3.glb
+assets/candidatos/armadura_peitoral.glb.import
+assets/candidatos/elmo_3.glb.import
