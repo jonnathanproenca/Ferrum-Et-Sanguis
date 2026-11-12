@@ -178,10 +178,56 @@ const AJUSTES_PADRAO := {
 }
 
 
+## Opções de material (texturas PBR baixadas; 1K). "padrao" devolve a textura/cor original da peça.
+const MATERIAIS_OPCOES := [["padrao", "Padrão"], ["ferro", "Ferro"], ["ouro", "Ouro"], ["prata", "Prata"], ["bronze", "Bronze"], ["escudo", "Escudo (scutum)"]]
+static var _texcache := {}
+
+
+static func _textura_pack(nome: String) -> Dictionary:
+	if _texcache.has(nome):
+		return _texcache[nome]
+	var base := "res://assets/materiais/%s/" % nome
+	var d := {"cor": load(base + "cor.jpg"), "normal": load(base + "normal.jpg"), "rug": load(base + "rug.jpg"), "metal": load(base + "metal.jpg")}
+	_texcache[nome] = d
+	return d
+
+
+## Liga/desliga as texturas PBR do material. Guarda as originais na 1ª vez para poder voltar em "Padrão".
+static func aplicar_textura(m: StandardMaterial3D, nome: String) -> void:
+	if not m.has_meta("base_tex"):
+		m.set_meta("base_tex", {"cor": m.albedo_texture, "normal": m.normal_texture, "normal_on": m.normal_enabled, "rug": m.roughness_texture, "metal": m.metallic_texture, "tri": m.uv1_triplanar})
+	var b: Dictionary = m.get_meta("base_tex")
+	if nome == "" or nome == "padrao" or not _textura_pack_valida(nome):
+		m.albedo_texture = b["cor"]
+		m.normal_texture = b["normal"]
+		m.normal_enabled = b["normal_on"]
+		m.roughness_texture = b["rug"]
+		m.metallic_texture = b["metal"]
+		m.uv1_triplanar = b["tri"]
+		return
+	var t := _textura_pack(nome)
+	m.albedo_texture = t["cor"]
+	m.normal_enabled = true
+	m.normal_texture = t["normal"]
+	m.roughness_texture = t["rug"]
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.metallic_texture = t["metal"]
+	m.metallic_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.uv1_triplanar = true   # projeção pelo volume: não depende de UV da peça procedural
+	m.uv1_scale = Vector3.ONE * 2.0
+
+
+static func _textura_pack_valida(nome: String) -> bool:
+	for o in MATERIAIS_OPCOES:
+		if o[0] == nome:
+			return nome != "padrao"
+	return false
+
+
 static func ajuste_de(chave: String) -> Dictionary:
 	var a: Dictionary = ajustes.get(chave, AJUSTES_PADRAO.get(chave, {}))
 	return {"pos": a.get("pos", [0.0, 0.0, 0.0]), "rot": a.get("rot", [0.0, 0.0, 0.0]), "esc": float(a.get("esc", 1.0)),
-		"cor": str(a.get("cor", "")), "metal": float(a.get("metal", -1.0)), "rug": float(a.get("rug", -1.0))}
+		"cor": str(a.get("cor", "")), "metal": float(a.get("metal", -1.0)), "rug": float(a.get("rug", -1.0)), "mat": str(a.get("mat", "padrao"))}
 
 
 ## Material (override) da peça montada: o primeiro que existir. As partes de uma peça que têm a mesma cor compartilham o mesmo material.
@@ -195,6 +241,17 @@ static func material_de(chave: String) -> StandardMaterial3D:
 			return m as StandardMaterial3D
 	if (v["no"] is MeshInstance3D) and ((v["no"] as MeshInstance3D).material_override is StandardMaterial3D):
 		return (v["no"] as MeshInstance3D).material_override as StandardMaterial3D
+	# peça sem material de override (ex.: escudo importado): cria um cópia editável e vincula a todas as malhas
+	var meshes := (v["no"] as Node).find_children("*", "MeshInstance3D", true, false)
+	if meshes.is_empty() and v["no"] is MeshInstance3D:
+		meshes = [v["no"]]
+	for mi in meshes:
+		var base := (mi as MeshInstance3D).get_active_material(0)
+		if base is StandardMaterial3D:
+			var novo := (base as StandardMaterial3D).duplicate() as StandardMaterial3D
+			for m2 in meshes:
+				(m2 as MeshInstance3D).material_override = novo
+			return novo
 	return null
 
 
@@ -202,13 +259,21 @@ static func _aplicar_cor(chave: String) -> void:
 	var m := material_de(chave)
 	if m == null:
 		return
+	if not m.has_meta("cor0"):
+		m.set_meta("cor0", m.albedo_color)
+		m.set_meta("met0", m.metallic)
+		m.set_meta("rug0", m.roughness)
 	var a := ajuste_de(chave)
+	aplicar_textura(m, str(a["mat"]))
+	var com_tex := _textura_pack_valida(str(a["mat"]))
 	if str(a["cor"]) != "":
 		m.albedo_color = Color(str(a["cor"]))
-	if float(a["metal"]) >= 0.0:
-		m.metallic = float(a["metal"])
-	if float(a["rug"]) >= 0.0:
-		m.roughness = float(a["rug"])
+	elif com_tex:
+		m.albedo_color = Color.WHITE   # a cor vem da textura
+	else:
+		m.albedo_color = m.get_meta("cor0")
+	m.metallic = float(a["metal"]) if float(a["metal"]) >= 0.0 else (0.45 if com_tex else float(m.get_meta("met0")))
+	m.roughness = float(a["rug"]) if float(a["rug"]) >= 0.0 else (1.0 if com_tex else float(m.get_meta("rug0")))
 
 
 ## Giro e tamanho são aplicados em torno da âncora (ponto de pegada da arma / base do capacete), para a peça não "andar" ao redimensionar.
@@ -383,6 +448,7 @@ static func _aplicar_escudo(chave: String) -> void:
 	var v: Dictionary = _vivos.get(chave, {})
 	if v.is_empty() or not is_instance_valid(v["no"]):
 		return
+	_aplicar_cor(chave)
 	var a := ajuste_de(chave)
 	var r: Array = a["rot"]
 	var p: Array = a["pos"]

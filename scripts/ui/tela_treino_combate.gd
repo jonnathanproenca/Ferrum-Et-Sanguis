@@ -29,6 +29,7 @@ var _ed_sl: Dictionary = {}        ## campo -> HSlider
 var _ed_val: Dictionary = {}       ## campo -> Label
 var _ed_bot: Dictionary = {}       ## item -> Button
 var _ed_cor: ColorPickerButton
+var _ed_mat: OptionButton
 var _ed_ocultos: Array = []        ## nós escondidos pelo botão "Ocultar interface"
 var _bot_ocultar: Button
 var _rep: Timer                    ## repetição ao segurar as setas
@@ -263,6 +264,18 @@ func _montar_editor() -> void:
 	_ed_cor.focus_mode = Control.FOCUS_NONE
 	_ed_cor.color_changed.connect(func(_c): _ed_mudou())
 	lc.add_child(_ed_cor)
+	var lm := HBoxContainer.new()
+	v.add_child(lm)
+	var rm := Tema.rotulo("Material", 13, Tema.AREIA)
+	rm.custom_minimum_size = Vector2(60, 0)
+	lm.add_child(rm)
+	_ed_mat = OptionButton.new()
+	_ed_mat.focus_mode = Control.FOCUS_NONE
+	_ed_mat.custom_minimum_size = Vector2(150, 26)
+	for i in Estilos3D.MATERIAIS_OPCOES.size():
+		_ed_mat.add_item(Estilos3D.MATERIAIS_OPCOES[i][1], i)
+	_ed_mat.item_selected.connect(func(_i): _ed_mudou())
+	lm.add_child(_ed_mat)
 	var lb := HBoxContainer.new()
 	lb.add_theme_constant_override("separation", 4)
 	v.add_child(lb)
@@ -358,6 +371,11 @@ func _ed_carregar() -> void:
 	for k in vals:
 		(_ed_sl[k] as HSlider).set_value_no_signal(float(vals[k]))
 		(_ed_val[k] as Label).text = str(snappedf(float(vals[k]), 0.01))
+	var idx := 0
+	for i in Estilos3D.MATERIAIS_OPCOES.size():
+		if Estilos3D.MATERIAIS_OPCOES[i][0] == str(a["mat"]):
+			idx = i
+	_ed_mat.select(idx)
 	_ed_cor.disabled = mat == null
 	_ed_cor.color = Color(str(a["cor"])) if str(a["cor"]) != "" else (mat.albedo_color if mat != null else Color.WHITE)
 
@@ -388,6 +406,7 @@ func _ed_mudou() -> void:
 		d["cor"] = _ed_cor.color.to_html(false)
 		d["metal"] = g.call("met")
 		d["rug"] = g.call("rug")
+		d["mat"] = Estilos3D.MATERIAIS_OPCOES[_ed_mat.selected][0]
 	Estilos3D.ajustes[ch] = d
 	for k in _ed_sl:
 		(_ed_val[k] as Label).text = str(snappedf((_ed_sl[k] as HSlider).value, 0.01))
