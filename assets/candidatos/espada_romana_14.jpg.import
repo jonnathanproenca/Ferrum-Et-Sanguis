@@ -2,16 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d26aomuonbitq"
-path="res://.godot/imported/brasa.png-c5906d09711bf1f11f9e8f778bfc4f30.ctex"
+uid="uid://brxakswwudqb2"
+path="res://.godot/imported/espada_romana_14.jpg-2755734044b49240621be0d82e34d227.ctex"
 metadata={
 "vram_texture": false
+}
+generator_parameters={
+"md5": "df70a8736b6bb51592608ab53e89faf0"
 }
 
 [deps]
 
-source_file="res://assets/anim/brasa.png"
-dest_files=["res://.godot/imported/brasa.png-c5906d09711bf1f11f9e8f778bfc4f30.ctex"]
+source_file="res://assets/candidatos/espada_romana_14.jpg"
+dest_files=["res://.godot/imported/espada_romana_14.jpg-2755734044b49240621be0d82e34d227.ctex"]
 
 [params]
 
@@ -21,7 +24,7 @@ compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

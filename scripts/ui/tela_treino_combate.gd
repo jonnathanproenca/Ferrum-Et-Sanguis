@@ -187,7 +187,8 @@ func _montar_editor() -> void:
 	_ed_dimensionar()
 	get_viewport().size_changed.connect(_ed_dimensionar)
 	var rolagem := ScrollContainer.new()
-	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# AUTO (não DISABLED): com DISABLED a largura mínima do conteúdo empurra o painel para fora da tela.
+	rolagem.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_ed.add_child(rolagem)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 3)
@@ -212,32 +213,39 @@ func _montar_editor() -> void:
 	_ed_teste.item_selected.connect(_ed_trocar_teste)
 	lt.add_child(_ed_teste)
 	var linha := GridContainer.new()
-	linha.columns = 3
+	linha.columns = 2   # 2 colunas: 3 deixavam a última cortada no painel
 	linha.add_theme_constant_override("h_separation", 4)
 	linha.add_theme_constant_override("v_separation", 3)
 	v.add_child(linha)
 	for it in ED_ITENS:
 		var b := Tema.botao(it[1], "normal", 12)
 		b.custom_minimum_size = Vector2(0, 26)
+		b.clip_text = true   # o texto não define a largura mínima (senão a grade de 3 colunas estoura o painel)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(_ed_escolher.bind(it[0]))
 		linha.add_child(b)
 		_ed_bot[it[0]] = b
-	var lp := HBoxContainer.new()
-	lp.add_theme_constant_override("separation", 4)
+	var lp := GridContainer.new()
+	lp.columns = 2
+	lp.add_theme_constant_override("h_separation", 4)
+	lp.add_theme_constant_override("v_separation", 4)
 	v.add_child(lp)
 	for ps in ED_POSES:
 		var b2 := Tema.botao(ps[0], "normal", 13)
 		b2.custom_minimum_size = Vector2(0, 28)
+		b2.clip_text = true
 		b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b2.pressed.connect(func(): _c3d.ver_pose(ps[1], ps[2]))
 		lp.add_child(b2)
-	var lz := HBoxContainer.new()
-	lz.add_theme_constant_override("separation", 4)
+	var lz := GridContainer.new()
+	lz.columns = 2
+	lz.add_theme_constant_override("h_separation", 4)
+	lz.add_theme_constant_override("v_separation", 4)
 	v.add_child(lz)
 	for zz in [["Câmera normal", 0], ["Corpo", 1], ["Cabeça", 2]]:
 		var bzm := Tema.botao(zz[0], "normal", 13)
 		bzm.custom_minimum_size = Vector2(0, 28)
+		bzm.clip_text = true
 		bzm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		bzm.pressed.connect(func(): _c3d.zoom(zz[1]))
 		lz.add_child(bzm)
@@ -349,10 +357,10 @@ func _ed_alternar_interface() -> void:
 		_bot_ocultar.text = "Ocultar interface"
 
 
-## Largura do editor: 330 px no desktop, mas nunca mais que a tela (celular/janela estreita).
+## Largura do editor: 380 px no desktop, mas nunca mais que a tela (celular/janela estreita).
 func _ed_dimensionar() -> void:
 	var vw := get_viewport_rect().size.x
-	var largura := minf(330.0, vw - 24.0)
+	var largura := minf(380.0, vw - 24.0)
 	_ed.offset_left = -largura - 12.0
 	_ed.offset_right = -12.0
 

@@ -16,7 +16,7 @@ static func criar(nome: String) -> Anim:
 	return a
 
 func _carregar(nome: String) -> void:
-	_folha = load("res://assets/anim/%s.png" % nome)
+	_folha = load("res://assets/anim/%s.webp" % nome)
 	_meta = Util.ler_json("res://assets/anim/%s.json" % nome)
 	var esc: float = float(_meta.get("escala", 1.0))
 	custom_minimum_size = Vector2(float(_meta["w"]) / esc, float(_meta["h"]) / esc)
