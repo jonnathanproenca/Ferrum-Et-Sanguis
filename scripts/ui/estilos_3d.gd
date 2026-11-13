@@ -192,7 +192,7 @@ static func itens_vivos() -> Array:
 ## Ajustes definitivos (vindos do editor do treino). Um ajuste local do navegador, se existir, vale por cima.
 const AJUSTES_PADRAO := {
 	"retiario/esq": {"esc": 0.4, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0]},
-	"murmilo/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "metal": 0.0},   # metálico 0: sem reflexo no Compatibility, o escudo ficava escuro
+	"murmilo/esc": {"cor": "ffffff", "esc": 2.2, "mat": "escudo", "metal": 1.0, "pos": [0.5, -2.5, 0.0], "rot": [35.0, 9.0, 95.0], "rug": 1.0},
 	"provocator/esc": {"esc": 1.0, "pos": [0.0, 0.0, 0.0], "rot": [0.0, 0.0, 0.0], "metal": 0.0},   # metálico 0: sem reflexo no Compatibility, o escudo ficava escuro
 	"samnita/cap": {"esc": 0.8, "pos": [-2.1, 7.2, -2.1], "rot": [15.0, 1.0, 0.0]},
 	"samnita/esc": {"esc": 1.0, "pos": [0.0, 0.0, -1.0], "rot": [41.0, 0.0, 84.0]},
