@@ -28,7 +28,7 @@ const ESTILOS := {
 ## m = comprimento em metros, grip = onde a mão segura (0 cabo … 1 ponta), roll = giro em torno da lâmina (graus),
 ## dir = direção da lâmina em T-pose (padrão: +Z, para a frente: o punho fecha nesse eixo), tex = textura Kickin It, inv = inverte a ponta.
 const ARMAS := {
-	"gladio": {"p": "res://assets/3d/gladio.glb", "eixo": Vector3(0, 1, 0), "m": 0.58, "grip": 0.12},
+	"gladio": {"p": "res://assets/candidatos/espada_romana.glb", "eixo": Vector3(0, 1, 0), "m": 0.7, "grip": 0.12, "sem": ["sheath", "Wooden Plate"], "embrulha": true},
 	"sica": {"p": "res://assets/3d/acc/k_Kopesh.fbx", "eixo": Vector3(0, 0, 1), "m": 0.55, "grip": 0.12, "tex": true, "inv": true},
 	"lanca": {"p": "res://assets/3d/acc/q_Spear.fbx", "eixo": Vector3(0, 1, 0), "m": 2.0, "grip": 0.35, "axis0": true},
 	"pilum": {"p": "res://assets/3d/cap/a_pilum.fbx", "eixo": Vector3(0, 1, 0), "m": 1.9, "grip": 0.4, "pilum": true, "axis0": true},
@@ -204,6 +204,15 @@ const AJUSTES_PADRAO := {
 	"dimachaerus/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
 	"velite/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
 	"velite/dir": {"esc": 1.0, "pos": [15.5, 13.0, -30.0], "rot": [0.0, -5.0, -1.0]},
+	# espada romana (substitui o gladius nos estilos que o usam)
+	"teste/espada_romana": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"murmilo/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"samnita/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"secutor/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"provocator/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"scissor/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"dimachaerus/dir": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
+	"dimachaerus/esq": {"cor": "ffffff", "esc": 1.0, "mat": "padrao", "metal": 1.0, "pos": [10.5, 4.5, 56.0], "rot": [180.0, 45.0, -83.0], "rug": 0.46},
 	"scissor/cap": {"esc": 0.75, "pos": [0.0, -3.0, 3.0], "rot": [-6.0, 9.0, 0.0]},
 }
 
@@ -457,7 +466,7 @@ static func _arma(sk: Skeleton3D, id: String, direita: bool, chave := "") -> voi
 	if no == null:
 		return
 	_remover_partes(no, a.get("sem", []))
-	if id.begins_with("t_"):   # peça de teste: embrulha para preservar a transformação interna do arquivo
+	if id.begins_with("t_") or a.get("embrulha", false):   # embrulha para preservar a transformação interna do arquivo
 		var emb := Node3D.new()
 		emb.add_child(no)
 		no = emb
